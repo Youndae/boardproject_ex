@@ -1,0 +1,23 @@
+# Environment variables
+.env
+.env.development
+.env.test
+.env.production
+
+# Node modules
+node_modules/
+
+# logs
+logs/
+
+# IDE / OS
+.idea/
+.DS_Store
+Thumbs.db
+
+# Jest coverage
+coverage/
+
+# Optional build folders
+dist/
+build/
