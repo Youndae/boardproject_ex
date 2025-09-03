@@ -32,6 +32,7 @@ Express 프로젝트 구조와 이해도 학습 목적
 - fs-extra 11.3.1
 - module-alias 2.2.3
 - uuid 11.1.0
+- redis 5.8.2
 - dev
   - jest 29.7.0
   - nodemon 3.1.10

@@ -33,6 +33,9 @@ const infoTransport = new DailyRotateFile({
     filename: 'info-%DATE%.log',
     level: 'info',
     format: timestampAndJsonFormat,
+	createSymlink: true,
+	symlinkName: 'current-info.log',
+	options: { flags: 'a', encoding: 'utf-8' },
     ...fileOptions
 });
 
@@ -42,6 +45,9 @@ const errorTransport = new DailyRotateFile({
     filename: 'error-%DATE%.log',
     level: 'error',
     format: timestampAndJsonFormat,
+	createSymlink: true,
+	symlinkName: 'current-error.log',
+	options: { flags: 'a', encoding: 'utf-8' },
     ...fileOptions
 });
 

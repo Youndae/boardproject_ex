@@ -1,11 +1,12 @@
 import Sequelize from 'sequelize';
 import dotenvFlow from 'dotenv-flow';
 
-import Member from './Member';
-import Board from "./Board";
-import ImageBoard from "./ImageBoard";
-import ImageData from "./ImageData";
-import Comment from "./Comment";
+import Member from '@models/Member.js';
+import Auth from '@models/Auth.js';
+import Board from "@models/Board.js";
+import ImageBoard from "@models/ImageBoard";
+import ImageData from "@models/ImageData";
+import Comment from "@models/Comment";
 
 dotenvFlow.config();
 
@@ -30,18 +31,21 @@ db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 
 db.Member = Member;
+db.Auth = Auth;
 db.Board = Board;
 db.ImageBoard = ImageBoard;
 db.ImageData = ImageData;
 db.Comment = Comment;
 
 Member.init(sequelize);
+Auth.init(sequelize);
 Board.init(sequelize);
 ImageBoard.init(sequelize);
 ImageData.init(sequelize);
 Comment.init(sequelize);
 
 Member.associate(db);
+Auth.associate(db);
 Board.associate(db);
 ImageBoard.associate(db);
 ImageData.associate(db);
