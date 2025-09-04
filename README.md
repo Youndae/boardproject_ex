@@ -51,3 +51,18 @@ Express 프로젝트 구조와 이해도 학습 목적
 >> docker-compose.yml 작성   
 >> env 작성   
 >> .gitignore 작성
+
+<br/>
+
+## 25/09/03
+> tokenMiddleware, memberRepository 일부, customError, responseStatus, tokenConstants, redisConfig, jwtConfig, validatorConfig, jwtTokenProvider, cookieUtils 작성   
+> pm2 설정으로 ecosystem.config.js 작성   
+> redis 패키지 추가
+
+<br/>
+
+## 25/09/04
+> passport - local, naver, kakao, googleStrategy 처리. passport/index.js 수정 oAuth strategy에 따라 MemberRepository, AuthRepository 생성 및 처리.   
+> oAuth Strategy 관련 로직을 oAuthService로 분리.   
+> validatorConfig를 버전에 맞는 코드로 수정.   
+> memberRouter, memberController 생성. 작업 중.

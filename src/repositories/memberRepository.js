@@ -5,6 +5,10 @@ import CustomError from '@errors/customError';
 
 export class MemberRepository {
 
+	static async findMemberByUserId(userId) {
+		return await Member.findOne({ userId });
+	}
+
 	static async findUserIdWithRoles(userId) {
 		try {
 			const member = await Member.findOne({
@@ -40,5 +44,21 @@ export class MemberRepository {
 			logger.error('Failed to find user with roles: ', { userId, error: error.message });
 			throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
 		}
+	}
+
+	static async findOAuthMember(provider, userId) {
+		return await Member.findOne({
+			where: { userId, provider },
+		});
+	}
+
+	static async createOAuthMember(userId, email, username, provider, userPw) {
+		return await Member.create({
+			userId,
+			email,
+			username,
+			provider,
+			userPw,
+		});
 	}
 }

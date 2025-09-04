@@ -7,6 +7,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv-flow';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import TokenMiddleware from '@middleware/tokenMiddleware';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -17,9 +18,11 @@ dotenv.config();
 
 import { sequelize } from './models';
 import passportConfig from './passport.js';
+import memberRouter from './routes/member.js';
 
 const app = express();
 passportConfig();
+app.use(TokenMiddleware);
 
 app.set('port', process.env.PORT || 8081);
 
@@ -40,6 +43,7 @@ app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(passport.initialize());
 
 // TODO: Router 등록
+app.use('/member', memberRouter);
 
 
 // 404

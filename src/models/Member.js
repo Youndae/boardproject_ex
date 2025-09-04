@@ -18,6 +18,10 @@ export default class Member extends Sequelize.Model {
                     type: Sequelize.STRING(50),
                     allowNull: false,
                 },
+				nickName: {
+					type: Sequelize.STRING(50),
+					allowNull: true,
+				},
                 email: {
                     type: Sequelize.STRING(200),
                     allowNull: false,
