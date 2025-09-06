@@ -1,5 +1,5 @@
 import { Strategy as NaverStrategy } from 'passport-naver';
-import { oAuthCallback, parsers } from '@services/oAuth/oAuthService';
+import { oAuthCallback, parsers } from '@services/oAuth/oAuthService.js';
 
 const naverStrategy = new NaverStrategy({
 		clientID: process.env.NAVER_ID,

@@ -4,9 +4,9 @@ import dotenvFlow from 'dotenv-flow';
 import Member from '@models/Member.js';
 import Auth from '@models/Auth.js';
 import Board from "@models/Board.js";
-import ImageBoard from "@models/ImageBoard";
-import ImageData from "@models/ImageData";
-import Comment from "@models/Comment";
+import ImageBoard from "@models/ImageBoard.js";
+import ImageData from "@models/ImageData.js";
+import Comment from "@models/Comment.js";
 
 dotenvFlow.config();
 

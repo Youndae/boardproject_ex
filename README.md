@@ -66,3 +66,8 @@ Express 프로젝트 구조와 이해도 학습 목적
 > oAuth Strategy 관련 로직을 oAuthService로 분리.   
 > validatorConfig를 버전에 맞는 코드로 수정.   
 > memberRouter, memberController 생성. 작업 중.
+
+<br/>
+
+## 25/09/06
+> memberRouter, memberController, memberService, resize, uplaodMiddleware, fileUtils 추가 및 구현.

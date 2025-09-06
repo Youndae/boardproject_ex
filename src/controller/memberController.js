@@ -1,6 +1,19 @@
 //TODO: import services
-
-//TODO: import logger, customError, ResponseStatus
+import {
+	registerService,
+	checkIdService,
+	checkNicknameService,
+	patchProfileService,
+	getProfileService
+} from "@services/member/memberService.js"
+import { profileResize } from "@utils/resize.js"
+import { logger } from "@config/loggerConfig.js"
+import CustomError from "@errors/customError.js"
+import { ResponseStatus } from "@constants/responseStatus.js"
+import { JWTTokenProvider } from "@services/jwt/jwtTokenProvider.js"
+import { getCookie } from "@utils/cookieUtils.js"
+import { jwtConfig } from "@config/jwtConfig.js"
+import passport from "passport"
 
 /**
  * 
@@ -9,18 +22,27 @@
  * @param {*} next 
  * 
  * @returns {
- * 	status: 201,
- * 	message: 'CREATED'
+ * 	status: 201
  * }
  */
 export async function register(req, res, next) {
 	try {
-		//TODO: register service
+		const { userId, userPw, username, nickname = null, email } = req.body;
+		const profileImage = req.file ? req.file.filename : null;
 
-		//TODO: response
+		if(profileImage){
+			try {
+				await profileResize(profileImage);
+			}catch(error) {
+				next(new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR));
+			}
+		}
+		await registerService(userId, userPw, username, nickname, email, profileImage);
+
+		return res.status(ResponseStatus.CREATED).json({});
 	}catch(error) {
-		//TODO: error logging
-		//TODO: error response
+		logger.error('Failed to register member');
+		next(error);
 	}
 }
 
@@ -32,7 +54,6 @@ export async function register(req, res, next) {
  * 
  * @returns {
  * 	status: 200,
- * 	message: 'SUCCESS',
  * 	data: {
  * 		isExist: true/false
  * }
@@ -40,12 +61,15 @@ export async function register(req, res, next) {
  */
 export async function checkId(req, res, next) {
 	try {
-		//TODO: checkId Service
-
-		//TODO: response
+		const result = await checkIdService(req.body.userId);
+		
+		return res.status(ResponseStatus.OK)
+			.json({
+				isExist: result
+			});
 	}catch(error) {
-		//TODO: error logging
-		//TODO: error response
+		logger.error('Failed to check id');
+		next(error);
 	}
 }
 
@@ -57,7 +81,6 @@ export async function checkId(req, res, next) {
  * 
  * @returns {
 * 	status: 200,
-* 	message: 'SUCCESS',
 * 	data: {
 * 		isExist: true/false
 * }
@@ -65,13 +88,145 @@ export async function checkId(req, res, next) {
 */
 export async function checkNickname(req, res, next) {
 	try {
-		//TODO: checkNickname Service
+		const result = await checkNicknameService(req.userId, req.body.nickname);
 
-		//TODO: response
+		return res.status(ResponseStatus.OK)
+			.json({
+				isExist: result
+			});
 	}catch(error) {
-		//TODO: error logging
-		//TODO: error response
+		logger.error('Failed to check nickname');
+		next(error);
 	}
 }
 
-export async function 
+/**
+ * 
+ * @param {*} req 
+ * @param {*} res 
+ * @param {*} next 
+ * 
+ * @returns {
+ * 	status: 200,
+ *  message: 'SUCCESS' || 'FORBIDDEN'
+ * 	data: {
+ * 		userId: string
+ * 	}
+ * 	cookies: {
+ * 		accessToken: httyOnly, secure, sameSite: 'strict',
+ * 		refreshToken: httyOnly, secure, sameSite: 'strict',
+ * 		ino: httyOnly, secure, sameSite: 'strict',
+ * 	}
+ * }
+ * }
+ */
+export async function login(req, res, next) {
+	try {
+		//TODO: login validation
+		//TODO: passport local strategy
+		passport.authenticate('local', (err, member, info) => {
+			if(err){
+				logger.error('Failed to login');
+				return next(err);
+			}
+			if(!member) {
+				logger.error('Failed to login. Invalid userId or userPw');
+				return next(new CustomError(ResponseStatus.FORBIDDEN));
+			}
+
+			JWTTokenProvider.issuedAllToken(member.userId, res);
+
+			return res.status(ResponseStatus.OK)
+					.json({
+						id: member.userId,
+					});
+		})(req, res, next);
+	}catch (error) {
+		logger.error('Failed to login');
+		next(error);
+	}
+}
+
+/**
+ * 
+ * @param {*} req 
+ * @param {*} res 
+ * @param {*} next 
+ * 
+ * @returns {
+ * 	status: 200
+ * }
+ */
+export async function logout(req, res, next) {
+	try {
+		const inoValue = getCookie(req, jwtConfig.inoHeader);
+		JWTTokenProvider.deleteTokenDataAndCookie(req.userId, inoValue, res);
+
+		return res.status(ResponseStatus.OK).json({});
+	}catch (error) {
+		logger.error('Failed to logout');
+		next(error);
+	}
+}
+
+/**
+ * 
+ * @param {*} req 
+ * @param {*} res 
+ * @param {*} next 
+ * 
+ * @returns {
+ * 	status: 200,
+ * }
+ */
+export async function patchProfile(req, res, next) {
+	try {
+		const { nickname = null, deleteProfile = null } = req.body;
+		const profileImage = req.file ? req.file.filename : null;
+
+		if(profileImage){
+			try {
+				await profileResize(profileImage);
+			}catch(error) {
+				next(new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR));
+			}
+		}
+		
+		await patchProfileService(req.userId, nickname, profileImage, deleteProfile);
+		
+		return res.status(ResponseStatus.OK).json({});
+	}catch (error) {
+		logger.error('Failed to patch profile');
+		next(error);
+	}
+}
+
+/**
+ * 
+ * @param {*} req 
+ * @param {*} res 
+ * @param {*} next 
+ * 
+ * @returns {
+ * 	status: 200,
+ *  message: 'SUCCESS',
+ * 	data: {
+ * 		nickname: string,
+ * 		profileImage: string,
+ * 	}
+ * }
+ */
+export async function getProfile(req, res, next) {
+	try {
+		const member = await getProfileService(req.userId);
+		
+		return res.status(ResponseStatus.OK)
+			.json({
+				nickname: member.nickname,
+				profileImage: member.profileThumbnail,
+			});
+	}catch (error) {
+		logger.error('Failed to get profile');
+		next(error);
+	}
+}

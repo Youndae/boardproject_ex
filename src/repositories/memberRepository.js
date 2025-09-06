@@ -1,7 +1,7 @@
 import { Member, Auth } from '@models/index.js';
-import { logger } from '@config/loggerConfig';
-import { ResponseStatus } from '../constants/responseStatus';
-import CustomError from '@errors/customError';
+import { logger } from '@config/loggerConfig.js';
+import { ResponseStatus } from '../constants/responseStatus.js';
+import CustomError from '@errors/customError.js';
 
 export class MemberRepository {
 
@@ -59,6 +59,40 @@ export class MemberRepository {
 			username,
 			provider,
 			userPw,
+		});
+	}
+
+	static async createMember(userId, hashedPw, email, username, nickname, profileImage) {
+		return await Member.create({
+			userId,
+			userPw: hashedPw,
+			email,
+			username,
+			nickname,
+			profileThumbnail: profileImage,
+		});
+	}
+
+	static async findMemberByNickname(nickname) {
+		return await Member.findOne({
+			where: { nickname },
+			attributes: ['userId'],
+		});
+	}
+
+	static async patchMemberProfile(userId, nickname, profileImage) {
+		return await Member.update({
+			nickname,
+			profileThumbnail: profileImage,
+		}, {
+			where: { userId },
+		});
+	}
+
+	static async getMemberProfile(userId) {
+		return await Member.findOne({
+			where: { userId },
+			attributes: ['nickname', 'profileThumbnail'],
 		});
 	}
 }

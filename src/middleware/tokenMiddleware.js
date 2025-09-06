@@ -1,10 +1,10 @@
-import { jwtConfig } from '@config/jwtConfig';
-import { JWTTokenProvider } from '@services/jwt/jwtTokenProvider';
-import { logger } from '@config/loggerConfig';
-import CustomError from '@errors/customError';
-import { getCookie } from '@utils/cookieUtils';
-import { ResponseStatusCode, ResponseStatus } from '@constants/responseStatus';
-import { MemberRepository } from '@repositories/memberRepository';
+import { jwtConfig } from '@config/jwtConfig.js';
+import { JWTTokenProvider } from '@services/jwt/jwtTokenProvider.js';
+import { logger } from '@config/loggerConfig.js';
+import CustomError from '@errors/customError.js';
+import { getCookie } from '@utils/cookieUtils.js';
+import { ResponseStatusCode, ResponseStatus } from '@constants/responseStatus.js';
+import { MemberRepository } from '@repositories/memberRepository.js';
 
 
 // get Token Cookie

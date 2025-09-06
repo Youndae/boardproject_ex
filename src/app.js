@@ -7,7 +7,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv-flow';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import TokenMiddleware from '@middleware/tokenMiddleware';
+import TokenMiddleware from '@middleware/tokenMiddleware.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -17,7 +17,7 @@ dotenv.config();
 // TODO: Router
 
 import { sequelize } from './models';
-import passportConfig from './passport.js';
+import passportConfig from './passport';
 import memberRouter from './routes/member.js';
 
 const app = express();

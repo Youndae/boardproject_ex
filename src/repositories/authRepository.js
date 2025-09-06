@@ -1,7 +1,7 @@
 import { Auth } from '@models/index.js';
-import { logger } from '@config/loggerConfig';
-import CustomError from '@errors/customError';
-import { ResponseStatus } from '@constants/responseStatus';
+import { logger } from '@config/loggerConfig.js';
+import CustomError from '@errors/customError.js';
+import { ResponseStatus } from '@constants/responseStatus.js';
 
 export class AuthRepository {
 
@@ -9,7 +9,7 @@ export class AuthRepository {
 		try {
 			await Auth.create({
 				userId,
-				role,
+				auth: role,
 			});
 		}catch(error) {
 			logger.error('Failed to create member auth: ', { userId, error: error.message });

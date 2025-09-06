@@ -1,5 +1,6 @@
-import { redisClient } from '@config/redisConfig';
-import { logger } from '@config/loggerConfig';
+import { redisClient } from '@config/redisConfig.js';
+import { logger } from '@config/loggerConfig.js';
+import CustomError from '@errors/customError.js';
 
 export class RedisService {
 	// get Token Value

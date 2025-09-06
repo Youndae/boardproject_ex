@@ -1,6 +1,6 @@
 import { Strategy as LocalStrategy } from 'passport-local';
 import bcrypt from 'bcrypt';
-import { MemberRepository } from '@repositories/memberRepository';
+import { MemberRepository } from '@repositories/memberRepository.js';
 
 const localStrategy = new LocalStrategy({
 		usernameField: 'userId',

@@ -1,10 +1,10 @@
 import passport from 'passport';
-import localStrategy from '@passport/localStrategy';
-import googleStrategy from '@passport/googleStrategy';
-import kakaoStrategy from '@passport/kakaoStrategy';
-import naverStrategy from '@passport/naverStrategy';
+import localStrategy from '@passport/localStrategy.js';
+import googleStrategy from '@passport/googleStrategy.js';
+import kakaoStrategy from '@passport/kakaoStrategy.js';
+import naverStrategy from '@passport/naverStrategy.js';
 
-export default function initializePassport() {
+export default function passportConfig() {
 	passport.use(localStrategy);
 	passport.use(googleStrategy);
 	passport.use(kakaoStrategy);

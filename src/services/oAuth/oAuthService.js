@@ -1,11 +1,11 @@
-import { MemberRepository } from '@repositories/memberRepository';
-import { AuthRepository } from '@repositories/authRepository';
+import { MemberRepository } from '@repositories/memberRepository.js';
+import { AuthRepository } from '@repositories/authRepository.js';
 import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
-import { logger } from '@config/loggerConfig';
+import { logger } from '@config/loggerConfig.js';
 import { sequelize } from '@models/index.js';
-import CustomError from '@errors/customError';
-import { ResponseStatus } from '@constants/responseStatus';
+import CustomError from '@errors/customError.js';
+import { ResponseStatus } from '@constants/responseStatus.js';
 
 async function findOrCreateOAuthMember({
 	provider,
