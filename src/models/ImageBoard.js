@@ -25,7 +25,7 @@ export default class ImageBoard extends Sequelize.Model {
                 imageDate: {
                     type: Sequelize.DATE,
                     allowNull: false,
-                    defaultValue: Date.now(),
+                    defaultValue: Sequelize.NOW,
                 }
             }, {
                 sequelize,

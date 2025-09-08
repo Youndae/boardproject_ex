@@ -1,12 +1,12 @@
 import { Member, Auth } from '@models/index.js';
-import { logger } from '@config/loggerConfig.js';
-import { ResponseStatus } from '../constants/responseStatus.js';
+import logger from '@config/loggerConfig.js';
+import { ResponseStatus } from '@constants/responseStatus.js';
 import CustomError from '@errors/customError.js';
 
 export class MemberRepository {
 
 	static async findMemberByUserId(userId) {
-		return await Member.findOne({ userId });
+		return await Member.findOne({ where: { userId } });
 	}
 
 	static async findUserIdWithRoles(userId) {
@@ -42,6 +42,8 @@ export class MemberRepository {
 			};
 		}catch(error) {
 			logger.error('Failed to find user with roles: ', { userId, error: error.message });
+			if(error instanceof CustomError)
+				throw error;
 			throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
@@ -56,7 +58,7 @@ export class MemberRepository {
 		return await Member.create({
 			userId,
 			email,
-			username,
+			userName: username,
 			provider,
 			userPw,
 		});
@@ -67,22 +69,22 @@ export class MemberRepository {
 			userId,
 			userPw: hashedPw,
 			email,
-			username,
-			nickname,
+			userName: username,
+			nickName: nickname,
 			profileThumbnail: profileImage,
 		});
 	}
 
 	static async findMemberByNickname(nickname) {
 		return await Member.findOne({
-			where: { nickname },
+			where: { nickName: nickname },
 			attributes: ['userId'],
 		});
 	}
 
 	static async patchMemberProfile(userId, nickname, profileImage) {
 		return await Member.update({
-			nickname,
+			nickName: nickname,
 			profileThumbnail: profileImage,
 		}, {
 			where: { userId },
@@ -92,7 +94,7 @@ export class MemberRepository {
 	static async getMemberProfile(userId) {
 		return await Member.findOne({
 			where: { userId },
-			attributes: ['nickname', 'profileThumbnail'],
+			attributes: ['nickName', 'profileThumbnail'],
 		});
 	}
 }

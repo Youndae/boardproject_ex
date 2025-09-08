@@ -48,5 +48,11 @@ export default class Member extends Sequelize.Model {
         );
     }
 
-    static associate(db) {}
+    static associate(db) {
+		db.Member.hasMany(db.Auth, {
+			foreignKey: 'userId',
+			sourceKey: 'userId',
+			as: 'auths',
+		})
+	}
 }

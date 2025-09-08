@@ -1,7 +1,6 @@
-//TODO: import repositories
 import { MemberRepository } from "@repositories/memberRepository.js"
 import { AuthRepository } from "@repositories/authRepository.js"
-import { logger } from "@config/loggerConfig.js"
+import logger from "@config/loggerConfig.js"
 import CustomError from "@errors/customError.js"
 import { ResponseStatus } from "@constants/responseStatus.js"
 import bcrypt from "bcrypt"
@@ -94,6 +93,8 @@ export async function getProfileService (userId) {
 		return member;
 	}catch (error) {
 		logger.error('Failed to get profile service.')
+		if(error instanceof CustomError)
+			throw error;
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
 	}
 }

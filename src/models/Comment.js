@@ -1,4 +1,4 @@
-import Sequelize from "sequelize";
+import Sequelize from 'sequelize';
 
 export default class Comment extends Sequelize.Model {
     static init(sequelize) {
@@ -29,7 +29,7 @@ export default class Comment extends Sequelize.Model {
                 commentDate: {
                     type: Sequelize.DATE,
                     allowNull: false,
-                    defaultValue: Date.now(),
+                    defaultValue: Sequelize.NOW,
                 },
                 commentGroupNo: {
                     type: Sequelize.BIGINT.UNSIGNED,
@@ -63,7 +63,7 @@ export default class Comment extends Sequelize.Model {
     }
 
     static associate(db) {
-        db.Comment.belongsTo(db.HierarchicalBoard, {
+        db.Comment.belongsTo(db.Board, {
             foreignKey: 'boardNo',
             targetKey: 'boardNo',
             onDelete: 'CASCADE',

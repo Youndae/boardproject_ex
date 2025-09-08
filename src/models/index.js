@@ -52,3 +52,4 @@ ImageData.associate(db);
 Comment.associate(db);
 
 export default db;
+export { sequelize, Member, Auth, Board, ImageBoard, ImageData, Comment };

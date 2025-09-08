@@ -25,7 +25,7 @@ export default class Board extends Sequelize.Model {
                 boardDate: {
                     type: Sequelize.DATE,
                     allowNull: false,
-                    defaultValue: Date.now(),
+                    defaultValue: Sequelize.NOW,
                 },
                 boardGroupNo: {
                     type: Sequelize.BIGINT.UNSIGNED,
