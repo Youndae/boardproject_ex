@@ -12,8 +12,8 @@
     "pm2:delete": "pm2 delete ecosystem.config.js",
     "pm2:logs": "pm2 logs boardproject_express",
     "pm2:monit": "pm2 monit",
-    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest",
-    "coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --coverage",
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --runInBand",
+    "coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --coverage --runInBand",
     "start": "cross-env NODE_ENV=production node src/server.js",
     "dev": "cross-env NODE_ENV=development nodemon src/server.js"
   },

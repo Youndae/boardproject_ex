@@ -83,12 +83,12 @@ export class MemberRepository {
 	}
 
 	static async patchMemberProfile(userId, nickname, profileImage) {
-		return await Member.update({
-			nickName: nickname,
-			profileThumbnail: profileImage,
-		}, {
-			where: { userId },
-		});
+		const updateData = { nickName: nickname };
+
+		if(profileImage !== undefined)
+			updateData.profileThumbnail = profileImage;
+
+		return await Member.update(updateData, { where: { userId } });
 	}
 
 	static async getMemberProfile(userId) {

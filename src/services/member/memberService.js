@@ -1,3 +1,4 @@
+//TODO: import repositories
 import { MemberRepository } from "@repositories/memberRepository.js"
 import { AuthRepository } from "@repositories/authRepository.js"
 import logger from "@config/loggerConfig.js"
@@ -28,7 +29,12 @@ export async function registerService ( userId, userPw, email, username, nicknam
 		if(profileImage)
 			deleteImageFile(profileImage, 'profile');
 
-		logger.error('Failed to register service.')
+		if(error instanceof CustomError){
+			logger.error('Member already exists.');
+			throw error;
+		}
+			
+		logger.error('Failed to register service.');
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
 	}
 }
@@ -61,11 +67,14 @@ export async function checkNicknameService (userId = null, nickname) {
 	}
 }
 
-export async function patchProfileService (userId, nickname = null, profileImage = null, deleteProfile = null) {
+export async function patchProfileService (userId, nickname, profileImage = null, deleteProfile = null) {
 	const transaction = await sequelize.transaction();
 	try {
 		if(profileImage)
 			profileImage = getResizeProfileName(profileImage);
+
+		if(!profileImage && !deleteProfile)
+			profileImage = undefined;
 
 		await MemberRepository.patchMemberProfile(userId, nickname, profileImage);
 
@@ -93,8 +102,10 @@ export async function getProfileService (userId) {
 		return member;
 	}catch (error) {
 		logger.error('Failed to get profile service.')
+
 		if(error instanceof CustomError)
 			throw error;
+
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
 	}
 }

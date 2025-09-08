@@ -65,8 +65,8 @@ describe('memberService unit test', () => {
 				await registerService(SAVE_MEMBER.userId, SAVE_MEMBER.userPw, SAVE_MEMBER.email, SAVE_MEMBER.username, SAVE_MEMBER.nickname, SAVE_MEMBER.profileImage);
 			}catch(error) {
 				expect(error).toBeInstanceOf(CustomError);
-				expect(error.status).toBe(ResponseStatus.INTERNAL_SERVER_ERROR.CODE);
-				expect(error.message).toBe(ResponseStatus.INTERNAL_SERVER_ERROR.MESSAGE);
+				expect(error.status).toBe(ResponseStatus.BAD_REQUEST.CODE);
+				expect(error.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
 				expect(getResizeProfileName).not.toHaveBeenCalled();
 				expect(createMemberSpy).not.toHaveBeenCalled();
 				expect(createAuthSpy).not.toHaveBeenCalled();
@@ -84,8 +84,8 @@ describe('memberService unit test', () => {
 				await registerService(SAVE_MEMBER.userId, SAVE_MEMBER.userPw, SAVE_MEMBER.email, SAVE_MEMBER.username, SAVE_MEMBER.nickname);
 			}catch (error) {
 				expect(error).toBeInstanceOf(CustomError);
-				expect(error.status).toBe(ResponseStatus.INTERNAL_SERVER_ERROR.CODE);
-				expect(error.message).toBe(ResponseStatus.INTERNAL_SERVER_ERROR.MESSAGE);
+				expect(error.status).toBe(ResponseStatus.BAD_REQUEST.CODE);
+				expect(error.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
 				expect(getResizeProfileName).not.toHaveBeenCalled();
 				expect(createMemberSpy).not.toHaveBeenCalled();
 				expect(createAuthSpy).not.toHaveBeenCalled();
