@@ -7,7 +7,7 @@ import {
 	getProfileService
 } from "@services/member/memberService.js"
 import { profileResize } from "@utils/resize.js"
-import { logger } from "@config/loggerConfig.js"
+import logger from "@config/loggerConfig.js"
 import CustomError from "@errors/customError.js"
 import { ResponseStatus } from "@constants/responseStatus.js"
 import { JWTTokenProvider } from "@services/jwt/jwtTokenProvider.js"
@@ -27,19 +27,20 @@ import passport from "passport"
  */
 export async function register(req, res, next) {
 	try {
-		const { userId, userPw, username, nickname = null, email } = req.body;
+		const { userId, userPw, userName, nickName = null, email } = req.body;
 		const profileImage = req.file ? req.file.filename : null;
 
 		if(profileImage){
 			try {
 				await profileResize(profileImage);
 			}catch(error) {
+				console.error('profileResize error : ', error);
 				next(new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR));
 			}
 		}
-		await registerService(userId, userPw, username, nickname, email, profileImage);
+		await registerService(userId, userPw, userName, nickName, email, profileImage);
 
-		return res.status(ResponseStatus.CREATED).json({});
+		return res.status(ResponseStatus.CREATED.CODE).json({});
 	}catch(error) {
 		logger.error('Failed to register member');
 		next(error);

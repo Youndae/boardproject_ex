@@ -157,9 +157,9 @@ describe('memberRepository test', () => {
 			const member = await MemberRepository.createMember(
 				'newMember',
 				await bcrypt.hash(userPw, 10),
-				'newMember@newMember.com',
 				'newMemberUserName',
 				'newMemberNickName',
+				'newMember@newMember.com',
 				'newMemberProfileThumbnail.jpg'
 			);
 

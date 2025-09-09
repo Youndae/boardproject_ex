@@ -54,24 +54,24 @@ export class MemberRepository {
 		});
 	}
 
-	static async createOAuthMember(userId, email, username, provider, userPw) {
+	static async createOAuthMember(userId, email, userName, provider, userPw) {
 		return await Member.create({
-			userId,
-			email,
-			userName: username,
-			provider,
-			userPw,
+			userId: userId,
+			email: email,
+			userName: userName,
+			provider: provider,
+			userPw: userPw,
 		});
 	}
 
-	static async createMember(userId, hashedPw, email, username, nickname, profileImage) {
+	static async createMember(userId, hashedPw, userName, nickName, email, profileThumbnail) {
 		return await Member.create({
-			userId,
+			userId: userId,
 			userPw: hashedPw,
-			email,
-			userName: username,
-			nickName: nickname,
-			profileThumbnail: profileImage,
+			email: email,
+			userName: userName,
+			nickName: nickName,
+			profileThumbnail: profileThumbnail,
 		});
 	}
 

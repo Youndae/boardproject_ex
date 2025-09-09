@@ -3,15 +3,14 @@ import CustomError from '@errors/customError.js';
 import { ResponseStatus } from '@constants/responseStatus.js';
 import { sequelize, Member, Auth } from '@models/index.js';
 import bcrypt from 'bcrypt';
-import { MemberRepository } from '../../../../src/repositories/memberRepository';
 
 const SAVE_MEMBER = {
 	userId: 'tester',
 	userPw: 'tester1234',
 	email: 'tester@tester.com',
-	username: 'testerName',
-	nickname: 'testerNickName',
-	profileImage: 'testerProfileImage.jpg',
+	userName: 'testerName',
+	nickName: 'testerNickName',
+	profileThumbnail: 'testerProfileImage.jpg',
 }
 
 await jest.unstable_mockModule('@utils/fileUtils.js', () => ({
@@ -42,17 +41,17 @@ describe('memberService integration test', () => {
 		await sequelize.close();
 	})
 
-	beforeEach(async () => {
+	afterEach(async () => {
 		await Member.destroy({ where: {} });
 		await Auth.destroy({ where: {} });
 	})
 
 	describe('registerService', () => {
 		it('회원 가입 정상 처리. 모든 값이 존재하는 경우', async () => {
-			getResizeProfileName.mockReturnValue(SAVE_MEMBER.profileImage);
-			await registerService(SAVE_MEMBER.userId, SAVE_MEMBER.userPw, SAVE_MEMBER.email, SAVE_MEMBER.username, SAVE_MEMBER.nickname, SAVE_MEMBER.profileImage);
+			getResizeProfileName.mockReturnValue(SAVE_MEMBER.profileThumbnail);
+			await registerService(SAVE_MEMBER.userId, SAVE_MEMBER.userPw, SAVE_MEMBER.userName, SAVE_MEMBER.nickName, SAVE_MEMBER.email, SAVE_MEMBER.profileThumbnail);
 
-			expect(getResizeProfileName).toHaveBeenCalledWith(SAVE_MEMBER.profileImage);
+			expect(getResizeProfileName).toHaveBeenCalledWith(SAVE_MEMBER.profileThumbnail);
 			expect(deleteImageFile).not.toHaveBeenCalled();
 
 			const registeredMember = await Member.findOne({ where: { userId: SAVE_MEMBER.userId } });
@@ -62,10 +61,10 @@ describe('memberService integration test', () => {
 			expect(registeredMember).toBeDefined();
 			expect(registeredMember.userId).toBe(SAVE_MEMBER.userId);
 			expect(pwValid).toBe(true);
-			expect(registeredMember.userName).toBe(SAVE_MEMBER.username);
-			expect(registeredMember.nickName).toBe(SAVE_MEMBER.nickname);
+			expect(registeredMember.userName).toBe(SAVE_MEMBER.userName);
+			expect(registeredMember.nickName).toBe(SAVE_MEMBER.nickName);
 			expect(registeredMember.email).toBe(SAVE_MEMBER.email);
-			expect(registeredMember.profileThumbnail).toBe(SAVE_MEMBER.profileImage);
+			expect(registeredMember.profileThumbnail).toBe(SAVE_MEMBER.profileThumbnail);
 			expect(registeredMember.provider).toBe('local');
 			expect(registeredAuth).toBeDefined();
 			expect(registeredAuth.length).toBe(1);
@@ -74,7 +73,7 @@ describe('memberService integration test', () => {
 		});
 
 		it('회원 가입 정상 처리. 프로필 이미지가 없는 경우', async() => {
-			await registerService(SAVE_MEMBER.userId, SAVE_MEMBER.userPw, SAVE_MEMBER.email, SAVE_MEMBER.username, SAVE_MEMBER.nickname, null);
+			await registerService(SAVE_MEMBER.userId, SAVE_MEMBER.userPw, SAVE_MEMBER.userName, SAVE_MEMBER.nickName, SAVE_MEMBER.email, null);
 
 			expect(getResizeProfileName).not.toHaveBeenCalled();
 			expect(deleteImageFile).not.toHaveBeenCalled();
@@ -86,8 +85,8 @@ describe('memberService integration test', () => {
 			expect(registeredMember).toBeDefined();
 			expect(registeredMember.userId).toBe(SAVE_MEMBER.userId);
 			expect(pwValid).toBe(true);
-			expect(registeredMember.userName).toBe(SAVE_MEMBER.username);
-			expect(registeredMember.nickName).toBe(SAVE_MEMBER.nickname);
+			expect(registeredMember.userName).toBe(SAVE_MEMBER.userName);
+			expect(registeredMember.nickName).toBe(SAVE_MEMBER.nickName);
 			expect(registeredMember.email).toBe(SAVE_MEMBER.email);
 			expect(registeredMember.profileThumbnail).toBeNull();
 			expect(registeredMember.provider).toBe('local');
@@ -98,10 +97,10 @@ describe('memberService integration test', () => {
 		});
 
 		it('회원 가입 정상 처리. 닉네임이 없는 경우', async() => {
-			getResizeProfileName.mockReturnValue(SAVE_MEMBER.profileImage);
-			await registerService(SAVE_MEMBER.userId, SAVE_MEMBER.userPw, SAVE_MEMBER.email, SAVE_MEMBER.username, null, SAVE_MEMBER.profileImage);
+			getResizeProfileName.mockReturnValue(SAVE_MEMBER.profileThumbnail);
+			await registerService(SAVE_MEMBER.userId, SAVE_MEMBER.userPw, SAVE_MEMBER.userName, null, SAVE_MEMBER.email, SAVE_MEMBER.profileThumbnail);
 
-			expect(getResizeProfileName).toHaveBeenCalledWith(SAVE_MEMBER.profileImage);
+			expect(getResizeProfileName).toHaveBeenCalledWith(SAVE_MEMBER.profileThumbnail);
 			expect(deleteImageFile).not.toHaveBeenCalled();
 
 			const registeredMember = await Member.findOne({ where: { userId: SAVE_MEMBER.userId } });
@@ -111,10 +110,10 @@ describe('memberService integration test', () => {
 			expect(registeredMember).toBeDefined();
 			expect(registeredMember.userId).toBe(SAVE_MEMBER.userId);
 			expect(pwValid).toBe(true);
-			expect(registeredMember.userName).toBe(SAVE_MEMBER.username);
+			expect(registeredMember.userName).toBe(SAVE_MEMBER.userName);
 			expect(registeredMember.nickName).toBeNull();
 			expect(registeredMember.email).toBe(SAVE_MEMBER.email);
-			expect(registeredMember.profileThumbnail).toBe(SAVE_MEMBER.profileImage);
+			expect(registeredMember.profileThumbnail).toBe(SAVE_MEMBER.profileThumbnail);
 			expect(registeredMember.provider).toBe('local');
 			expect(registeredAuth).toBeDefined();
 			expect(registeredAuth.length).toBe(1);
@@ -123,7 +122,7 @@ describe('memberService integration test', () => {
 		});
 
 		it('회원 가입 정상 처리. 닉네임과 프로필 이미지가 없는 경우', async() => {
-			await registerService(SAVE_MEMBER.userId, SAVE_MEMBER.userPw, SAVE_MEMBER.email, SAVE_MEMBER.username, null, null);
+			await registerService(SAVE_MEMBER.userId, SAVE_MEMBER.userPw, SAVE_MEMBER.userName, null, SAVE_MEMBER.email, null);
 
 			expect(getResizeProfileName).not.toHaveBeenCalled();
 			expect(deleteImageFile).not.toHaveBeenCalled();
@@ -135,7 +134,7 @@ describe('memberService integration test', () => {
 			expect(registeredMember).toBeDefined();
 			expect(registeredMember.userId).toBe(SAVE_MEMBER.userId);
 			expect(pwValid).toBe(true);
-			expect(registeredMember.userName).toBe(SAVE_MEMBER.username);
+			expect(registeredMember.userName).toBe(SAVE_MEMBER.userName);
 			expect(registeredMember.nickName).toBeNull();
 			expect(registeredMember.email).toBe(SAVE_MEMBER.email);
 			expect(registeredMember.profileThumbnail).toBeNull();
@@ -150,17 +149,17 @@ describe('memberService integration test', () => {
 			await Member.create({
 				userId: SAVE_MEMBER.userId,
 				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
-				userName: SAVE_MEMBER.username,
-				nickName: SAVE_MEMBER.nickname,
+				userName: SAVE_MEMBER.userName,
+				nickName: SAVE_MEMBER.nickName,
 				email: SAVE_MEMBER.email,
-				profileThumbnail: SAVE_MEMBER.profileImage,
+				profileThumbnail: SAVE_MEMBER.profileThumbnail,
 				provider: 'local',
 			});
 
 			deleteImageFile.mockReturnValue(() => {});
 
 			try {
-				await registerService(SAVE_MEMBER.userId, SAVE_MEMBER.userPw, SAVE_MEMBER.email, SAVE_MEMBER.username, SAVE_MEMBER.nickname, SAVE_MEMBER.profileImage);
+				await registerService(SAVE_MEMBER.userId, SAVE_MEMBER.userPw, SAVE_MEMBER.email, SAVE_MEMBER.userName, SAVE_MEMBER.nickName, SAVE_MEMBER.profileThumbnail);
 			}catch(error) {
 				expect(error).toBeInstanceOf(CustomError);
 				expect(error.status).toBe(ResponseStatus.BAD_REQUEST.CODE);
@@ -174,13 +173,13 @@ describe('memberService integration test', () => {
 			await Member.create({
 				userId: SAVE_MEMBER.userId,
 				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
-				userName: SAVE_MEMBER.username,
-				nickName: SAVE_MEMBER.nickname,
+				userName: SAVE_MEMBER.userName,
+				nickName: SAVE_MEMBER.nickName,
 				email: SAVE_MEMBER.email,
 			});
 
 			try {
-				await registerService(SAVE_MEMBER.userId, SAVE_MEMBER.userPw, SAVE_MEMBER.email, SAVE_MEMBER.username, SAVE_MEMBER.nickname, null);
+				await registerService(SAVE_MEMBER.userId, SAVE_MEMBER.userPw, SAVE_MEMBER.email, SAVE_MEMBER.userName, SAVE_MEMBER.nickName, null);
 			}catch(error) {
 				expect(error).toBeInstanceOf(CustomError);
 				expect(error.status).toBe(ResponseStatus.BAD_REQUEST.CODE);
@@ -201,8 +200,8 @@ describe('memberService integration test', () => {
 			await Member.create({
 				userId: SAVE_MEMBER.userId,
 				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
-				userName: SAVE_MEMBER.username,
-				nickName: SAVE_MEMBER.nickname,
+				userName: SAVE_MEMBER.userName,
+				nickName: SAVE_MEMBER.nickName,
 				email: SAVE_MEMBER.email,
 			});
 
@@ -213,7 +212,7 @@ describe('memberService integration test', () => {
 
 	describe('checkNicknameService', () => {
 		it('닉네임 중복 체크. 중복이 아닌 경우.', async() => {
-			const result = await checkNicknameService(null, SAVE_MEMBER.nickname);
+			const result = await checkNicknameService(null, SAVE_MEMBER.nickName);
 			expect(result).toBe(false);
 		});
 
@@ -221,12 +220,12 @@ describe('memberService integration test', () => {
 			await Member.create({
 				userId: SAVE_MEMBER.userId,
 				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
-				userName: SAVE_MEMBER.username,
-				nickName: SAVE_MEMBER.nickname,
+				userName: SAVE_MEMBER.userName,
+				nickName: SAVE_MEMBER.nickName,
 				email: SAVE_MEMBER.email,
 			});
 
-			const result = await checkNicknameService(null, SAVE_MEMBER.nickname);
+			const result = await checkNicknameService(null, SAVE_MEMBER.nickName);
 			expect(result).toBe(true);
 		});
 
@@ -234,12 +233,12 @@ describe('memberService integration test', () => {
 			await Member.create({
 				userId: SAVE_MEMBER.userId,
 				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
-				userName: SAVE_MEMBER.username,
-				nickName: SAVE_MEMBER.nickname,
+				userName: SAVE_MEMBER.userName,
+				nickName: SAVE_MEMBER.nickName,
 				email: SAVE_MEMBER.email,
 			});
 
-			const result = await checkNicknameService(SAVE_MEMBER.userId, SAVE_MEMBER.nickname);
+			const result = await checkNicknameService(SAVE_MEMBER.userId, SAVE_MEMBER.nickName);
 			expect(result).toBe(false);
 		});
 
@@ -247,12 +246,12 @@ describe('memberService integration test', () => {
 			await Member.create({
 				userId: SAVE_MEMBER.userId,
 				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
-				userName: SAVE_MEMBER.username,
-				nickName: SAVE_MEMBER.nickname,
+				userName: SAVE_MEMBER.userName,
+				nickName: SAVE_MEMBER.nickName,
 				email: SAVE_MEMBER.email,
 			});
 
-			const result = await checkNicknameService('otherUserId', SAVE_MEMBER.nickname);
+			const result = await checkNicknameService('otherUserId', SAVE_MEMBER.nickName);
 			expect(result).toBe(true);
 		});
 	});
@@ -268,10 +267,10 @@ describe('memberService integration test', () => {
 			await Member.create({
 				userId: SAVE_MEMBER.userId,
 				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
-				userName: SAVE_MEMBER.username,
-				nickName: SAVE_MEMBER.nickname,
+				userName: SAVE_MEMBER.userName,
+				nickName: SAVE_MEMBER.nickName,
 				email: SAVE_MEMBER.email,
-				profileThumbnail: SAVE_MEMBER.profileImage,
+				profileThumbnail: SAVE_MEMBER.profileThumbnail,
 				provider: 'local',
 			});
 
@@ -292,10 +291,10 @@ describe('memberService integration test', () => {
 			await Member.create({
 				userId: SAVE_MEMBER.userId,
 				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
-				userName: SAVE_MEMBER.username,
-				nickName: SAVE_MEMBER.nickname,
+				userName: SAVE_MEMBER.userName,
+				nickName: SAVE_MEMBER.nickName,
 				email: SAVE_MEMBER.email,
-				profileThumbnail: SAVE_MEMBER.profileImage,
+				profileThumbnail: SAVE_MEMBER.profileThumbnail,
 				provider: 'local',
 			});
 
@@ -316,10 +315,10 @@ describe('memberService integration test', () => {
 			await Member.create({
 				userId: SAVE_MEMBER.userId,
 				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
-				userName: SAVE_MEMBER.username,
-				nickName: SAVE_MEMBER.nickname,
+				userName: SAVE_MEMBER.userName,
+				nickName: SAVE_MEMBER.nickName,
 				email: SAVE_MEMBER.email,
-				profileThumbnail: SAVE_MEMBER.profileImage,
+				profileThumbnail: SAVE_MEMBER.profileThumbnail,
 				provider: 'local',
 			});
 
@@ -338,22 +337,22 @@ describe('memberService integration test', () => {
 			await Member.create({
 				userId: SAVE_MEMBER.userId,
 				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
-				userName: SAVE_MEMBER.username,
-				nickName: SAVE_MEMBER.nickname,
+				userName: SAVE_MEMBER.userName,
+				nickName: SAVE_MEMBER.nickName,
 				email: SAVE_MEMBER.email,
-				profileThumbnail: SAVE_MEMBER.profileImage,
+				profileThumbnail: SAVE_MEMBER.profileThumbnail,
 				provider: 'local',
 			});
 
-			await patchProfileService(SAVE_MEMBER.userId, SAVE_MEMBER.nickname, null, null);
+			await patchProfileService(SAVE_MEMBER.userId, SAVE_MEMBER.nickName, null, null);
 
 			expect(getResizeProfileName).not.toHaveBeenCalled();
 			expect(deleteImageFile).not.toHaveBeenCalled();
 
 			const member = await Member.findOne({ where: { userId: SAVE_MEMBER.userId } });
 			expect(member).toBeDefined();
-			expect(member.nickName).toBe(SAVE_MEMBER.nickname);
-			expect(member.profileThumbnail).toBe(SAVE_MEMBER.profileImage);
+			expect(member.nickName).toBe(SAVE_MEMBER.nickName);
+			expect(member.profileThumbnail).toBe(SAVE_MEMBER.profileThumbnail);
 		});
 	});
 
@@ -362,17 +361,17 @@ describe('memberService integration test', () => {
 			await Member.create({
 				userId: SAVE_MEMBER.userId,
 				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
-				userName: SAVE_MEMBER.username,
-				nickName: SAVE_MEMBER.nickname,
+				userName: SAVE_MEMBER.userName,
+				nickName: SAVE_MEMBER.nickName,
 				email: SAVE_MEMBER.email,
-				profileThumbnail: SAVE_MEMBER.profileImage,
+				profileThumbnail: SAVE_MEMBER.profileThumbnail,
 				provider: 'local',
 			});
 
 			const result = await getProfileService(SAVE_MEMBER.userId);
 			expect(result).toBeDefined();
-			expect(result.nickName).toBe(SAVE_MEMBER.nickname);
-			expect(result.profileThumbnail).toBe(SAVE_MEMBER.profileImage);
+			expect(result.nickName).toBe(SAVE_MEMBER.nickName);
+			expect(result.profileThumbnail).toBe(SAVE_MEMBER.profileThumbnail);
 			expect(result.userId).toBeUndefined();
 			expect(result.userPw).toBeUndefined();
 			expect(result.userName).toBeUndefined();

@@ -1,8 +1,8 @@
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4} from 'uuid';
 import { jwtConfig } from '@config/jwtConfig.js';
-import { redisService } from '@services/redis/RedisService.js';
-import { logger } from '@config/loggerConfig.js';
+import { RedisService } from '@services/redis/redisService.js';
+import logger from '@config/loggerConfig.js';
 import CustomError from '@errors/customError.js';
 
 export class JWTTokenProvider {
@@ -31,7 +31,7 @@ export class JWTTokenProvider {
 		const replacedToken = this.#replaceTokenValue(token);
 		const verifyValue = this.#verifyToken(replacedToken, jwtConfig.accessSecret).userId;
 		const redisKey = this.#getRedisKey(jwtConfig.accessKeyPrefix, verifyValue, inoValue);
-		const redisValue = await redisService.getTokenValue(redisKey);
+		const redisValue = await RedisService.getTokenValue(redisKey);
 
 		if(redisValue === replacedToken)
 			return verifyValue;
@@ -42,8 +42,8 @@ export class JWTTokenProvider {
 			logger.error('Access Token Stealing. ', { redisValue, replacedToken });
 			this.deleteAllTokenCookie(res);
 			const refreshKey = this.#getRedisKey(jwtConfig.refreshKeyPrefix, verifyValue, inoValue);
-			redisService.deleteTokenValue(redisKey);
-			redisService.deleteTokenValue(refreshKey);
+			RedisService.deleteTokenValue(redisKey);
+			RedisService.deleteTokenValue(refreshKey);
 			throw new CustomError(800, 'Token Stealing Error');
 		}
 	}
@@ -53,7 +53,7 @@ export class JWTTokenProvider {
 		const replacedToken = this.#replaceTokenValue(token);
 		const verifyValue = this.#verifyToken(replacedToken, jwtConfig.refreshSecret).userId;
 		const redisKey = this.#getRedisKey(jwtConfig.refreshKeyPrefix, verifyValue, inoValue);
-		const redisValue = await redisService.getTokenValue(redisKey);
+		const redisValue = await RedisService.getTokenValue(redisKey);
 
 		if(redisValue === replacedToken)
 			return verifyValue;
@@ -64,8 +64,8 @@ export class JWTTokenProvider {
 			logger.error('Refresh Token Stealing. ', { redisValue, replacedToken });
 			this.deleteAllTokenCookie(res);
 			const refreshKey = this.#getRedisKey(jwtConfig.refreshKeyPrefix, verifyValue, inoValue);
-			redisService.deleteTokenValue(redisKey);
-			redisService.deleteTokenValue(refreshKey);
+			RedisService.deleteTokenValue(redisKey);
+			RedisService.deleteTokenValue(refreshKey);
 			throw new CustomError(800, 'Token Stealing Error');
 		}
 	}
@@ -97,8 +97,8 @@ export class JWTTokenProvider {
 	static async deleteTokenData(userId, inoValue) {
 		const accessKey = this.#getRedisKey(jwtConfig.accessKeyPrefix, userId, inoValue);
 		const refreshKey = this.#getRedisKey(jwtConfig.refreshKeyPrefix, userId, inoValue);
-		await redisService.deleteTokenValue(accessKey);
-		await redisService.deleteTokenValue(refreshKey);
+		await RedisService.deleteTokenValue(accessKey);
+		await RedisService.deleteTokenValue(refreshKey);
 	}
 
 	static deleteAllTokenCookie(res) {
@@ -125,7 +125,7 @@ export class JWTTokenProvider {
 		const payload = this.createPayload(userId);
 		const token = this.#createToken(payload, jwtConfig.accessSecret, jwtConfig.accessExpire);
 		const redisKey = this.#getRedisKey(jwtConfig.accessKeyPrefix, userId, inoValue);
-		await redisService.setTokenValue(redisKey, token, jwtConfig.accessExpire);
+		await RedisService.setTokenValue(redisKey, token, this.#convertExpiresToMillisecond(jwtConfig.accessExpire));
 
 		return this.#setTokenPrefix(token);
 	}
@@ -135,7 +135,7 @@ export class JWTTokenProvider {
 		const payload = this.createPayload(userId);
 		const token = this.#createToken(payload, jwtConfig.refreshSecret, jwtConfig.refreshExpire);
 		const redisKey = this.#getRedisKey(jwtConfig.refreshKeyPrefix, userId, inoValue);
-		await redisService.setTokenValue(redisKey, token, jwtConfig.refreshExpire);
+		await RedisService.setTokenValue(redisKey, token, this.#convertExpiresToMillisecond(jwtConfig.refreshExpire));
 
 		return this.#setTokenPrefix(token);
 	}

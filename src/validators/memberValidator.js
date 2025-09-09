@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-const pwRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+const pwRegex = /^(?=.*[a-zA-Z])(?=.*[!@#$%^&*+=-])(?=.*[0-9]).{8,16}$/;
+
 
 const userIdValidator = z.string()
 						.min(4, { message: '아이디는 최소 4자 이상이어야 합니다.'})
@@ -21,9 +22,9 @@ export const registerValidator = z.object({
 	userId: userIdValidator,
 	userPw: pwValidator,
 	email: z.string().email({ message: '이메일 형식에 맞지 않습니다.'}),
-	username: z.string().min(2, { message: '이름은 최소 2자 이상이어야 합니다.'}).max(50),
-	nickname: nicknameValidator.optional().nullable(),
-}).strict();
+	userName: z.string().min(2, { message: '이름은 최소 2자 이상이어야 합니다.'}).max(50),
+	nickName: nicknameValidator.optional().nullable(),
+});
 
 export const checkIdValidator = z.object({
 	userId: userIdValidator,

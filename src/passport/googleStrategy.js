@@ -4,7 +4,7 @@ import { oAuthCallback, parsers } from '@services/oAuth/oAuthService.js';
 const googleStrategy = new GoogleStrategy({	
 		clientID: process.env.GOOGLE_ID,
 		clientSecret: process.env.GOOGLE_SECRET,
-		callbackURL: '',
+		callbackURL: process.env.GOOGLE_CALLBACK,
 	},
 	oAuthCallback('google', parsers.google)
 )

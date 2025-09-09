@@ -1,7 +1,15 @@
 import express from 'express';
 import { isLoggedIn, isNotLoggedIn } from '@middleware/authMiddleware.js';
-import { MemberController } from '@controllers/memberController.js';
-import { ResponseStatusCodes } from '@constants/responseStatus.js';
+import { 
+	register,
+	checkId,
+	checkNickname,
+	login,
+	logout,
+	patchProfile,
+	getProfile
+ } from '@controllers/memberController.js';
+import { ResponseStatusCode } from '@constants/responseStatus.js';
 import { validate } from '@middleware/validateMiddleware.js';
 import { 
 	registerValidator, 
@@ -20,17 +28,17 @@ router.get('/check-login', (req, res, next) => {
 	if(req.userId)
 		loginStatus = true;
 
-	return res.status(ResponseStatusCodes.OK)
+	return res.status(ResponseStatusCode.OK)
 		.json({
 			loginStatus,
 		});
 });
-router.post('/join', isNotLoggedIn, validate(registerValidator), profileUpload, MemberController.join);
-router.get('/check-id', isNotLoggedIn, validate(checkIdValidator), MemberController.checkId);
-router.get('/check-nickname', validate(checkNicknameValidator), MemberController.checkNickname);
-router.post('/login', isNotLoggedIn, validate(loginValidator), MemberController.login);
-router.post('/logout', isLoggedIn, MemberController.logout);
-router.patch('/profile', isLoggedIn, validate(patchProfileValidator), profileUpload, MemberController.profile);
-router.get('/profile', isLoggedIn, MemberController.profile);
+router.post('/join', isNotLoggedIn, profileUpload, validate(registerValidator), register);
+router.get('/check-id', isNotLoggedIn, validate(checkIdValidator), checkId);
+router.get('/check-nickname', validate(checkNicknameValidator), checkNickname);
+router.post('/login', isNotLoggedIn, validate(loginValidator), login);
+router.post('/logout', isLoggedIn, logout);
+router.patch('/profile', isLoggedIn, validate(patchProfileValidator), profileUpload, patchProfile);
+router.get('/profile', isLoggedIn, getProfile);
 
 export default router;

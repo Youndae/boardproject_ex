@@ -1,6 +1,6 @@
 import { jwtConfig } from '@config/jwtConfig.js';
 import { JWTTokenProvider } from '@services/jwt/jwtTokenProvider.js';
-import { logger } from '@config/loggerConfig.js';
+import logger from '@config/loggerConfig.js';
 import CustomError from '@errors/customError.js';
 import { getCookie } from '@utils/cookieUtils.js';
 import { ResponseStatusCode, ResponseStatus } from '@constants/responseStatus.js';

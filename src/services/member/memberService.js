@@ -8,7 +8,7 @@ import bcrypt from "bcrypt"
 import { sequelize } from "@models/index.js"
 import { getResizeProfileName, deleteImageFile } from "@utils/fileUtils.js";
 
-export async function registerService ( userId, userPw, email, username, nickname = null, profileImage = null ) {
+export async function registerService ( userId, userPw, userName, nickName = null, email, profileThumbnail = null ) {
 	const transaction = await sequelize.transaction();
 	try {
 		const member = await MemberRepository.findMemberByUserId(userId);
@@ -16,18 +16,20 @@ export async function registerService ( userId, userPw, email, username, nicknam
 			throw new CustomError(ResponseStatus.BAD_REQUEST);
 		const hashedPw = await bcrypt.hash(userPw, 10);
 
-		if(profileImage)
-			profileImage = getResizeProfileName(profileImage);
+		if(profileThumbnail)
+			profileThumbnail = getResizeProfileName(profileThumbnail);
 		
-		await MemberRepository.createMember(userId, hashedPw, email, username, nickname, profileImage);
+		await MemberRepository.createMember(userId, hashedPw, userName, nickName, email, profileThumbnail);
 		await AuthRepository.createMemberAuth(userId, 'ROLE_MEMBER');
 
 		await transaction.commit();
 	}catch(error) {
 		await transaction.rollback();
 
-		if(profileImage)
-			deleteImageFile(profileImage, 'profile');
+		console.error('registerService error : ', error);
+
+		if(profileThumbnail)
+			deleteImageFile(profileThumbnail, 'profile');
 
 		if(error instanceof CustomError){
 			logger.error('Member already exists.');
@@ -48,12 +50,12 @@ export async function checkIdService (userId) {
 	}
 }
 
-export async function checkNicknameService (userId = null, nickname) {
+export async function checkNicknameService (userId = null, nickName) {
 	try {
-		const member = await MemberRepository.findMemberByNickname(nickname);
+		const member = await MemberRepository.findMemberByNickname(nickName);
 		
 		if(member) {
-			if(userId) { // 동일한 nickname이 존재하지만 사용자의 닉네임일 때는 false를 반환해 Not Exist인 것처럼 처리
+			if(userId) { // 동일한 nickName이 존재하지만 사용자의 닉네임일 때는 false를 반환해 Not Exist인 것처럼 처리
 				return member.userId !== userId;
 			}
 	
@@ -67,16 +69,16 @@ export async function checkNicknameService (userId = null, nickname) {
 	}
 }
 
-export async function patchProfileService (userId, nickname, profileImage = null, deleteProfile = null) {
+export async function patchProfileService (userId, nickName, profileThumbnail = null, deleteProfile = null) {
 	const transaction = await sequelize.transaction();
 	try {
-		if(profileImage)
-			profileImage = getResizeProfileName(profileImage);
+		if(profileThumbnail)
+			profileThumbnail = getResizeProfileName(profileThumbnail);
 
-		if(!profileImage && !deleteProfile)
-			profileImage = undefined;
+		if(!profileThumbnail && !deleteProfile)
+			profileThumbnail = undefined;
 
-		await MemberRepository.patchMemberProfile(userId, nickname, profileImage);
+		await MemberRepository.patchMemberProfile(userId, nickName, profileThumbnail);
 
 		if(deleteProfile)
 			deleteImageFile(deleteProfile, 'profile');
@@ -85,8 +87,8 @@ export async function patchProfileService (userId, nickname, profileImage = null
 	}catch(error) {
 		await transaction.rollback();
 
-		if(profileImage)
-			deleteImageFile(profileImage, 'profile');
+		if(profileThumbnail)
+			deleteImageFile(profileThumbnail, 'profile');
 
 		logger.error('Failed to patch profile service.')
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);

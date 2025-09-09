@@ -8,7 +8,7 @@ export class AuthRepository {
 	static async createMemberAuth(userId, role) {
 		try {
 			await Auth.create({
-				userId,
+				userId: userId,
 				auth: role,
 			});
 		}catch(error) {

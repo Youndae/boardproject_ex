@@ -8,9 +8,11 @@ import { ResponseStatusCode } from '@constants/responseStatus.js';
 const profilePath = process.env.PROFILE_FILE_PATH;
 const boardPath = process.env.BOARD_FILE_PATH;
 
-[profilePath, boardPath].forEach((dir) => {
-	fs.mkdirSync(dir, { recursive: true });
-});
+if (process.env.NODE_ENV !== 'test') {
+	[profilePath, boardPath].forEach((dir) => {
+		fs.mkdirSync(dir, { recursive: true });
+	});
+}
 
 const createFilename = (file) => {
 	const ext = path.extname(file.originalname);
@@ -31,7 +33,27 @@ const imageFileFilter = (req, file, cb) => {
 		cb(new CustomError(ResponseStatusCode.BAD_REQUEST, '이미지 파일만 업로드 가능합니다.'), false);
 };
 
+// test 전용 memoryStorage + filename 주입
+const createMemoryStorageByTest = () => {
+	const storage = multer.memoryStorage();
+
+	return {
+		_handleFile(req, file, cb) {
+			storage._handleFile(req, file, (err, info) => {
+				if(err) 
+					return cb(err);
+				info.filename = createFilename(file);
+				cb(null, info);
+			});
+		},
+		_removeFile: storage._removeFile,
+	}
+}
+
 const createStorage = (destination) => {
+	if(process.env.NODE_ENV === 'test')
+		return createMemoryStorageByTest();
+	
 	return multer.diskStorage({
 		destination: (req, file, cb) => cb(null, destination),
 		filename: (req, file, cb) => {

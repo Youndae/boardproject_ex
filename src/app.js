@@ -7,8 +7,8 @@ import morgan from 'morgan';
 import dotenv from 'dotenv-flow';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import TokenMiddleware from '@middleware/tokenMiddleware.js';
-
+import { tokenMiddleware } from '@middleware/tokenMiddleware.js';
+import { initRedis, closeRedis } from '@config/redisConfig.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -22,18 +22,29 @@ import memberRouter from './routes/member.js';
 
 const app = express();
 passportConfig();
-app.use(TokenMiddleware);
+app.use(tokenMiddleware);
 
-app.set('port', process.env.PORT || 8081);
+app.set('port', process.env.PORT || 8080);
 
-sequelize.sync({ force: false })
-    .then(() => {
-        console.log('connected Database');
-    })
-    .catch((err) => {
-        console.error('Failed to Database connect');
-        console.error(err);
-    });
+(async () => {
+	try {
+		if(process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development') {
+			await initRedis();
+			console.log('redis connected');
+		}
+
+		await sequelize.authenticate();
+		console.log('database connected');
+
+		if(process.env.NODE_ENV === 'test') {
+			sequelize.sync({ force: true });
+			console.log('test database synced');
+		}
+	}catch(error) {
+		console.error('Failed to database connect');
+		console.error(error);
+	}
+})();
 
 app.use(morgan('dev'));
 app.use(express.static(join(__dirname, 'public')));

@@ -14,6 +14,11 @@ export const boardResize = async (filename) => {
 }
 
 const resizeImage = async(filename, sizes, uploadPath, options = {}) => {
+	if(process.env.NODE_ENV === 'test') {
+		console.log('test mode. skip resize');
+		return;
+	}
+	
 	const ext = path.extname(filename);
 	const baseName = path.basename(filename, ext);
 	const inputPath = path.join(uploadPath, filename);
@@ -28,8 +33,10 @@ const resizeImage = async(filename, sizes, uploadPath, options = {}) => {
 			})
 		);
 
-		if(options.deleteOriginal)
+		if(options.deleteOriginal){
+			console.error('deleteOriginal : ', inputPath);
 			fs.unlinkSync(inputPath);
+		}
 	} catch (error) {
 		console.error(error);
 		throw error;

@@ -12,7 +12,7 @@
     "pm2:delete": "pm2 delete ecosystem.config.js",
     "pm2:logs": "pm2 logs boardproject_express",
     "pm2:monit": "pm2 monit",
-    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --runInBand",
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --runInBand --silent=false --verbose --detectOpenHandles",
     "coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --coverage --runInBand",
     "start": "cross-env NODE_ENV=production node src/server.js",
     "dev": "cross-env NODE_ENV=development nodemon src/server.js"
@@ -29,7 +29,8 @@
     "@repositories": "src/repositories",
     "@routes": "src/routes",
     "@services": "src/services",
-    "@utils": "src/utils"
+    "@utils": "src/utils",
+	"@validators": "src/validators"
   },
   "author": "",
   "license": "MIT",
