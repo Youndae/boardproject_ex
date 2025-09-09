@@ -1,6 +1,7 @@
 import sharp from 'sharp';
 import path from 'path';
 import fs from 'fs';
+import { getBaseNameAndExt } from './fileNameUtils.js';
 
 const profilePath = process.env.PROFILE_FILE_PATH;
 const boardPath = process.env.BOARD_FILE_PATH;
@@ -19,8 +20,7 @@ const resizeImage = async(filename, sizes, uploadPath, options = {}) => {
 		return;
 	}
 	
-	const ext = path.extname(filename);
-	const baseName = path.basename(filename, ext);
+	const { baseName, ext } = getBaseNameAndExt(filename);
 	const inputPath = path.join(uploadPath, filename);
 
 	try {

@@ -106,3 +106,9 @@ Express 프로젝트 구조와 이해도 학습 목적
 > memberRoutes 통합 테스트 중.   
 > 기본적으로 Cookie를 어떻게 담아야 할지, multer를 어떻게 처리할지 테스트 및 방법 실습.   
 > resize, delete 까지 그냥 수행되는 방향으로 둔 상태지만 resize, delete의 경우 mocking을 통해 호출 여부를 검증할 수 있도록 수정 예정.
+
+<br/>
+## 25/09/10
+> memberRoutes resize, deletefile mocking 처리 완료 및 테스트 수행.   
+> deletefile의 경우 fileUtils에서 getResizeProfileName과 같이 있었는데 getResizeProfileName은 mocking되지 않은 상태로 정상 저장을 검증하기 위해 fileNameUtils로 분리.   
+> fileNameUtils에서 ext, baseName을 구하는 유틸을 분리. resize에서도 이 유틸을 통해 ext, basename을 받도록 수정.   

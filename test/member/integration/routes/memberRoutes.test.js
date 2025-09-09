@@ -1,12 +1,25 @@
+import { jest } from '@jest/globals';
 import CustomError from '@errors/customError.js';
 import { ResponseStatus } from '@constants/responseStatus.js';
 import { sequelize, Member, Auth } from '@models/index.js';
 import bcrypt from 'bcrypt';
 import request from 'supertest';
-import app from '../../../../src/app.js';
 import { createTestToken } from '../../../utils/testTokenUtils.js';
 import { initRedis, closeRedis } from '@config/redisConfig.js';
 import { redisClient } from '@config/redisConfig.js';
+
+await jest.unstable_mockModule('@utils/resize.js', () => ({
+	  profileResize: jest.fn(),
+}));
+  
+// deleteImageFile 모듈 최소 모킹
+await jest.unstable_mockModule('@utils/fileUtils.js',  () => ({
+	deleteImageFile: jest.fn(),
+}));
+
+const { profileResize } = await import('@utils/resize.js');
+const { deleteImageFile } = await import('@utils/fileUtils.js');
+const app = (await import('../../../../src/app.js')).default;
 
 const SAVE_MEMBER = {
 	userId: 'tester',
@@ -48,11 +61,13 @@ describe('memberRoutes Integration Test', () => {
 						.field('nickName', SAVE_MEMBER.nickName)
 						.attach(
 							'profileThumbnail', 
-							Buffer.from(SAVE_MEMBER.profileThumbnail), 
+							Buffer.from('fake'), 
 							"testerProfileThumbnail.jpg"
 						);
 			
 			expect(res.status).toBe(ResponseStatus.CREATED.CODE);
+			expect(profileResize).toHaveBeenCalled();
+			expect(deleteImageFile).not.toHaveBeenCalled();
 			
 			const member = await Member.findOne({ where: { userId: SAVE_MEMBER.userId } });
 			const auth = await Auth.findAll({ where: { userId: SAVE_MEMBER.userId } });
@@ -66,6 +81,7 @@ describe('memberRoutes Integration Test', () => {
 			expect(member.email).toBe(SAVE_MEMBER.email);
 			expect(pwValid).toBe(true);
 			expect(member.profileThumbnail).toBeDefined();
+			expect(member.profileThumbnail.endsWith('_300.jpg')).toBe(true);
 			expect(auth).toBeDefined();
 			expect(auth.length).toBe(1);
 			expect(auth[0].userId).toBe(SAVE_MEMBER.userId);
@@ -90,6 +106,8 @@ describe('memberRoutes Integration Test', () => {
 				expect(error).toBeInstanceOf(CustomError);
 				expect(error.status).toBe(ResponseStatus.BAD_REQUEST.CODE);
 				expect(error.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
+				expect(profileResize).not.toHaveBeenCalled();
+				expect(deleteImageFile).not.toHaveBeenCalled();
 			}
 		});
 
@@ -112,6 +130,8 @@ describe('memberRoutes Integration Test', () => {
 				expect(error).toBeInstanceOf(CustomError);
 				expect(error.status).toBe(ResponseStatus.BAD_REQUEST.CODE);
 				expect(error.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
+				expect(profileResize).not.toHaveBeenCalled();
+				expect(deleteImageFile).not.toHaveBeenCalled();
 			}
 		});
 
@@ -133,6 +153,8 @@ describe('memberRoutes Integration Test', () => {
 				expect(error).toBeInstanceOf(CustomError);
 				expect(error.status).toBe(ResponseStatus.BAD_REQUEST.CODE);
 				expect(error.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
+				expect(profileResize).not.toHaveBeenCalled();
+				expect(deleteImageFile).not.toHaveBeenCalled();
 			}
 		});
 
@@ -155,6 +177,8 @@ describe('memberRoutes Integration Test', () => {
 				expect(error).toBeInstanceOf(CustomError);
 				expect(error.status).toBe(ResponseStatus.BAD_REQUEST.CODE);
 				expect(error.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
+				expect(profileResize).not.toHaveBeenCalled();
+				expect(deleteImageFile).not.toHaveBeenCalled();
 			}
 		});
 
@@ -176,6 +200,8 @@ describe('memberRoutes Integration Test', () => {
 				expect(error).toBeInstanceOf(CustomError);
 				expect(error.status).toBe(ResponseStatus.BAD_REQUEST.CODE);
 				expect(error.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
+				expect(profileResize).not.toHaveBeenCalled();
+				expect(deleteImageFile).not.toHaveBeenCalled();
 			}
 		});
 		
@@ -197,6 +223,8 @@ describe('memberRoutes Integration Test', () => {
 				expect(error).toBeInstanceOf(CustomError);
 				expect(error.status).toBe(ResponseStatus.BAD_REQUEST.CODE);
 				expect(error.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
+				expect(profileResize).not.toHaveBeenCalled();
+				expect(deleteImageFile).not.toHaveBeenCalled();
 			}
 		});
 
@@ -221,6 +249,9 @@ describe('memberRoutes Integration Test', () => {
 
 			const pwValid = await bcrypt.compare(SAVE_MEMBER.userPw, member.userPw);
 
+			expect(profileResize).toHaveBeenCalled();
+			expect(deleteImageFile).not.toHaveBeenCalled();
+			
 			expect(member).toBeDefined();
 			expect(member.userId).toBe(SAVE_MEMBER.userId);
 			expect(member.nickName).toBeNull();
@@ -228,6 +259,7 @@ describe('memberRoutes Integration Test', () => {
 			expect(member.email).toBe(SAVE_MEMBER.email);
 			expect(pwValid).toBe(true);
 			expect(member.profileThumbnail).toBeDefined();
+			expect(member.profileThumbnail.endsWith('_300.jpg')).toBe(true);
 			expect(auth).toBeDefined();
 			expect(auth.length).toBe(1);
 			expect(auth[0].userId).toBe(SAVE_MEMBER.userId);
@@ -250,6 +282,9 @@ describe('memberRoutes Integration Test', () => {
 			const auth = await Auth.findAll({ where: { userId: SAVE_MEMBER.userId } });
 
 			const pwValid = await bcrypt.compare(SAVE_MEMBER.userPw, member.userPw);
+			
+			expect(profileResize).not.toHaveBeenCalled();
+			expect(deleteImageFile).not.toHaveBeenCalled();
 			
 			expect(member).toBeDefined();
 			expect(member.userId).toBe(SAVE_MEMBER.userId);
@@ -280,6 +315,9 @@ describe('memberRoutes Integration Test', () => {
 
 			const pwValid = await bcrypt.compare(SAVE_MEMBER.userPw, member.userPw);
 
+			expect(profileResize).not.toHaveBeenCalled();
+			expect(deleteImageFile).not.toHaveBeenCalled();
+			
 			expect(member).toBeDefined();
 			expect(member.userId).toBe(SAVE_MEMBER.userId);
 			expect(member.nickName).toBeNull();
@@ -349,13 +387,15 @@ describe('memberRoutes Integration Test', () => {
 				expect(error).toBeInstanceOf(CustomError);
 				expect(error.status).toBe(ResponseStatus.BAD_REQUEST.CODE);
 				expect(error.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
+				expect(profileResize).not.toHaveBeenCalled();
+				expect(deleteImageFile).not.toHaveBeenCalled();
 			}
 		});
 	});
 
 	describe('GET /check-id', () => {
 		it('아이디 중복 체크. 중복이 아닌 경우', async () => {
-
+			
 		});
 
 		it('아이디 중복 체크. 중복인 경우', async () => {

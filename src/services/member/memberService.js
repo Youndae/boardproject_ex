@@ -6,7 +6,8 @@ import CustomError from "@errors/customError.js"
 import { ResponseStatus } from "@constants/responseStatus.js"
 import bcrypt from "bcrypt"
 import { sequelize } from "@models/index.js"
-import { getResizeProfileName, deleteImageFile } from "@utils/fileUtils.js";
+import { deleteImageFile } from "@utils/fileUtils.js";
+import { getResizeProfileName } from "@utils/fileNameUtils.js";
 
 export async function registerService ( userId, userPw, userName, nickName = null, email, profileThumbnail = null ) {
 	const transaction = await sequelize.transaction();
@@ -28,13 +29,13 @@ export async function registerService ( userId, userPw, userName, nickName = nul
 
 		console.error('registerService error : ', error);
 
-		if(profileThumbnail)
-			deleteImageFile(profileThumbnail, 'profile');
-
-		if(error instanceof CustomError){
+		if(error instanceof CustomError && error.status === ResponseStatus.BAD_REQUEST.CODE){
 			logger.error('Member already exists.');
 			throw error;
 		}
+
+		if(profileThumbnail)
+			deleteImageFile(profileThumbnail, 'profile');
 			
 		logger.error('Failed to register service.');
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);

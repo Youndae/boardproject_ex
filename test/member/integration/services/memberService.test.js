@@ -14,8 +14,11 @@ const SAVE_MEMBER = {
 }
 
 await jest.unstable_mockModule('@utils/fileUtils.js', () => ({
-	getResizeProfileName: jest.fn(),
 	deleteImageFile: jest.fn(),
+}));
+
+await jest.unstable_mockModule('@utils/fileNameUtils.js', () => ({
+	getResizeProfileName: jest.fn(),
 }));
 
 const {
@@ -27,9 +30,10 @@ const {
 } = await import('@services/member/memberService.js');
 
 const {
-	getResizeProfileName,
 	deleteImageFile,
 } = await import('@utils/fileUtils.js');
+
+const { getResizeProfileName } = await import('@utils/fileNameUtils.js');
 
 describe('memberService integration test', () => {
 	beforeAll(async () => {
@@ -165,7 +169,7 @@ describe('memberService integration test', () => {
 				expect(error.status).toBe(ResponseStatus.BAD_REQUEST.CODE);
 				expect(error.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
 				expect(getResizeProfileName).not.toHaveBeenCalled();
-				expect(deleteImageFile).toHaveBeenCalled();
+				expect(deleteImageFile).not.toHaveBeenCalled();
 			}
 		});
 
