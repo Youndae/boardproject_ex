@@ -351,5 +351,81 @@ describe('memberRoutes Integration Test', () => {
 				expect(error.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
 			}
 		});
+	});
+
+	describe('GET /check-id', () => {
+		it('아이디 중복 체크. 중복이 아닌 경우', async () => {
+
+		});
+
+		it('아이디 중복 체크. 중복인 경우', async () => {
+
+		});
+
+		it('아이디 중복 체크. 아이디가 너무 짧은 경우', async () => {
+
+		});
+
+		it('아이디 중복 체크. 로그인한 회원이 요청한 경우', async () => {
+
+		});
+	});
+
+	describe('GET /check-nickname', () => {
+		it('닉네임 중복 체크. 중복이 아닌 경우', async () => {
+
+		});
+
+		it('닉네임 중복 체크. 중복인 경우', async () => {
+
+		});
+
+		it('닉네임 중복 체크. 닉네임이 너무 짧은 경우', async () => {
+
+		});
+
+		it('닉네임 중복 체크. 로그인한 회원이 자신의 닉네임과 동일한 닉네임으로 요청한 경우', async () => {
+
+		});
+
+		it('닉네임 중복 체크. 로그인한 회원의 요청. 다른 사용자가 사용중인 경우', async () => {
+
+		});
+
+		it('닉네임 중복 체크. 로그인한 회원의 요청, 중복이 아닌 경우', async () => {
+
+		});
+	});
+
+	describe('POST /login', () => {
+		it('로그인 요청.', async () => {
+
+		});
+
+		it('로그인 요청. 일치하는 정보가 없는 경우', async () => {
+
+		});
+
+		it('로그인 요청. 이미 로그인한 회원이 요청한 경우', async () => {
+
+		});
+	});
+
+	describe('POST /logout', () => {
+		it('로그아웃 요청.', async () => {
+
+		});
+
+		it('로그아웃 요청. 비회원이 요청한 경우', async () => {
+
+		});
+	});
+
+	describe('PATCH /profile', () => {
+		it('정보 수정 요청. 닉네임과 프로필 이미지를 추가하는 경우', async () => {
+
+		});
+
+		it('정보 수정 요청, 닉네임과 프로필 이미지')
 	})
 })

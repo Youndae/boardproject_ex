@@ -103,3 +103,6 @@ Express 프로젝트 구조와 이해도 학습 목적
 
 ## 25/09/09
 > memberService 통합 테스트 작성. 전체 통과 확인.
+> memberRoutes 통합 테스트 중.   
+> 기본적으로 Cookie를 어떻게 담아야 할지, multer를 어떻게 처리할지 테스트 및 방법 실습.   
+> resize, delete 까지 그냥 수행되는 방향으로 둔 상태지만 resize, delete의 경우 mocking을 통해 호출 여부를 검증할 수 있도록 수정 예정.
