@@ -124,3 +124,12 @@ Express 프로젝트 구조와 이해도 학습 목적
 >> 해당 부분을 cookieUtils에서 가져온 그대로 사용하는 것으로 수정.   
 >> 검증 함수의 경우 async로 선언되어있는데 tokenMiddleware에서는 그냥 호출하는 바람에 반환값이 Promise 객체인 것이 두 번째 문제.   
 >> 해당 부분들을 체크하고 await 을 붙여주는 것으로 문제 해결.   
+> memberRoutes 테스트 코드 작성 및 테스트 완료.   
+> oAuth2 구현 및 브라우저 테스트 완료.   
+> jwtTokenProvider CustomError 상태 코드 및 응답 메시지 하드코딩 되어있던거 ResponseStatus, ResopnseStatusCode로 개선.   
+> 문제 발생   
+>> 테스트에서는 문제가 없었으나 dev 로 실행하니 module-alias 인식 문제가 발생.   
+>> 원인을 찾아보니 module-alias는 CJS에서 정상처리되며 ESM에서는 정상처리되지 않는다는 것을 알게 됨.   
+>> 그러나 테스트 코드에서는 잘 됐기 때문에 그 이유를 찾아보니 jest에서는 jest.config.cjs의 moduleNameMapper를 참조하기 때문.   
+>> NODE_OPTIONS + --experimental-specifier-resolution=node 또는 module-alias/register를 직접 import 하는 방법도 있지만 ESM 전용 path alias를 사용하는 것으로 분제를 해결.   
+>> node 14+ 부터 package.json에 imports 필드를 지원했으며 이걸 사용하면 ESM 환경에서 alias가 native로 동작.
