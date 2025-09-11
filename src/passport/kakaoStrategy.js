@@ -1,5 +1,5 @@
 import { Strategy as KakaoStrategy } from 'passport-kakao';
-import { oAuthCallback, parsers } from '@services/oAuth/oAuthService.js';
+import { oAuthCallback, parsers } from '#services/oAuth/oAuthService.js';
 
 const kakaoStrategy = new KakaoStrategy({
 		clientID: process.env.KAKAO_ID,

@@ -1,8 +1,8 @@
-import { MemberRepository } from '@repositories/memberRepository.js';
-import { sequelize, Member, Auth } from '@models/index.js';
+import { MemberRepository } from '#repositories/memberRepository.js';
+import { sequelize, Member, Auth } from '#models/index.js';
 import bcrypt from 'bcrypt';
-import CustomError from '@errors/customError.js';
-import { ResponseStatus } from '@constants/responseStatus.js';
+import CustomError from '#errors/customError.js';
+import { ResponseStatus } from '#constants/responseStatus.js';
 
 const SAVE_MEMBER = {
 	userId: 'tester',

@@ -1,13 +1,13 @@
 //TODO: import repositories
-import { MemberRepository } from "@repositories/memberRepository.js"
-import { AuthRepository } from "@repositories/authRepository.js"
-import logger from "@config/loggerConfig.js"
-import CustomError from "@errors/customError.js"
-import { ResponseStatus } from "@constants/responseStatus.js"
+import { MemberRepository } from "#repositories/memberRepository.js"
+import { AuthRepository } from "#repositories/authRepository.js"
+import logger from "#config/loggerConfig.js"
+import CustomError from "#errors/customError.js"
+import { ResponseStatus } from "#constants/responseStatus.js"
 import bcrypt from "bcrypt"
-import { sequelize } from "@models/index.js"
-import { deleteImageFile } from "@utils/fileUtils.js";
-import { getResizeProfileName } from "@utils/fileNameUtils.js";
+import { sequelize } from "#models/index.js"
+import { deleteImageFile } from "#utils/fileUtils.js";
+import { getResizeProfileName } from "#utils/fileNameUtils.js";
 
 export async function registerService ( userId, userPw, userName, nickName = null, email, profileThumbnail = null ) {
 	const transaction = await sequelize.transaction();

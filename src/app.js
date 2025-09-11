@@ -1,26 +1,38 @@
-import 'module-alias/register';
+import dotenv from 'dotenv-flow/config';
+// import 'module-alias/register.js';
 import express from 'express';
-import path from 'path';
+// import path from 'path';
 import cookieParser from 'cookie-parser';
 import passport from 'passport';
 import morgan from 'morgan';
-import dotenv from 'dotenv-flow';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { tokenMiddleware } from '@middleware/tokenMiddleware.js';
-import { initRedis, closeRedis } from '@config/redisConfig.js';
+import { tokenMiddleware } from '#middleware/tokenMiddleware.js';
+import { initRedis, closeRedis } from '#config/redisConfig.js';
+import cors from 'cors';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-dotenv.config();
+// dotenv.config();
 // TODO: Router
 
-import { sequelize } from './models';
-import passportConfig from './passport';
-import memberRouter from './routes/member.js';
+
+
+import { sequelize } from '#models/index.js';
+import passportConfig from '#passport/index.js';
+import memberRouter from '#routes/member.js';
+
+const corsOptions = {
+	origin: 'http://localhost:3000',
+	credentials: true,
+	methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+	allowedHeaders: ['Content-Type', 'Authorization'],
+};
 
 const app = express();
+app.use(cors(corsOptions));
+// app.options('*', cors(corsOptions));
 passportConfig();
 
 app.set('port', process.env.PORT || 8080);

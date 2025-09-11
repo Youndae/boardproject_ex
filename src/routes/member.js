@@ -1,5 +1,5 @@
 import express from 'express';
-import { isLoggedIn, isNotLoggedIn } from '@middleware/authMiddleware.js';
+import { isLoggedIn, isNotLoggedIn } from '#middleware/authMiddleware.js';
 import { 
 	register,
 	checkId,
@@ -10,17 +10,17 @@ import {
 	getProfile,
 	oAuthLogin,
 	callbackOAuth
- } from '@controllers/memberController.js';
-import { ResponseStatusCode } from '@constants/responseStatus.js';
-import { validate } from '@middleware/validateMiddleware.js';
+ } from '#controllers/memberController.js';
+import { ResponseStatusCode } from '#constants/responseStatus.js';
+import { validate } from '#middleware/validateMiddleware.js';
 import { 
 	registerValidator, 
 	checkIdValidator, 
 	checkNicknameValidator, 
 	loginValidator, 
 	patchProfileValidator 
-} from '@validators/memberValidator.js';
-import { profileUpload } from '@middleware/uploadMiddleware.js';
+} from '#validators/memberValidator.js';
+import { profileUpload } from '#middleware/uploadMiddleware.js';
 
 const router = express.Router();
 

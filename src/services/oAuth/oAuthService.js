@@ -1,11 +1,11 @@
-import { MemberRepository } from '@repositories/memberRepository.js';
-import { AuthRepository } from '@repositories/authRepository.js';
+import { MemberRepository } from '#repositories/memberRepository.js';
+import { AuthRepository } from '#repositories/authRepository.js';
 import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
-import logger from '@config/loggerConfig.js';
-import { sequelize } from '@models/index.js';
-import CustomError from '@errors/customError.js';
-import { ResponseStatus } from '@constants/responseStatus.js';
+import logger from '#config/loggerConfig.js';
+import { sequelize } from '#models/index.js';
+import CustomError from '#errors/customError.js';
+import { ResponseStatus } from '#constants/responseStatus.js';
 
 async function findOrCreateOAuthMember({
 	provider,
@@ -17,6 +17,12 @@ async function findOrCreateOAuthMember({
 
 	try {
 		let member = await MemberRepository.findOAuthMember(provider, userId);
+
+		console.error('oAuthService :: userId : ', userId);
+		console.error('oAuthService :: email : ', email);
+		console.error('oAuthService :: username : ', username);
+		console.error('oAuthService :: provider : ', provider);
+		console.error('oAuthService :: member : ', member);
 
 		if(!member) {
 			member = await MemberRepository.createOAuthMember(
@@ -54,13 +60,14 @@ export const parsers = {
 	naver: (profile) => ({
 		userId: `naver_${profile.id}`,
 		email: profile._json?.email || (profile.emails?.[0]?.value ?? null),
-		username: profile._json?.nickname || profile.displayName,
+		username: profile._json?.nickname || profile.displayName || `naver_${uuidv4().replaceAll('-', '').slice(0, 5)}`,
 	})
 }
 
 export const oAuthCallback = (provider, parseProfile) =>
 	async (accessToken, refreshToken, profile, done) => {
 		try {
+			console.error('oAuthCallback :: profile : ', profile);
 			const { userId, email, username } = parseProfile(profile);
 			const member = await findOrCreateOAuthMember({ provider, userId, email, username });
 

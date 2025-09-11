@@ -1,12 +1,16 @@
-import { Member, Auth } from '@models/index.js';
-import logger from '@config/loggerConfig.js';
-import { ResponseStatus } from '@constants/responseStatus.js';
-import CustomError from '@errors/customError.js';
+import { Member, Auth } from '#models/index.js';
+import logger from '#config/loggerConfig.js';
+import { ResponseStatus } from '#constants/responseStatus.js';
+import CustomError from '#errors/customError.js';
 
 export class MemberRepository {
 
 	static async findMemberByUserId(userId) {
 		return await Member.findOne({ where: { userId } });
+	}
+
+	static async findMemberByUserIdFromLocal(userId) {
+		return await Member.findOne({ where: { userId, provider: 'local' } });
 	}
 
 	static async findUserIdWithRoles(userId) {

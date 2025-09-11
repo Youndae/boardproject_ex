@@ -1,25 +1,25 @@
 import { jest } from '@jest/globals';
-import CustomError from '@errors/customError.js';
-import { ResponseStatus, ResponseStatusCode } from '@constants/responseStatus.js';
-import { sequelize, Member, Auth } from '@models/index.js';
+import CustomError from '#errors/customError.js';
+import { ResponseStatus, ResponseStatusCode } from '#constants/responseStatus.js';
+import { sequelize, Member, Auth } from '#models/index.js';
 import bcrypt from 'bcrypt';
 import request from 'supertest';
 import { createTestToken } from '../../../utils/testTokenUtils.js';
-import { initRedis, closeRedis } from '@config/redisConfig.js';
-import { redisClient } from '@config/redisConfig.js';
-import { jwtConfig } from '@config/jwtConfig.js';
+import { initRedis, closeRedis } from '#config/redisConfig.js';
+import { redisClient } from '#config/redisConfig.js';
+import { jwtConfig } from '#config/jwtConfig.js';
 
-await jest.unstable_mockModule('@utils/resize.js', () => ({
+await jest.unstable_mockModule('#utils/resize.js', () => ({
 	  profileResize: jest.fn(),
 }));
   
 // deleteImageFile 모듈 최소 모킹
-await jest.unstable_mockModule('@utils/fileUtils.js',  () => ({
+await jest.unstable_mockModule('#utils/fileUtils.js',  () => ({
 	deleteImageFile: jest.fn(),
 }));
 
-const { profileResize } = await import('@utils/resize.js');
-const { deleteImageFile } = await import('@utils/fileUtils.js');
+const { profileResize } = await import('#utils/resize.js');
+const { deleteImageFile } = await import('#utils/fileUtils.js');
 const app = (await import('../../../../src/app.js')).default;
 
 const SAVE_MEMBER = {

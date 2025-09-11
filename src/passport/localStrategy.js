@@ -1,6 +1,6 @@
 import { Strategy as LocalStrategy } from 'passport-local';
 import bcrypt from 'bcrypt';
-import { MemberRepository } from '@repositories/memberRepository.js';
+import { MemberRepository } from '#repositories/memberRepository.js';
 
 const localStrategy = new LocalStrategy({
 		usernameField: 'userId',
@@ -9,7 +9,7 @@ const localStrategy = new LocalStrategy({
 	},
 	async (userId, userPw, done) => {
 		try {
-			const member = await MemberRepository.findMemberByUserId(userId);
+			const member = await MemberRepository.findMemberByUserIdFromLocal(userId);
 			if(!member) 
 				return done(null, false, { message: 'Authenticate Failed' });
 			

@@ -1,7 +1,7 @@
-import { Auth } from '@models/index.js';
-import logger from '@config/loggerConfig.js';
-import CustomError from '@errors/customError.js';
-import { ResponseStatus } from '@constants/responseStatus.js';
+import { Auth } from '#models/index.js';
+import logger from '#config/loggerConfig.js';
+import CustomError from '#errors/customError.js';
+import { ResponseStatus } from '#constants/responseStatus.js';
 
 export class AuthRepository {
 

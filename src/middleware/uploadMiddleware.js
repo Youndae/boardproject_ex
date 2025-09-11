@@ -2,8 +2,8 @@ import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import CustomError from '@errors/customError.js';
-import { ResponseStatusCode } from '@constants/responseStatus.js';
+import CustomError from '#errors/customError.js';
+import { ResponseStatusCode } from '#constants/responseStatus.js';
 
 const profilePath = process.env.PROFILE_FILE_PATH;
 const boardPath = process.env.BOARD_FILE_PATH;

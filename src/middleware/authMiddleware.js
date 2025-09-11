@@ -1,5 +1,5 @@
-import { ResponseStatus } from '@constants/responseStatus.js';
-import CustomError from '@errors/customError.js';
+import { ResponseStatus } from '#constants/responseStatus.js';
+import CustomError from '#errors/customError.js';
 
 
 export const isLoggedIn = (req, res, next) => {

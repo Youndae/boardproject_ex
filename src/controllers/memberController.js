@@ -5,14 +5,14 @@ import {
 	checkNicknameService,
 	patchProfileService,
 	getProfileService
-} from "@services/member/memberService.js"
-import { profileResize } from "@utils/resize.js"
-import logger from "@config/loggerConfig.js"
-import CustomError from "@errors/customError.js"
-import { ResponseStatus, ResponseStatusCode } from "@constants/responseStatus.js"
-import { JWTTokenProvider } from "@services/jwt/jwtTokenProvider.js"
-import { getCookie } from "@utils/cookieUtils.js"
-import { jwtConfig } from "@config/jwtConfig.js"
+} from "#services/member/memberService.js"
+import { profileResize } from "#utils/resize.js"
+import logger from "#config/loggerConfig.js"
+import CustomError from "#errors/customError.js"
+import { ResponseStatus, ResponseStatusCode } from "#constants/responseStatus.js"
+import { JWTTokenProvider } from "#services/jwt/jwtTokenProvider.js"
+import { getCookie } from "#utils/cookieUtils.js"
+import { jwtConfig } from "#config/jwtConfig.js"
 import passport from "passport"
 
 /**
@@ -284,9 +284,10 @@ export async function callbackOAuth(req, res, next) {
 	
 			await JWTTokenProvider.issuedAllToken(member.userId, res);
 	
-			return res.status(ResponseStatusCode.OK).json({
-				id: member.userId,
-			});
+			// return res.status(ResponseStatusCode.OK).json({
+				// id: member.userId,
+			// });
+			return res.redirect('http://localhost:3000/');
 		}catch (error) {
 			logger.error('Failed to callback OAuth');
 			next(error);

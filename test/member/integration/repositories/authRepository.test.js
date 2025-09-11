@@ -1,7 +1,7 @@
-import { AuthRepository } from '@repositories/authRepository.js';
-import { sequelize, Member, Auth } from '@models/index.js';
-import CustomError from '@errors/customError.js';
-import { ResponseStatus } from '@constants/responseStatus.js';
+import { AuthRepository } from '#repositories/authRepository.js';
+import { sequelize, Member, Auth } from '#models/index.js';
+import CustomError from '#errors/customError.js';
+import { ResponseStatus } from '#constants/responseStatus.js';
 
 describe('authRepository test', () => {
 	beforeAll(async () => {

@@ -1,7 +1,7 @@
-import { MemberRepository } from '@repositories/memberRepository.js';
-import { AuthRepository } from '@repositories/authRepository.js';
-import CustomError from '@errors/customError.js';
-import { ResponseStatus } from '@constants/responseStatus.js';
+import { MemberRepository } from '#repositories/memberRepository.js';
+import { AuthRepository } from '#repositories/authRepository.js';
+import CustomError from '#errors/customError.js';
+import { ResponseStatus } from '#constants/responseStatus.js';
 import { jest } from '@jest/globals';
 
 const SAVE_MEMBER = {
@@ -13,11 +13,11 @@ const SAVE_MEMBER = {
 	profileImage: 'testerProfileImage.jpg',
 }
 
-await jest.unstable_mockModule('@utils/fileUtils.js', () => ({
+await jest.unstable_mockModule('#utils/fileUtils.js', () => ({
 	deleteImageFile: jest.fn(),
 }));
 
-await jest.unstable_mockModule('@utils/fileNameUtils.js', () => ({
+await jest.unstable_mockModule('#utils/fileNameUtils.js', () => ({
 	getResizeProfileName: jest.fn(),
 }));
 
@@ -27,13 +27,13 @@ const {
 	checkNicknameService,
 	patchProfileService,
 	getProfileService,
-} = await import('@services/member/memberService.js');
+} = await import('#services/member/memberService.js');
 
 const {
 	deleteImageFile,
-} = await import('@utils/fileUtils.js');
+} = await import('#utils/fileUtils.js');
 
-const { getResizeProfileName } = await import('@utils/fileNameUtils.js');
+const { getResizeProfileName } = await import('#utils/fileNameUtils.js');
 
 describe('memberService unit test', () => {
 	describe('registerService', () => {

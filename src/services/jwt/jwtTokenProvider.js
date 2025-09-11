@@ -1,10 +1,10 @@
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4} from 'uuid';
-import { jwtConfig } from '@config/jwtConfig.js';
-import { RedisService } from '@services/redis/redisService.js';
-import logger from '@config/loggerConfig.js';
-import CustomError from '@errors/customError.js';
-import { ResponseStatusCode, ResponseStatus } from '@constants/responseStatus.js';
+import { jwtConfig } from '#config/jwtConfig.js';
+import { RedisService } from '#services/redis/redisService.js';
+import logger from '#config/loggerConfig.js';
+import CustomError from '#errors/customError.js';
+import { ResponseStatusCode, ResponseStatus } from '#constants/responseStatus.js';
 
 export class JWTTokenProvider {
 
