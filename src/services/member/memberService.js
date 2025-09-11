@@ -20,8 +20,8 @@ export async function registerService ( userId, userPw, userName, nickName = nul
 		if(profileThumbnail)
 			profileThumbnail = getResizeProfileName(profileThumbnail);
 		
-		await MemberRepository.createMember(userId, hashedPw, userName, nickName, email, profileThumbnail);
-		await AuthRepository.createMemberAuth(userId, 'ROLE_MEMBER');
+		await MemberRepository.createMember(userId, hashedPw, userName, nickName, email, profileThumbnail, { transaction });
+		await AuthRepository.createMemberAuth(userId, 'ROLE_MEMBER', { transaction });
 
 		await transaction.commit();
 	}catch(error) {
@@ -79,7 +79,7 @@ export async function patchProfileService (userId, nickName, profileThumbnail = 
 		if(!profileThumbnail && !deleteProfile)
 			profileThumbnail = undefined;
 
-		await MemberRepository.patchMemberProfile(userId, nickName, profileThumbnail);
+		await MemberRepository.patchMemberProfile(userId, nickName, profileThumbnail, { transaction });
 
 		if(deleteProfile)
 			deleteImageFile(deleteProfile, 'profile');

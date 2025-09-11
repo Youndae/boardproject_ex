@@ -4,6 +4,7 @@ import { jwtConfig } from '@config/jwtConfig.js';
 import { RedisService } from '@services/redis/redisService.js';
 import logger from '@config/loggerConfig.js';
 import CustomError from '@errors/customError.js';
+import { ResponseStatusCode, ResponseStatus } from '@constants/responseStatus.js';
 
 export class JWTTokenProvider {
 
@@ -37,14 +38,14 @@ export class JWTTokenProvider {
 			return verifyValue;
 		else if(redisValue === null) {
 			logger.error('Redis Token Value is Null. ', { redisValue, replacedToken });
-			throw new CustomError(800, 'Token Stealing Error');
+			throw new CustomError(ResponseStatus.TOKEN_STEALING);
 		} else {
 			logger.error('Access Token Stealing. ', { redisValue, replacedToken });
 			this.deleteAllTokenCookie(res);
 			const refreshKey = this.#getRedisKey(jwtConfig.refreshKeyPrefix, verifyValue, inoValue);
 			RedisService.deleteTokenValue(redisKey);
 			RedisService.deleteTokenValue(refreshKey);
-			throw new CustomError(800, 'Token Stealing Error');
+			throw new CustomError(ResponseStatus.TOKEN_STEALING);
 		}
 	}
 
@@ -59,14 +60,14 @@ export class JWTTokenProvider {
 			return verifyValue;
 		else if(redisValue === null) {
 			logger.error('Redis Token Value is Null. ', { redisValue, replacedToken });
-			throw new CustomError(800, 'Token Stealing Error');
+			throw new CustomError(ResponseStatus.TOKEN_STEALING);
 		} else {
 			logger.error('Refresh Token Stealing. ', { redisValue, replacedToken });
 			this.deleteAllTokenCookie(res);
 			const refreshKey = this.#getRedisKey(jwtConfig.refreshKeyPrefix, verifyValue, inoValue);
 			RedisService.deleteTokenValue(redisKey);
 			RedisService.deleteTokenValue(refreshKey);
-			throw new CustomError(800, 'Token Stealing Error');
+			throw new CustomError(ResponseStatus.TOKEN_STEALING);
 		}
 	}
 
@@ -79,13 +80,13 @@ export class JWTTokenProvider {
 		}catch (error) {
 			if(error instanceof jwt.TokenExpiredError) {
 				logger.info('Token Expired', error.expiredAt);
-				throw new CustomError(401, 'TOKEN_EXPIRED');
+				throw new CustomError(ResponseStatus.TOKEN_EXPIRED);
 			}else if(error instanceof jwt.JsonWebTokenError) {
 				logger.info('Invalid Token', error.message);
-				throw new CustomError(401, 'UNAUTHORIZED');
+				throw new CustomError(ResponseStatus.UNAUTHORIZED);
 			}else {
 				logger.error('token verify error', error.message);
-				throw new CustomError(500, 'INTERNAL_SERVER_ERROR');
+				throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
 			}
 		}
 	}
@@ -192,7 +193,7 @@ export class JWTTokenProvider {
 			case 'd':
 				return value * 24 * 60 * 60 * 1000;
 			default:
-				throw new CustomError(400, 'Invalid convertExpiresToMillisecond');
+				throw new CustomError('Invalid convertExpiresToMillisecond', ResponseStatusCode.BAD_REQUEST);
 		}
 	}
  }

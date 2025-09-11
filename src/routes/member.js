@@ -7,7 +7,9 @@ import {
 	login,
 	logout,
 	patchProfile,
-	getProfile
+	getProfile,
+	oAuthLogin,
+	callbackOAuth
  } from '@controllers/memberController.js';
 import { ResponseStatusCode } from '@constants/responseStatus.js';
 import { validate } from '@middleware/validateMiddleware.js';
@@ -40,5 +42,7 @@ router.post('/login', isNotLoggedIn, validate(loginValidator), login);
 router.post('/logout', isLoggedIn, logout);
 router.patch('/profile', isLoggedIn, profileUpload, validate(patchProfileValidator), patchProfile);
 router.get('/profile', isLoggedIn, getProfile);
+router.get('/oauth/:provider', isNotLoggedIn, oAuthLogin);
+router.get('/oauth/:provider/callback', callbackOAuth);
 
 export default router;

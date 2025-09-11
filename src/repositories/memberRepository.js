@@ -54,17 +54,17 @@ export class MemberRepository {
 		});
 	}
 
-	static async createOAuthMember(userId, email, userName, provider, userPw) {
+	static async createOAuthMember(userId, email, userName, provider, userPw, options = {}) {
 		return await Member.create({
 			userId: userId,
 			email: email,
 			userName: userName,
 			provider: provider,
 			userPw: userPw,
-		});
+		}, { transaction: options.transaction });
 	}
 
-	static async createMember(userId, hashedPw, userName, nickName, email, profileThumbnail) {
+	static async createMember(userId, hashedPw, userName, nickName, email, profileThumbnail, options = {}) {
 		return await Member.create({
 			userId: userId,
 			userPw: hashedPw,
@@ -72,7 +72,7 @@ export class MemberRepository {
 			userName: userName,
 			nickName: nickName,
 			profileThumbnail: profileThumbnail,
-		});
+		}, { transaction: options.transaction });
 	}
 
 	static async findMemberByNickname(nickname) {
@@ -82,13 +82,13 @@ export class MemberRepository {
 		});
 	}
 
-	static async patchMemberProfile(userId, nickname, profileImage) {
+	static async patchMemberProfile(userId, nickname, profileImage, options = {}) {
 		const updateData = { nickName: nickname };
 
 		if(profileImage !== undefined)
 			updateData.profileThumbnail = profileImage;
 
-		return await Member.update(updateData, { where: { userId } });
+		return await Member.update(updateData, { where: { userId }, transaction: options.transaction });
 	}
 
 	static async getMemberProfile(userId) {

@@ -24,10 +24,11 @@ async function findOrCreateOAuthMember({
 				email,
 				username,
 				provider,
-				await bcrypt.hash(uuidv4().replaceAll('-', ''), 10)
+				await bcrypt.hash(uuidv4().replaceAll('-', ''), 10),
+				{ transaction }
 			)
 
-			await AuthRepository.createMemberAuth(userId, 'ROLE_MEMBER');
+			await AuthRepository.createMemberAuth(userId, 'ROLE_MEMBER', { transaction });
 		}
 
 		await transaction.commit();

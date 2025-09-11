@@ -136,10 +136,11 @@ export async function checkNickname(req, res, next) {
  * }
  */
 export async function login(req, res, next) {
-	try {
-		//TODO: login validation
-		//TODO: passport local strategy
-		passport.authenticate('local', async (err, member, info) => {
+	
+	//TODO: login validation
+	//TODO: passport local strategy
+	passport.authenticate('local', async (err, member, info) => {
+		try {
 			if(err){
 				logger.error('Failed to login');
 				return next(err);
@@ -153,13 +154,13 @@ export async function login(req, res, next) {
 
 			return res.status(ResponseStatusCode.OK)
 					.json({
-						id: member.userId,
-					});
-		})(req, res, next);
-	}catch (error) {
-		logger.error('Failed to login');
-		next(error);
-	}
+							id: member.userId,
+						});
+		}catch (error) {
+			logger.error('Failed to login');
+			next(error);
+		}
+	})(req, res, next);
 }
 
 /**
@@ -244,4 +245,51 @@ export async function getProfile(req, res, next) {
 		logger.error('Failed to get profile');
 		next(error);
 	}
+}
+
+const allowedProviders = ['google', 'naver', 'kakao'];
+const providerOptions = {
+	google: { scope: ['profile', 'email'], session: false, prompt: 'consent' },
+	kakao: { scope: ['account_email', 'profile_nickname'], session: false},
+	naver: { session: false }
+}
+
+export async function oAuthLogin(req, res, next) {
+	const { provider } = req.params;
+	if(!allowedProviders.includes(provider)) {
+		return next(new CustomError(ResponseStatus.BAD_REQUEST));
+	}
+
+	passport.authenticate(provider, providerOptions[provider])(req, res, next);
+}
+
+export async function callbackOAuth(req, res, next) {
+	const { provider } = req.params;
+
+	if(!allowedProviders.includes(provider)) {
+		return next(new CustomError(ResponseStatus.BAD_REQUEST));
+	}
+	
+	
+	passport.authenticate(provider, { session: false }, async (err, member, info) => {
+		try {
+			if(err){
+				logger.error('Failed to callback OAuth');
+				return next(err);
+			}
+			if(!member) {
+				logger.error('Failed to callback OAuth. Invalid provider');
+				return next(new CustomError(ResponseStatus.FORBIDDEN));
+			}
+	
+			await JWTTokenProvider.issuedAllToken(member.userId, res);
+	
+			return res.status(ResponseStatusCode.OK).json({
+				id: member.userId,
+			});
+		}catch (error) {
+			logger.error('Failed to callback OAuth');
+			next(error);
+		}		
+	})(req, res, next);
 }
