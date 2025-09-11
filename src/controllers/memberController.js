@@ -209,7 +209,7 @@ export async function patchProfile(req, res, next) {
 		
 		await patchProfileService(req.userId, nickname, profileImage, deleteProfile);
 		
-		return res.status(ResponseStatus.OK).json({});
+		return res.status(ResponseStatusCode.OK).json({});
 	}catch (error) {
 		logger.error('Failed to patch profile');
 		next(error);
@@ -235,9 +235,9 @@ export async function getProfile(req, res, next) {
 	try {
 		const member = await getProfileService(req.userId);
 		
-		return res.status(ResponseStatus.OK)
+		return res.status(ResponseStatusCode.OK)
 			.json({
-				nickname: member.nickname,
+				nickname: member.nickName,
 				profileImage: member.profileThumbnail,
 			});
 	}catch (error) {

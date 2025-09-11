@@ -744,6 +744,125 @@ describe('memberRoutes Integration Test', () => {
 		});
 	});
 
+	describe('PATCH /profile', () => {
+		beforeEach(async () => {
+			await Member.create({
+				userId: SAVE_MEMBER.userId,
+				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
+				userName: SAVE_MEMBER.userName,
+				nickName: SAVE_MEMBER.nickName,
+				email: SAVE_MEMBER.email,
+				profileThumbnail: SAVE_MEMBER.profileThumbnail,
+			});
+
+			await Auth.create({
+				userId: SAVE_MEMBER.userId,
+				auth: 'ROLE_MEMBER',
+			});
+		});
+		it('정보 수정 요청. 닉네임과 프로필 이미지를 추가하는 경우', async () => {
+			const originalThumbnail = (await Member.findOne({ where: { userId: SAVE_MEMBER.userId } })).profileThumbnail;
+			console.error('originalThumbnail : ', originalThumbnail);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER.userId);
+			const res = await request(app)
+						.patch('/member/profile')
+						.set('Cookie', [
+							`Authorization=${accessToken}`,
+							`Authorization_Refresh=${refreshToken}`,
+							`Authorization_ino=${ino}`,
+						])
+						.field('nickname', 'newNickname')
+						.field('deleteProfile', originalThumbnail)
+						.attach('profileThumbnail', Buffer.from('fake'), 'newProfileThumbnail.jpg');
+
+			const patchMember = await Member.findOne({ where: { userId: SAVE_MEMBER.userId } });
+
+			expect(res.status).toBe(ResponseStatusCode.OK);
+			expect(patchMember.nickName).toBe('newNickname');
+			expect(patchMember.profileThumbnail).not.toBe(originalThumbnail);
+
+			expect(profileResize).toHaveBeenCalled();
+			expect(deleteImageFile).toHaveBeenCalledWith(originalThumbnail, 'profile');
+		});
+
+		it('정보 수정 요청. 프로필 삭제는 하지 않고 닉네임만 수정하는 경우', async () => {
+			const originalThumbnail = (await Member.findOne({ where: { userId: SAVE_MEMBER.userId } })).profileThumbnail;
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER.userId);
+			const res = await request(app)
+						.patch('/member/profile')
+						.set('Cookie', [
+							`Authorization=${accessToken}`,
+							`Authorization_Refresh=${refreshToken}`,
+							`Authorization_ino=${ino}`,
+						])
+						.field('nickname', 'newNickname');
+
+			const patchMember = await Member.findOne({ where: { userId: SAVE_MEMBER.userId } });
+
+			expect(res.status).toBe(ResponseStatusCode.OK);
+			expect(patchMember.nickName).toBe('newNickname');
+			expect(patchMember.profileThumbnail).toBe(originalThumbnail);
+
+			expect(profileResize).not.toHaveBeenCalled();
+			expect(deleteImageFile).not.toHaveBeenCalled();
+		});
+
+		it('정보 수정 요청. 프로필 추가를 하지 않고 삭제만 하는 경우', async () => {
+			const originalThumbnail = (await Member.findOne({ where: { userId: SAVE_MEMBER.userId } })).profileThumbnail;
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER.userId);
+			const res = await request(app)
+						.patch('/member/profile')
+						.set('Cookie', [
+							`Authorization=${accessToken}`,
+							`Authorization_Refresh=${refreshToken}`,
+							`Authorization_ino=${ino}`,
+						])
+						.field('nickname', 'newNickname')
+						.field('deleteProfile', originalThumbnail);
+
+			const patchMember = await Member.findOne({ where: { userId: SAVE_MEMBER.userId } });
+
+			expect(res.status).toBe(ResponseStatusCode.OK);
+			expect(patchMember.nickName).toBe('newNickname');
+			expect(patchMember.profileThumbnail).toBe(null);
+
+			expect(profileResize).not.toHaveBeenCalled();
+			expect(deleteImageFile).toHaveBeenCalledWith(originalThumbnail, 'profile');
+		});
+	});
+
+	describe('GET /profile', () => {
+		beforeEach(async () => {
+			await Member.create({
+				userId: SAVE_MEMBER.userId,
+				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
+				userName: SAVE_MEMBER.userName,
+				nickName: SAVE_MEMBER.nickName,
+				email: SAVE_MEMBER.email,
+				profileThumbnail: SAVE_MEMBER.profileThumbnail,
+			});
+
+			await Auth.create({
+				userId: SAVE_MEMBER.userId,
+				auth: 'ROLE_MEMBER',
+			});
+		});
+
+		it('회원 정보 조회 요청.', async () => {
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER.userId);
+			const res = await request(app)
+						.get('/member/profile')
+						.set('Cookie', [
+							`Authorization=${accessToken}`,
+							`Authorization_Refresh=${refreshToken}`,
+							`Authorization_ino=${ino}`,
+						]);
+
+			expect(res.status).toBe(ResponseStatusCode.OK);
+			expect(res.body.nickname).toBe(SAVE_MEMBER.nickName);
+			expect(res.body.profileImage).toBe(SAVE_MEMBER.profileThumbnail);
+		});
+	})
 })
 
 const checkClearCookieExpires = (cookies) => {

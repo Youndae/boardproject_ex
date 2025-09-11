@@ -38,7 +38,7 @@ router.get('/check-id', isNotLoggedIn, validate(checkIdValidator, 'query'), chec
 router.get('/check-nickname', validate(checkNicknameValidator, 'query'), checkNickname);
 router.post('/login', isNotLoggedIn, validate(loginValidator), login);
 router.post('/logout', isLoggedIn, logout);
-router.patch('/profile', isLoggedIn, validate(patchProfileValidator), profileUpload, patchProfile);
+router.patch('/profile', isLoggedIn, profileUpload, validate(patchProfileValidator), patchProfile);
 router.get('/profile', isLoggedIn, getProfile);
 
 export default router;
