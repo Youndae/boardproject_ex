@@ -139,7 +139,7 @@ export async function login(req, res, next) {
 	try {
 		//TODO: login validation
 		//TODO: passport local strategy
-		passport.authenticate('local', (err, member, info) => {
+		passport.authenticate('local', async (err, member, info) => {
 			if(err){
 				logger.error('Failed to login');
 				return next(err);
@@ -149,9 +149,9 @@ export async function login(req, res, next) {
 				return next(new CustomError(ResponseStatus.FORBIDDEN));
 			}
 
-			JWTTokenProvider.issuedAllToken(member.userId, res);
+			await JWTTokenProvider.issuedAllToken(member.userId, res);
 
-			return res.status(ResponseStatus.OK)
+			return res.status(ResponseStatusCode.OK)
 					.json({
 						id: member.userId,
 					});
@@ -175,9 +175,9 @@ export async function login(req, res, next) {
 export async function logout(req, res, next) {
 	try {
 		const inoValue = getCookie(req, jwtConfig.inoHeader);
-		JWTTokenProvider.deleteTokenDataAndCookie(req.userId, inoValue, res);
+		await JWTTokenProvider.deleteTokenDataAndCookie(req.userId, inoValue, res);
 
-		return res.status(ResponseStatus.OK).json({});
+		return res.status(ResponseStatusCode.OK).json({});
 	}catch (error) {
 		logger.error('Failed to logout');
 		next(error);

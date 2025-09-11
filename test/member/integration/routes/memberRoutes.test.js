@@ -7,6 +7,7 @@ import request from 'supertest';
 import { createTestToken } from '../../../utils/testTokenUtils.js';
 import { initRedis, closeRedis } from '@config/redisConfig.js';
 import { redisClient } from '@config/redisConfig.js';
+import { jwtConfig } from '@config/jwtConfig.js';
 
 await jest.unstable_mockModule('@utils/resize.js', () => ({
 	  profileResize: jest.fn(),
@@ -627,34 +628,140 @@ describe('memberRoutes Integration Test', () => {
 	});
 
 	describe('POST /login', () => {
-		it('로그인 요청.', async () => {
+		beforeEach(async () => {
+			await Member.create({
+				userId: SAVE_MEMBER.userId,
+				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
+				userName: SAVE_MEMBER.userName,
+				nickName: SAVE_MEMBER.nickName,
+				email: SAVE_MEMBER.email,
+			});
 
+			await Auth.create({
+				userId: SAVE_MEMBER.userId,
+				auth: 'ROLE_MEMBER',
+			});
+		});
+		it('로그인 요청.', async () => {
+			const res = await request(app)
+						.post('/member/login')
+						.send({
+							userId: SAVE_MEMBER.userId,
+							userPw: SAVE_MEMBER.userPw,
+						});
+			
+			expect(res.status).toBe(ResponseStatusCode.OK);
+			expect(res.body.id).toBe(SAVE_MEMBER.userId);
+			expect(res.headers['set-cookie']).toBeDefined();
+			expect(res.headers['set-cookie'].length).toBe(3);
+			const cookies = res.headers['set-cookie'];
+			checkSecurityFromCookies(cookies);
 		});
 
-		it('로그인 요청. 일치하는 정보가 없는 경우', async () => {
+		it('로그인 요청. 아이디가 일치하지 않는 경우', async () => {
+			const res = await request(app)
+						.post('/member/login')
+						.send({
+							userId: 'nonexistent',
+							userPw: SAVE_MEMBER.userPw,
+						});
 
+			expect(res.status).toBe(ResponseStatusCode.FORBIDDEN);
+			expect(res.body.message).toBe(ResponseStatus.FORBIDDEN.MESSAGE);
+		});
+
+		it('로그인 요청. 비밀번호가 일치하지 않는 경우', async () => {
+			const res = await request(app)
+						.post('/member/login')
+						.send({
+							userId: SAVE_MEMBER.userId,
+							userPw: 'nonexistent12!!@',
+						});
+
+			expect(res.status).toBe(ResponseStatusCode.FORBIDDEN);
+			expect(res.body.message).toBe(ResponseStatus.FORBIDDEN.MESSAGE);
 		});
 
 		it('로그인 요청. 이미 로그인한 회원이 요청한 경우', async () => {
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER.userId);
 
+			const res = await request(app)
+						.post('/member/login')
+						.set('Cookie', [
+							`Authorization=${accessToken}`,
+							`Authorization_Refresh=${refreshToken}`,
+							`Authorization_ino=${ino}`,
+						])
+						.send({
+							userId: SAVE_MEMBER.userId,
+							userPw: SAVE_MEMBER.userPw,
+						});
+
+			expect(res.status).toBe(ResponseStatusCode.FORBIDDEN);
+			expect(res.body.message).toBe(ResponseStatus.FORBIDDEN.MESSAGE);
 		});
 	});
 
 	describe('POST /logout', () => {
-		it('로그아웃 요청.', async () => {
+		beforeEach(async () => {
+			await Member.create({
+				userId: SAVE_MEMBER.userId,
+				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
+				userName: SAVE_MEMBER.userName,
+				nickName: SAVE_MEMBER.nickName,
+				email: SAVE_MEMBER.email,
+			});
 
+			await Auth.create({
+				userId: SAVE_MEMBER.userId,
+				auth: 'ROLE_MEMBER',
+			});
+		});
+
+		it('로그아웃 요청.', async () => {
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER.userId);
+			const res = await request(app)
+						.post('/member/logout')
+						.set('Cookie', [
+							`Authorization=${accessToken}`,
+							`Authorization_Refresh=${refreshToken}`,
+							`Authorization_ino=${ino}`,
+						]);
+
+			expect(res.status).toBe(ResponseStatusCode.OK);
+			expect(res.headers['set-cookie']).toBeDefined();
+			expect(res.headers['set-cookie'].length).toBe(3);
+			const cookies = res.headers['set-cookie'];
+			checkClearCookieExpires(cookies);
 		});
 
 		it('로그아웃 요청. 비회원이 요청한 경우', async () => {
+			const res = await request(app)
+						.post('/member/logout');
 
+			expect(res.status).toBe(ResponseStatusCode.FORBIDDEN);
+			expect(res.body.message).toBe(ResponseStatus.FORBIDDEN.MESSAGE);
 		});
 	});
 
-	describe('PATCH /profile', () => {
-		it('정보 수정 요청. 닉네임과 프로필 이미지를 추가하는 경우', async () => {
-
-		});
-
-		it('정보 수정 요청, 닉네임과 프로필 이미지')
-	})
 })
+
+const checkClearCookieExpires = (cookies) => {
+	const cookieNames = [jwtConfig.accessHeader, jwtConfig.refreshHeader, jwtConfig.inoHeader];
+	cookieNames.forEach(cookieName => {
+		const cookie = cookies.find(cookie => cookie.startsWith(`${cookieName}=`));
+		expect(cookie).toBeDefined();
+		expect(cookie).toMatch(/Expires=Thu, 01 Jan 1970 00:00:00 GMT/);
+	});	
+}
+
+const checkSecurityFromCookies = (cookies) => {
+	const cookieNames = [jwtConfig.accessHeader, jwtConfig.refreshHeader, jwtConfig.inoHeader];
+	cookieNames.forEach(cookieName => {
+		const cookie = cookies.find(cookie => cookie.startsWith(`${cookieName}=`));
+		expect(cookie).toBeDefined();
+		expect(cookie).toMatch(/HttpOnly/);
+		expect(cookie).toMatch(/Secure/);
+		expect(cookie).toMatch(/SameSite=Strict/);
+	});
+}

@@ -33,8 +33,6 @@ export class JWTTokenProvider {
 		const redisKey = this.#getRedisKey(jwtConfig.accessKeyPrefix, verifyValue, inoValue);
 		const redisValue = await RedisService.getTokenValue(redisKey);
 
-		console.error('verifyAccessToken redisValue : ', redisValue);
-		console.error('verifyAccessToken verifyValue : ', verifyValue);
 		if(redisValue === replacedToken)
 			return verifyValue;
 		else if(redisValue === null) {
