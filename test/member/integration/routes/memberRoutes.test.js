@@ -50,6 +50,44 @@ describe('memberRoutes Integration Test', () => {
 		await redisClient.flushAll();
 	})
 
+	describe('GET /check-login', () => {
+		it('로그인 상태 조회 요청.', async () => {
+			await Member.create({
+				userId: SAVE_MEMBER.userId,
+				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
+				userName: SAVE_MEMBER.userName,
+				nickName: SAVE_MEMBER.nickName,
+				email: SAVE_MEMBER.email,
+			});
+
+			await Auth.create({
+				userId: SAVE_MEMBER.userId,
+				auth: 'ROLE_MEMBER',
+			});
+
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER.userId);
+			
+			const res = await request(app)
+						.get('/member/check-login')
+						.set('Cookie', [
+							`Authorization=${accessToken}`,
+							`Authorization_Refresh=${refreshToken}`,
+							`Authorization_ino=${ino}`,
+						]);
+
+			expect(res.status).toBe(ResponseStatusCode.OK);
+			expect(res.body.loginStatus).toBe(true);
+		});
+
+		it('로그인 상태 조회 요청. 비회원이 요청한 경우', async () => {
+			const res = await request(app)
+						.get('/member/check-login');
+
+			expect(res.status).toBe(ResponseStatusCode.OK);
+			expect(res.body.loginStatus).toBe(false);
+		});
+	});
+
 	describe('POST /join', () => {
 		it('회원가입. 모든 값이 존재하는 경우', async () => {
 			const res = await request(app)
