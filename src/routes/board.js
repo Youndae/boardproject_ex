@@ -1,11 +1,21 @@
 import express from 'express';
 import { isLoggedIn } from '#middleware/authMiddleware.js';
-
-//TODO: controller import
-
+import {
+	getBoardList,
+	getBoardDetail,
+	postBoard,
+	patchBoardDetailData,
+	patchBoard,
+	deleteBoard,
+	getReplyDetail,
+	postBoardReply
+} from '#controllers/boardController.js';
 import { validate } from '#middleware/validateMiddleware.js';
-
-//TODO; boardValidator import
+import {
+	postBoardValidator,
+	patchBoardValidator,
+	postBoardReplyValidator,
+} from '#validators/boardValidator.js';
 
 const router = express.Router();
 
