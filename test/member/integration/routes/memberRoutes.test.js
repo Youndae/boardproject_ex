@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import CustomError from '@errors/customError.js';
-import { ResponseStatus } from '@constants/responseStatus.js';
+import { ResponseStatus, ResponseStatusCode } from '@constants/responseStatus.js';
 import { sequelize, Member, Auth } from '@models/index.js';
 import bcrypt from 'bcrypt';
 import request from 'supertest';
@@ -332,6 +332,18 @@ describe('memberRoutes Integration Test', () => {
 		})
 
 		it('로그인한 회원이 회원가입을 시도하는 경우', async () => {
+			await Member.create({
+				userId: SAVE_MEMBER.userId,
+				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
+				userName: SAVE_MEMBER.userName,
+				nickName: SAVE_MEMBER.nickName,
+				email: SAVE_MEMBER.email,
+			});
+			await Auth.create({
+				userId: SAVE_MEMBER.userId,
+				auth: 'ROLE_MEMBER',
+			});
+
 			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER.userId);
 
 			try {
@@ -369,6 +381,11 @@ describe('memberRoutes Integration Test', () => {
 				profileThumbnail: SAVE_MEMBER.profileThumbnail,
 			});
 
+			await Auth.create({
+				userId: SAVE_MEMBER.userId,
+				auth: 'ROLE_MEMBER',
+			});
+
 			try {
 				await request(app)
 						.post('/member/join')
@@ -395,45 +412,217 @@ describe('memberRoutes Integration Test', () => {
 
 	describe('GET /check-id', () => {
 		it('아이디 중복 체크. 중복이 아닌 경우', async () => {
-			
+			const res = await request(app)
+								.get('/member/check-id')
+								.query({'userId': SAVE_MEMBER.userId});
+
+			expect(res.status).toBe(ResponseStatusCode.OK);
+			expect(res.body.isExist).toBe(false);
 		});
 
 		it('아이디 중복 체크. 중복인 경우', async () => {
+			await Member.create({
+				userId: SAVE_MEMBER.userId,
+				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
+				userName: SAVE_MEMBER.userName,
+				nickName: SAVE_MEMBER.nickName,
+				email: SAVE_MEMBER.email,
+				provider: 'local'
+			});
 
+			await Auth.create({
+				userId: SAVE_MEMBER.userId,
+				auth: 'ROLE_MEMBER',
+			});
+
+			const res = await request(app)
+								.get('/member/check-id')
+								.query({'userId': SAVE_MEMBER.userId});
+
+			expect(res.status).toBe(ResponseStatusCode.CONFLICT);
+			expect(res.body.isExist).toBeUndefined();
 		});
 
 		it('아이디 중복 체크. 아이디가 너무 짧은 경우', async () => {
+			const res = await request(app)
+								.get('/member/check-id')
+								.query({'userId': 'tes'});
 
+			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
 		});
 
 		it('아이디 중복 체크. 로그인한 회원이 요청한 경우', async () => {
+			await Member.create({
+				userId: SAVE_MEMBER.userId,
+				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
+				userName: SAVE_MEMBER.userName,
+				nickName: SAVE_MEMBER.nickName,
+				email: SAVE_MEMBER.email,
+			});
 
+			await Auth.create({
+				userId: SAVE_MEMBER.userId,
+				auth: 'ROLE_MEMBER',
+			});
+
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER.userId);
+
+			try {
+				await request(app)
+						.get('/member/check-id')
+						.set('Cookie', [
+							`Authorization=${accessToken}`,
+							`Authorization_Refresh=${refreshToken}`,
+							`Authorization_ino=${ino}`,
+						])
+						.query({'userId': SAVE_MEMBER.userId});
+			}catch(error) {
+				expect(error).toBeInstanceOf(CustomError);
+				expect(error.status).toBe(ResponseStatus.FORBIDDEN.CODE);
+				expect(error.message).toBe(ResponseStatus.FORBIDDEN.MESSAGE);
+			}
 		});
 	});
 
 	describe('GET /check-nickname', () => {
 		it('닉네임 중복 체크. 중복이 아닌 경우', async () => {
+			const res = await request(app)
+								.get('/member/check-nickname')
+								.query({'nickname': SAVE_MEMBER.nickName});
 
+			expect(res.status).toBe(ResponseStatusCode.OK);
+			expect(res.body.isExist).toBe(false);
 		});
 
 		it('닉네임 중복 체크. 중복인 경우', async () => {
+			await Member.create({
+				userId: SAVE_MEMBER.userId,
+				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
+				userName: SAVE_MEMBER.userName,
+				nickName: SAVE_MEMBER.nickName,
+				email: SAVE_MEMBER.email,
+			});
 
+			await Auth.create({
+				userId: SAVE_MEMBER.userId,
+				auth: 'ROLE_MEMBER',
+			});
+
+			const res = await request(app)
+								.get('/member/check-nickname')
+								.query({'nickname': SAVE_MEMBER.nickName});
+
+			expect(res.status).toBe(ResponseStatusCode.CONFLICT);
+			expect(res.body.isExist).toBeUndefined();
 		});
 
 		it('닉네임 중복 체크. 닉네임이 너무 짧은 경우', async () => {
+			const res = await request(app)
+								.get('/member/check-nickname')
+								.query({'nickname': 't'});
 
+			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
 		});
 
 		it('닉네임 중복 체크. 로그인한 회원이 자신의 닉네임과 동일한 닉네임으로 요청한 경우', async () => {
+			await Member.create({
+				userId: SAVE_MEMBER.userId,
+				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
+				userName: SAVE_MEMBER.userName,
+				nickName: SAVE_MEMBER.nickName,
+				email: SAVE_MEMBER.email,
+			});
 
+			await Auth.create({
+				userId: SAVE_MEMBER.userId,
+				auth: 'ROLE_MEMBER',
+			});
+
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER.userId);
+
+			const res = await request(app)
+						.get('/member/check-nickname')
+						.set('Cookie', [
+							`Authorization=${accessToken}`,
+							`Authorization_Refresh=${refreshToken}`,
+							`Authorization_ino=${ino}`,
+						])
+						.query({'nickname': SAVE_MEMBER.nickName});
+
+			expect(res.status).toBe(ResponseStatusCode.OK);
+			expect(res.body.isExist).toBe(false);
 		});
 
 		it('닉네임 중복 체크. 로그인한 회원의 요청. 다른 사용자가 사용중인 경우', async () => {
+			await Member.create({
+				userId: 'otherUserId',
+				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
+				userName: SAVE_MEMBER.userName,
+				nickName: 'otherNickname',
+				email: SAVE_MEMBER.email,
+			});
 
+			await Auth.create({
+				userId: 'otherUserId',
+				auth: 'ROLE_MEMBER',
+			});
+
+			await Member.create({
+				userId: SAVE_MEMBER.userId,
+				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
+				userName: SAVE_MEMBER.userName,
+				nickName: SAVE_MEMBER.nickName,
+				email: SAVE_MEMBER.email,
+			});
+
+			await Auth.create({
+				userId: SAVE_MEMBER.userId,
+				auth: 'ROLE_MEMBER',
+			});
+
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER.userId);
+
+			const res = await request(app)
+						.get('/member/check-nickname')
+						.set('Cookie', [
+							`Authorization=${accessToken}`,
+							`Authorization_Refresh=${refreshToken}`,
+							`Authorization_ino=${ino}`,
+						])
+						.query({'nickname': 'otherNickname'});
+
+			expect(res.status).toBe(ResponseStatusCode.CONFLICT);
+			expect(res.body.message).toBe(ResponseStatus.CONFLICT.MESSAGE);
+			expect(res.body.isExist).toBeUndefined();
 		});
 
 		it('닉네임 중복 체크. 로그인한 회원의 요청, 중복이 아닌 경우', async () => {
+			await Member.create({
+				userId: SAVE_MEMBER.userId,
+				userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
+				userName: SAVE_MEMBER.userName,
+				nickName: SAVE_MEMBER.nickName,
+				email: SAVE_MEMBER.email,
+			});
 
+			await Auth.create({
+				userId: SAVE_MEMBER.userId,
+				auth: 'ROLE_MEMBER',
+			});
+
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER.userId);
+
+			const res = await request(app)
+						.get('/member/check-nickname')
+						.set('Cookie', [
+							`Authorization=${accessToken}`,
+							`Authorization_Refresh=${refreshToken}`,
+							`Authorization_ino=${ino}`,
+						])
+						.query({'nickname': SAVE_MEMBER.nickName});
+
+			expect(res.status).toBe(ResponseStatusCode.OK);
+			expect(res.body.isExist).toBe(false);
 		});
 	});
 

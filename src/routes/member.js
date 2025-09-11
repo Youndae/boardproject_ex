@@ -34,8 +34,8 @@ router.get('/check-login', (req, res, next) => {
 		});
 });
 router.post('/join', isNotLoggedIn, profileUpload, validate(registerValidator), register);
-router.get('/check-id', isNotLoggedIn, validate(checkIdValidator), checkId);
-router.get('/check-nickname', validate(checkNicknameValidator), checkNickname);
+router.get('/check-id', isNotLoggedIn, validate(checkIdValidator, 'query'), checkId);
+router.get('/check-nickname', validate(checkNicknameValidator, 'query'), checkNickname);
 router.post('/login', isNotLoggedIn, validate(loginValidator), login);
 router.post('/logout', isLoggedIn, logout);
 router.patch('/profile', isLoggedIn, validate(patchProfileValidator), profileUpload, patchProfile);

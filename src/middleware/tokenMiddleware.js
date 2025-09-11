@@ -22,35 +22,32 @@ const checkTokenPrefix = (tokenValue) => {
 
 export const tokenMiddleware = async (req, res, next) => {
 	let username = null;
+	
 	try {
 		const { accessToken, refreshToken, ino } = extractAllTokenFromCookie(req);
 
 		if(ino) {
-			const inoValue = ino.value;
-			const accessTokenValue = accessToken !== null ? accessToken.value : null;
-			const refreshTokenValue = refreshToken !== null ? refreshToken.value : null;
-			
-			if(accessTokenValue && refreshTokenValue) {
-				if(!checkTokenPrefix(accessTokenValue) || !checkTokenPrefix(refreshTokenValue)) {
-					logger.warn('Invalid Token Prefix: ', { accessTokenValue, refreshTokenValue });
+			if(accessToken && refreshToken) {
+				if(!checkTokenPrefix(accessToken) || !checkTokenPrefix(refreshToken)) {
+					logger.warn('Invalid Token Prefix: ', { accessToken, refreshToken });
 					JWTTokenProvider.deleteAllTokenCookie(res);
 					next(new CustomError(ResponseStatus.TOKEN_INVALID));
 				}else {
 					try {
-						const accessTokenVerifyValue = JWTTokenProvider.verifyAccessToken(accessTokenValue, inoValue, res);
-						username = accessTokenVerifyValue;
+						const accessTokenVerifyValue = await JWTTokenProvider.verifyAccessToken(accessToken, ino, res);
+						username = accessTokenVerifyValue;						
 					}catch(error) {
 						if(error instanceof CustomError) {
 							if(error.status === ResponseStatusCode.UNAUTHORIZED && error.message === ResponseStatus.TOKEN_EXPIRED.MESSAGE) {
 								try {
-									const decodedAccessToken = JWTTokenProvider.decodeToken(accessTokenValue).userId;
-									const refreshTokenVerifyValue = JWTTokenProvider.verifyRefreshToken(refreshTokenValue, inoValue, res);
+									const decodedAccessToken = JWTTokenProvider.decodeToken(accessToken).userId;
+									const refreshTokenVerifyValue = await JWTTokenProvider.verifyRefreshToken(refreshToken, ino, res);
 
 									if(decodedAccessToken === refreshTokenVerifyValue) {
-										JWTTokenProvider.issuedToken(decodedAccessToken, inoValue, res);
+										await JWTTokenProvider.issuedToken(decodedAccessToken, ino, res);
 										username = decodedAccessToken;
 									}else {
-										JWTTokenProvider.deleteTokenDataAndCookie(refreshTokenVerifyValue, inoValue, res);
+										await JWTTokenProvider.deleteTokenDataAndCookie(refreshTokenVerifyValue, ino, res);
 										next(new CustomError(ResponseStatus.TOKEN_STEALING));
 									}
 								}catch(error) {
@@ -61,16 +58,16 @@ export const tokenMiddleware = async (req, res, next) => {
 							next(error);
 					}
 				}
-			} else if(!accessTokenValue && !refreshTokenValue) {
+			} else if(!accessToken && !refreshToken) {
 				next();
 			} else {
 				let verifyValue = null;
-				if(accessTokenValue) 
-					verifyValue = JWTTokenProvider.decodeToken(accessTokenValue).userId;
-				else if(refreshTokenValue)
-					verifyValue = JWTTokenProvider.decodeToken(refreshTokenValue).userId;
+				if(accessToken) 
+					verifyValue = JWTTokenProvider.decodeToken(accessToken).userId;
+				else if(refreshToken)
+					verifyValue = JWTTokenProvider.decodeToken(refreshToken).userId;
 
-				JWTTokenProvider.deleteTokenDataAndCookie(verifyValue, inoValue, res);
+				await JWTTokenProvider.deleteTokenDataAndCookie(verifyValue, ino, res);
 				next(new CustomError(ResponseStatus.TOKEN_STEALING));
 			}
 		}

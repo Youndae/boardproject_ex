@@ -22,7 +22,6 @@ import memberRouter from './routes/member.js';
 
 const app = express();
 passportConfig();
-app.use(tokenMiddleware);
 
 app.set('port', process.env.PORT || 8080);
 
@@ -51,6 +50,7 @@ app.use(express.static(join(__dirname, 'public')));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
+app.use(tokenMiddleware);
 app.use(passport.initialize());
 
 // TODO: Router 등록

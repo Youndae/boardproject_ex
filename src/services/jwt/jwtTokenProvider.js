@@ -33,6 +33,8 @@ export class JWTTokenProvider {
 		const redisKey = this.#getRedisKey(jwtConfig.accessKeyPrefix, verifyValue, inoValue);
 		const redisValue = await RedisService.getTokenValue(redisKey);
 
+		console.error('verifyAccessToken redisValue : ', redisValue);
+		console.error('verifyAccessToken verifyValue : ', verifyValue);
 		if(redisValue === replacedToken)
 			return verifyValue;
 		else if(redisValue === null) {
@@ -54,7 +56,7 @@ export class JWTTokenProvider {
 		const verifyValue = this.#verifyToken(replacedToken, jwtConfig.refreshSecret).userId;
 		const redisKey = this.#getRedisKey(jwtConfig.refreshKeyPrefix, verifyValue, inoValue);
 		const redisValue = await RedisService.getTokenValue(redisKey);
-
+		
 		if(redisValue === replacedToken)
 			return verifyValue;
 		else if(redisValue === null) {

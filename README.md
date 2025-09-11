@@ -108,7 +108,19 @@ Express 프로젝트 구조와 이해도 학습 목적
 > resize, delete 까지 그냥 수행되는 방향으로 둔 상태지만 resize, delete의 경우 mocking을 통해 호출 여부를 검증할 수 있도록 수정 예정.
 
 <br/>
+
 ## 25/09/10
 > memberRoutes resize, deletefile mocking 처리 완료 및 테스트 수행.   
 > deletefile의 경우 fileUtils에서 getResizeProfileName과 같이 있었는데 getResizeProfileName은 mocking되지 않은 상태로 정상 저장을 검증하기 위해 fileNameUtils로 분리.   
 > fileNameUtils에서 ext, baseName을 구하는 유틸을 분리. resize에서도 이 유틸을 통해 ext, basename을 받도록 수정.   
+
+<br/>
+
+## 25/09/11
+> memberRoutes 테스트 작성 중.   
+> 문제 발생
+>> 다른 테스트가 정상적으로 처리되기랠 몰랐는데 tokenMiddleware가 정상적으로 동작하지 않는다는 것을 확인.   
+>> 문제점은 cookie에서 이미 값을 가져왔는데 그걸 다시 .value로 가져오게 되면서 null로 처리되어 Cookie가 정상이더라도 검증을 수행하지 않는 것이 문제.   
+>> 해당 부분을 cookieUtils에서 가져온 그대로 사용하는 것으로 수정.   
+>> 검증 함수의 경우 async로 선언되어있는데 tokenMiddleware에서는 그냥 호출하는 바람에 반환값이 Promise 객체인 것이 두 번째 문제.   
+>> 해당 부분들을 체크하고 await 을 붙여주는 것으로 문제 해결.   

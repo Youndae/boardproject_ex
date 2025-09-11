@@ -9,7 +9,7 @@ import {
 import { profileResize } from "@utils/resize.js"
 import logger from "@config/loggerConfig.js"
 import CustomError from "@errors/customError.js"
-import { ResponseStatus } from "@constants/responseStatus.js"
+import { ResponseStatus, ResponseStatusCode } from "@constants/responseStatus.js"
 import { JWTTokenProvider } from "@services/jwt/jwtTokenProvider.js"
 import { getCookie } from "@utils/cookieUtils.js"
 import { jwtConfig } from "@config/jwtConfig.js"
@@ -40,7 +40,7 @@ export async function register(req, res, next) {
 		}
 		await registerService(userId, userPw, userName, nickName, email, profileImage);
 
-		return res.status(ResponseStatus.CREATED.CODE).json({});
+		return res.status(ResponseStatusCode.CREATED).json({});
 	}catch(error) {
 		logger.error('Failed to register member');
 		next(error);
@@ -62,15 +62,22 @@ export async function register(req, res, next) {
  */
 export async function checkId(req, res, next) {
 	try {
-		const result = await checkIdService(req.body.userId);
-		
-		return res.status(ResponseStatus.OK)
+		const result = await checkIdService(req.query.userId);
+
+		if(result)
+			throw new CustomError(ResponseStatus.CONFLICT);
+
+		return res.status(ResponseStatusCode.OK)
 			.json({
 				isExist: result
 			});
 	}catch(error) {
-		logger.error('Failed to check id');
-		next(error);
+		if(error instanceof CustomError && error.status === ResponseStatusCode.CONFLICT)
+			logger.info('checkId Already exists. ', error);
+		else
+			logger.error('Failed to check id. ', error);
+
+		return next(error);
 	}
 }
 
@@ -89,15 +96,22 @@ export async function checkId(req, res, next) {
 */
 export async function checkNickname(req, res, next) {
 	try {
-		const result = await checkNicknameService(req.userId, req.body.nickname);
+		const result = await checkNicknameService(req.userId, req.query.nickname);
 
-		return res.status(ResponseStatus.OK)
+		if(result)
+			throw new CustomError(ResponseStatus.CONFLICT);
+
+		return res.status(ResponseStatusCode.OK)
 			.json({
 				isExist: result
 			});
 	}catch(error) {
-		logger.error('Failed to check nickname');
-		next(error);
+		if(error instanceof CustomError && error.status === ResponseStatusCode.CONFLICT)
+			logger.info('checkNickname Already exists. ', error);
+		else
+			logger.error('Failed to check nickname. ', error);
+
+		return next(error);
 	}
 }
 
