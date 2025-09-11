@@ -1,5 +1,13 @@
-//TODO: service import
-
+import {
+	getBoardListService,
+	getBoardDetailService,
+	postBoardService,
+	patchBoardDetailDataService,
+	patchBoardService,
+	deleteBoardService,
+	getReplyDetailService,
+	postBoardReplyService
+} from '#services/board/boardService.js';
 import logger from '#config/loggerConfig.js';
 import CustomError from '#errors/customError.js';
 import { ResponseStatusCode, ResponseStatus } from '#constants/responseStatus.js';
@@ -23,7 +31,7 @@ import { ResponseStatusCode, ResponseStatus } from '#constants/responseStatus.js
  * 			{
  * 				boardNo: 1,
  * 				boardTitle: String,
- * 				nickname: String,
+ * 				userId: String,
  * 				boardDate: Date,
  * 				boardIndent: Integer,
  * 			}
