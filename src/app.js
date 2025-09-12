@@ -22,6 +22,7 @@ const __dirname = dirname(__filename);
 import { sequelize } from '#models/index.js';
 import passportConfig from '#passport/index.js';
 import memberRouter from '#routes/member.js';
+import boardRouter from '#routes/board.js';
 
 const corsOptions = {
 	origin: 'http://localhost:3000',
@@ -67,6 +68,7 @@ app.use(passport.initialize());
 
 // TODO: Router 등록
 app.use('/member', memberRouter);
+app.use('/board', boardRouter);
 
 
 // 404
