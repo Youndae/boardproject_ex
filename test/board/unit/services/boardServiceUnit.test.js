@@ -113,8 +113,9 @@ describe('boardService unit test', () => {
 			const result = await postBoardService('tester', { boardTitle: 'testTitle', boardContent: 'testContent' });
 			expect(BoardRepository.postBoard)
 				.toHaveBeenCalledWith(
+					'testTitle',
+					'testContent',
 					'tester', 
-					{ boardTitle: 'testTitle', boardContent: 'testContent' }, 
 					{ transaction: mockTransaction }
 				);
 			expect(result).toBe(1);
