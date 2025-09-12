@@ -3,30 +3,31 @@ import logger from "#config/loggerConfig.js"
 import { ResponseStatus } from "#constants/responseStatus.js"
 import CustomError from "#errors/customError.js"
 import { getOffset } from "#utils/paginationUtils.js"
+import { Op } from "sequelize"
 
 const boardAmount = 20;
 
 export class BoardRepository {
 	static async getBoardListPageable({keyword, searchType, pageNum = 1}) {
 		const offset = getOffset(pageNum, boardAmount);
-		const keyword = keyword ? `%${keyword}%` : '';
+		const searchKeyword = keyword ? `%${keyword}%` : '';
 		const where = {};
 
 		switch (searchType) {
 			case 't':
-				where.boardTitle = { [Op.like]: `${keyword}` };
+				where.boardTitle = { [Op.like]: `${searchKeyword}` };
 				break;
 			case 'c':
-				where.boardContent = { [Op.like]: `${keyword}` };
+				where.boardContent = { [Op.like]: `${searchKeyword}` };
 				break;
 			case 'tc':
 				where[Op.or] = [
-					{ boardTitle: { [Op.like]: `${keyword}` } },
-					{ boardContent: { [Op.like]: `${keyword}` } },
+					{ boardTitle: { [Op.like]: `${searchKeyword}` } },
+					{ boardContent: { [Op.like]: `${searchKeyword}` } },
 				]
 				break;
 			case 'u':
-				where.userId = { [Op.like]: `${keyword}` };
+				where.userId = { [Op.like]: `${searchKeyword}` };
 				break;
 			default:
 				break;
@@ -127,6 +128,7 @@ export class BoardRepository {
 			boardGroupNo: boardGroupNo,
 			boardIndent: boardIndent,
 			boardUpperNo: boardUpperNo,
+			userId: userId,
 		}, { transaction: options.transaction });
 
 		const replyNo = reply.boardNo;
