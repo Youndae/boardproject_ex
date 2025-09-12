@@ -1,13 +1,4 @@
-import {
-	getBoardListPageable,
-	getBoardDetail,
-	postBoard,
-	getPatchDetailData,
-	patchBoard,
-	deleteBoard,
-	getReplyDetail,
-	postBoardReply
-} from '#repositories/boardRepository.js';
+import { BoardRepository } from '#repositories/boardRepository.js';
 import logger from "#config/loggerConfig.js"
 import CustomError from "#errors/customError.js"
 import { ResponseStatus } from "#constants/responseStatus.js"
@@ -16,7 +7,7 @@ import { sequelize } from "#models/index.js"
 
 export async function getBoardListService({keyword, searchType, pageNum = 1}) {
 	try {
-		const boardList = await getBoardListPageable({keyword, searchType, pageNum});
+		const boardList = await BoardRepository.getBoardListPageable({keyword, searchType, pageNum});
 
 		return {
 				content: boardList.rows,
@@ -36,7 +27,7 @@ export async function getBoardListService({keyword, searchType, pageNum = 1}) {
 
 export async function getBoardDetailService(boardNo) {
 	try {
-		const board = await getBoardDetail(boardNo);
+		const board = await BoardRepository.getBoardDetail(boardNo);
 
 		return board;
 	}catch (error) {
@@ -53,7 +44,7 @@ export async function getBoardDetailService(boardNo) {
 export async function postBoardService(userId, {boardTitle, boardContent}) {
 	const transaction = await sequelize.transaction();
 	try {
-		const boardNo = await postBoard(userId, {boardTitle, boardContent}, {transaction});
+		const boardNo = await BoardRepository.postBoard(userId, {boardTitle, boardContent}, {transaction});
 
 		await transaction.commit();
 
@@ -72,7 +63,7 @@ export async function postBoardService(userId, {boardTitle, boardContent}) {
 
 export async function patchBoardDetailDataService(userId, boardNo) {
 	try {
-		const board = await getPatchDetailData(boardNo, userId);
+		const board = await BoardRepository.getPatchDetailData(boardNo, userId);
 
 		return board;
 	}catch (error) {
@@ -91,7 +82,7 @@ export async function patchBoardService(userId, boardNo, {boardTitle, boardConte
 		const checkResult = await checkWriter(userId, boardNo);
 
 		if(checkResult) {
-			await patchBoard(boardNo, {boardTitle, boardContent});
+			await BoardRepository.patchBoard(boardNo, {boardTitle, boardContent});
 
 			return boardNo;
 		}
@@ -111,7 +102,7 @@ export async function deleteBoardService(userId, boardNo) {
 		const checkResult = await checkWriter(userId, boardNo);
 
 		if(checkResult) {
-			await deleteBoard(boardNo);
+			await BoardRepository.deleteBoard(boardNo);
 		}
 	}catch (error) {
 		logger.error('Failed to delete board service.')
@@ -126,7 +117,7 @@ export async function deleteBoardService(userId, boardNo) {
 
 export async function getReplyDetailService(boardNo) {
 	try {
-		const reply = await getReplyDetail(boardNo);
+		const reply = await BoardRepository.getReplyDetail(boardNo);
 
 		return reply;
 	}catch (error) {
@@ -139,12 +130,10 @@ export async function getReplyDetailService(boardNo) {
 	}
 }
 
-// sequelize transaction 필요.
-// 최초 저장 이후 해당 게시글 기준으로 UpperNo 갱신 필요.
 export async function postBoardReplyService(userId, {boardTitle, boardContent, boardGroupNo, boardIndent, boardUpperNo}) {
 	const transaction = await sequelize.transaction();
 	try {
-		const replyNo = await postBoardReply(
+		const replyNo = await BoardRepository.postBoardReply(
 								boardTitle, 
 								boardContent, 
 								boardGroupNo, 
@@ -170,7 +159,7 @@ export async function postBoardReplyService(userId, {boardTitle, boardContent, b
 
 // 기존 데이터 조회 후 작성자 체크
 async function checkWriter(userId, boardNo) {
-	const originalBoard = await getBoardDetail(boardNo);
+	const originalBoard = await BoardRepository.getBoardDetail(boardNo);
 
 	if(originalBoard.userId !== userId) {
 		logger.error('User is not the author of the board, boardNo: ', { boardNo });
