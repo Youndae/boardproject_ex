@@ -1,7 +1,11 @@
-import { ImageBoard } from "#models/index.js";
+import { ImageBoard, ImageData } from "#models/index.js";
 import { getOffset } from "#utils/paginationUtils.js";
 import { sequelize } from "#models/index.js";
 import { Sequelize } from "sequelize";
+import { Op } from "sequelize";
+import CustomError from "#errors/customError.js";
+import { ResponseStatus } from "#constants/responseStatus.js";
+import logger from "#config/loggerConfig.js";
 
 const imageBoardAmount = 15;
 
@@ -138,21 +142,24 @@ export class ImageBoardRepository {
 	}
 
 	static async patchImageBoard(imageNo, imageTitle, imageContent, files, deleteFiles, options = {}) {
-		let maxImageStep = await ImageData.max('imageStep', { where: { imageNo: imageNo } });
+		let maxImageStep = await ImageData.max('imageStep', { where: { imageNo: imageNo } }) + 1;
 
 		await ImageBoard.update({
 			imageTitle: imageTitle,
 			imageContent: imageContent,
 		}, { where: { imageNo: imageNo }, transaction: options.transaction });
 
-		await ImageData.destroy({ where: { imageNo: imageNo, imageName: { [Op.in]: deleteFiles } }, transaction: options.transaction });
+		if(deleteFiles) 
+			await ImageData.destroy({ where: { imageNo: imageNo, imageName: { [Op.in]: deleteFiles } }, transaction: options.transaction });
 
-		await ImageData.bulkCreate(files.map(file => ({
-			imageName: file.filename,
-			oldName: file.originalname,
-			imageStep: maxImageStep++,
-			imageNo: imageNo,
-		})), { transaction: options.transaction });
+		if(files) {
+			await ImageData.bulkCreate(files.map(file => ({
+				imageName: file.filename,
+				oldName: file.originalname,
+				imageStep: maxImageStep++,
+				imageNo: imageNo,
+			})), { transaction: options.transaction });
+		}
 
 		return imageNo;
 	}
