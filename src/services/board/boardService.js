@@ -44,13 +44,13 @@ export async function getBoardDetailService(boardNo) {
 export async function postBoardService(userId, {boardTitle, boardContent}) {
 	const transaction = await sequelize.transaction();
 	try {
-		const boardNo = await BoardRepository.postBoard(userId, {boardTitle, boardContent}, {transaction});
+		const boardNo = await BoardRepository.postBoard(boardTitle, boardContent, userId, {transaction});
 
 		await transaction.commit();
 
 		return boardNo;
 	}catch (error) {
-		logger.error('Failed to post board service.')
+		logger.error('Failed to post board service.', error);
 		await transaction.rollback();
 
 		if(error instanceof CustomError)
@@ -67,7 +67,7 @@ export async function patchBoardDetailDataService(userId, boardNo) {
 
 		return board;
 	}catch (error) {
-		logger.error('Failed to get patch detail data service.')
+		logger.error('Failed to get patch detail data service.', error);
 
 		if(error instanceof CustomError)
 			throw error;
@@ -82,12 +82,12 @@ export async function patchBoardService(userId, boardNo, {boardTitle, boardConte
 		const checkResult = await checkWriter(userId, boardNo);
 
 		if(checkResult) {
-			await BoardRepository.patchBoard(boardNo, {boardTitle, boardContent});
+			await BoardRepository.patchBoard(boardNo, boardTitle, boardContent);
 
 			return boardNo;
 		}
 	}catch (error) {
-		logger.error('Failed to patch board service.')
+		logger.error('Failed to patch board service.', error);
 
 		if(error instanceof CustomError)
 			throw error;
@@ -105,7 +105,7 @@ export async function deleteBoardService(userId, boardNo) {
 			await BoardRepository.deleteBoard(boardNo);
 		}
 	}catch (error) {
-		logger.error('Failed to delete board service.')
+		logger.error('Failed to delete board service.', error);
 
 		if(error instanceof CustomError)
 			throw error;
@@ -121,7 +121,7 @@ export async function getReplyDetailService(boardNo) {
 
 		return reply;
 	}catch (error) {
-		logger.error('Failed to get reply detail service.')
+		logger.error('Failed to get reply detail service.', error);
 
 		if(error instanceof CustomError)
 			throw error;
@@ -147,7 +147,7 @@ export async function postBoardReplyService(userId, {boardTitle, boardContent, b
 
 		return replyNo;
 	}catch (error) {
-		logger.error('Failed to post board reply service.')
+		logger.error('Failed to post board reply service.', error);
 		await transaction.rollback();
 
 		if(error instanceof CustomError)
@@ -162,7 +162,7 @@ async function checkWriter(userId, boardNo) {
 	const originalBoard = await BoardRepository.getBoardDetail(boardNo);
 
 	if(originalBoard.userId !== userId) {
-		logger.error('User is not the author of the board, boardNo: ', { boardNo });
+		logger.error('User is not the author of the board, boardNo: ', boardNo);
 		throw new CustomError(ResponseStatus.FORBIDDEN);
 	}
 
