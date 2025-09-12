@@ -7,8 +7,7 @@ import bcrypt from "bcrypt"
 import { sequelize } from "#models/index.js"
 import { deleteImageFile } from "#utils/fileUtils.js";
 import { getResizeProfileName } from "#utils/fileNameUtils.js";
-
-const profilePrefix = 'profile_';
+import { ImageConstants } from "#constants/imageConstants.js";
 
 export async function registerService ( userId, userPw, userName, nickName = null, email, profileThumbnail = null ) {
 	const transaction = await sequelize.transaction();
@@ -20,8 +19,8 @@ export async function registerService ( userId, userPw, userName, nickName = nul
 
 		let dbProfileThumbnail = null;
 		if(profileThumbnail)
-			dbProfileThumbnail = `${profilePrefix}${getResizeProfileName(profileThumbnail)}`;
-		
+			dbProfileThumbnail = `${ImageConstants.PROFILE_PREFIX}${getResizeProfileName(profileThumbnail)}`;
+
 		await MemberRepository.createMember(userId, hashedPw, userName, nickName, email, dbProfileThumbnail, { transaction });
 		await AuthRepository.createMemberAuth(userId, 'ROLE_MEMBER', { transaction });
 
@@ -37,7 +36,7 @@ export async function registerService ( userId, userPw, userName, nickName = nul
 		}
 
 		if(profileThumbnail)
-			deleteImageFile(profileThumbnail, 'profile');
+			deleteImageFile(profileThumbnail, ImageConstants.PROFILE_TYPE);
 			
 		logger.error('Failed to register service.');
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
@@ -77,16 +76,16 @@ export async function patchProfileService (userId, nickName, profileThumbnail = 
 	try {
 		let dbProfileThumbnail = null;
 		if(profileThumbnail)
-			dbProfileThumbnail = `${profilePrefix}${getResizeProfileName(profileThumbnail)}`;
+			dbProfileThumbnail = `${ImageConstants.PROFILE_PREFIX}${getResizeProfileName(profileThumbnail)}`;
 
 		if(!profileThumbnail && !deleteProfile)
-			profileThumbnail = undefined;
+			dbProfileThumbnail = undefined;
 
 		await MemberRepository.patchMemberProfile(userId, nickName, dbProfileThumbnail, { transaction });
 
 		if(deleteProfile){
-			const deleteFilename = deleteProfile.replace(profilePrefix, '');
-			deleteImageFile(deleteFilename, 'profile');
+			const deleteFilename = deleteProfile.replace(ImageConstants.PROFILE_PREFIX, '');
+			deleteImageFile(deleteFilename, ImageConstants.PROFILE_TYPE);
 		}
 			
 		await transaction.commit();
@@ -94,7 +93,7 @@ export async function patchProfileService (userId, nickName, profileThumbnail = 
 		await transaction.rollback();
 
 		if(profileThumbnail)
-			deleteImageFile(profileThumbnail, 'profile');
+			deleteImageFile(profileThumbnail, ImageConstants.PROFILE_TYPE);
 
 		logger.error('Failed to patch profile service.')
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);

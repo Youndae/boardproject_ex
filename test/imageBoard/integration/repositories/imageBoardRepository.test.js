@@ -184,13 +184,13 @@ describe('imageBoardRepository test', () => {
 
 			const saveImageData = await ImageData.findAll({ where: { imageNo: result } });
 			expect(saveImageData.length).toBe(3);
-			expect(saveImageData[0].imageName).toBe('testPostImage1.jpg');
+			expect(saveImageData[0].imageName).toBe('board_testPostImage1.jpg');
 			expect(saveImageData[0].oldName).toBe('testPostImage_old_1.jpg');
 			expect(saveImageData[0].imageStep).toBe(1);
-			expect(saveImageData[1].imageName).toBe('testPostImage2.jpg');
+			expect(saveImageData[1].imageName).toBe('board_testPostImage2.jpg');
 			expect(saveImageData[1].oldName).toBe('testPostImage_old_2.jpg');
 			expect(saveImageData[1].imageStep).toBe(2);
-			expect(saveImageData[2].imageName).toBe('testPostImage3.jpg');
+			expect(saveImageData[2].imageName).toBe('board_testPostImage3.jpg');
 			expect(saveImageData[2].oldName).toBe('testPostImage_old_3.jpg');
 			expect(saveImageData[2].imageStep).toBe(3);
 		});
@@ -250,15 +250,15 @@ describe('imageBoardRepository test', () => {
 			expect(saveImageBoard.imageContent).toBe('testUpdateContent');
 			expect(saveImageBoard.userId).toBe(DEFAULT_USER_ID);
 			
-			const saveImageData = await ImageData.findAll({ where: { imageNo: result } });
+			const saveImageData = await ImageData.findAll({ where: { imageNo: result }, order: [['imageStep', 'ASC']] });
 			expect(saveImageData.length).toBe(3);
 			expect(saveImageData[0].imageName).toBe('testImage1_3.jpg');
 			expect(saveImageData[0].oldName).toBe('testImage_old_1_3.jpg');
 			expect(saveImageData[0].imageStep).toBe(3);
-			expect(saveImageData[1].imageName).toBe('testPatchImage1_10.jpg');
+			expect(saveImageData[1].imageName).toBe('board_testPatchImage1_10.jpg');
 			expect(saveImageData[1].oldName).toBe('testPatchImage_old_1_10.jpg');
 			expect(saveImageData[1].imageStep).toBe(4);
-			expect(saveImageData[2].imageName).toBe('testPatchImage1_20.jpg');
+			expect(saveImageData[2].imageName).toBe('board_testPatchImage1_20.jpg');
 			expect(saveImageData[2].oldName).toBe('testPatchImage_old_1_20.jpg');
 			expect(saveImageData[2].imageStep).toBe(5);
 		});
@@ -280,7 +280,7 @@ describe('imageBoardRepository test', () => {
 			expect(saveImageBoard.imageContent).toBe('testUpdateContent');
 			expect(saveImageBoard.userId).toBe(DEFAULT_USER_ID);
 
-			const saveImageData = await ImageData.findAll({ where: { imageNo: result } });
+			const saveImageData = await ImageData.findAll({ where: { imageNo: result }, order: [['imageStep', 'ASC']] });
 			expect(saveImageData.length).toBe(1);
 			expect(saveImageData[0].imageName).toBe('testImage1_3.jpg');
 			expect(saveImageData[0].oldName).toBe('testImage_old_1_3.jpg');
@@ -309,7 +309,7 @@ describe('imageBoardRepository test', () => {
 			expect(saveImageBoard.imageContent).toBe('testUpdateContent');
 			expect(saveImageBoard.userId).toBe(DEFAULT_USER_ID);
 
-			const saveImageData = await ImageData.findAll({ where: { imageNo: result } });
+			const saveImageData = await ImageData.findAll({ where: { imageNo: result }, order: [['imageStep', 'ASC']] });
 			expect(saveImageData.length).toBe(4);
 			expect(saveImageData[0].imageName).toBe('testImage1_1.jpg');
 			expect(saveImageData[0].oldName).toBe('testImage_old_1_1.jpg');
@@ -320,7 +320,7 @@ describe('imageBoardRepository test', () => {
 			expect(saveImageData[2].imageName).toBe('testImage1_3.jpg');
 			expect(saveImageData[2].oldName).toBe('testImage_old_1_3.jpg');
 			expect(saveImageData[2].imageStep).toBe(3);
-			expect(saveImageData[3].imageName).toBe('testPatchImage1_10.jpg');
+			expect(saveImageData[3].imageName).toBe('board_testPatchImage1_10.jpg');
 			expect(saveImageData[3].oldName).toBe('testPatchImage_old_1_10.jpg');
 			expect(saveImageData[3].imageStep).toBe(4);
 		});
@@ -341,7 +341,7 @@ describe('imageBoardRepository test', () => {
 			expect(saveImageBoard.imageContent).toBe('testUpdateContent');
 			expect(saveImageBoard.userId).toBe(DEFAULT_USER_ID);
 
-			const saveImageData = await ImageData.findAll({ where: { imageNo: result } });
+			const saveImageData = await ImageData.findAll({ where: { imageNo: result }, order: [['imageStep', 'ASC']] });
 			expect(saveImageData.length).toBe(3);
 			expect(saveImageData[0].imageName).toBe('testImage1_1.jpg');
 			expect(saveImageData[0].oldName).toBe('testImage_old_1_1.jpg');
@@ -365,4 +365,33 @@ describe('imageBoardRepository test', () => {
 			expect(saveImageBoard).toBeNull();
 		});
 	})
+
+	describe('getImageBoardWriter', () => {
+		it('정상 조회', async () => {
+			const result = await ImageBoardRepository.getImageBoardWriter(1);
+
+			expect(result).toBe(DEFAULT_USER_ID);
+		});
+
+		it('데이터가 없는 경우', async () => {
+			try {
+				await ImageBoardRepository.getImageBoardWriter(0);
+			}catch(error) {
+				expect(error).toBeInstanceOf(CustomError);
+				expect(error.status).toBe(ResponseStatus.NOT_FOUND.CODE);
+				expect(error.message).toBe(ResponseStatus.NOT_FOUND.MESSAGE);
+			}
+		});
+	});
+	
+	describe('getImageBoardDeleteFiles', () => {
+		it('정상 조회', async () => {
+			const result = await ImageBoardRepository.getImageBoardDeleteFiles(1);
+
+			expect(result.length).toBe(3);
+			expect(result[0].imageName).toBe('testImage1_1.jpg');
+			expect(result[1].imageName).toBe('testImage1_2.jpg');
+			expect(result[2].imageName).toBe('testImage1_3.jpg');
+		});
+	});
 })

@@ -3,6 +3,7 @@ import CustomError from '#errors/customError.js';
 import { ResponseStatus } from '#constants/responseStatus.js';
 import { sequelize, Member, Auth } from '#models/index.js';
 import bcrypt from 'bcrypt';
+import { ImageConstants } from '#constants/imageConstants.js';
 
 const SAVE_MEMBER = {
 	userId: 'tester',
@@ -68,7 +69,7 @@ describe('memberService integration test', () => {
 			expect(registeredMember.userName).toBe(SAVE_MEMBER.userName);
 			expect(registeredMember.nickName).toBe(SAVE_MEMBER.nickName);
 			expect(registeredMember.email).toBe(SAVE_MEMBER.email);
-			expect(registeredMember.profileThumbnail).toBe(SAVE_MEMBER.profileThumbnail);
+			expect(registeredMember.profileThumbnail).toBe(`${ImageConstants.PROFILE_PREFIX}${SAVE_MEMBER.profileThumbnail}`);
 			expect(registeredMember.provider).toBe('local');
 			expect(registeredAuth).toBeDefined();
 			expect(registeredAuth.length).toBe(1);
@@ -117,7 +118,7 @@ describe('memberService integration test', () => {
 			expect(registeredMember.userName).toBe(SAVE_MEMBER.userName);
 			expect(registeredMember.nickName).toBeNull();
 			expect(registeredMember.email).toBe(SAVE_MEMBER.email);
-			expect(registeredMember.profileThumbnail).toBe(SAVE_MEMBER.profileThumbnail);
+			expect(registeredMember.profileThumbnail).toBe(`${ImageConstants.PROFILE_PREFIX}${SAVE_MEMBER.profileThumbnail}`);
 			expect(registeredMember.provider).toBe('local');
 			expect(registeredAuth).toBeDefined();
 			expect(registeredAuth.length).toBe(1);
@@ -281,12 +282,12 @@ describe('memberService integration test', () => {
 			await patchProfileService(SAVE_MEMBER.userId, patchNickname, patchProfileName, deleteProfile);
 
 			expect(getResizeProfileName).toHaveBeenCalledWith(patchProfileName);
-			expect(deleteImageFile).toHaveBeenCalledWith(deleteProfile, 'profile');
+			expect(deleteImageFile).toHaveBeenCalledWith(deleteProfile, ImageConstants.PROFILE_TYPE);
 
 			const member = await Member.findOne({ where: { userId: SAVE_MEMBER.userId } });
 			expect(member).toBeDefined();
 			expect(member.nickName).toBe(patchNickname);
-			expect(member.profileThumbnail).toBe(patchProfileName);
+			expect(member.profileThumbnail).toBe(`${ImageConstants.PROFILE_PREFIX}${patchProfileName}`);
 		});
 
 		it('회원 정보 수정. 닉네임과 삭제할 프로필 이미지명만 있는 경우.', async() => {
