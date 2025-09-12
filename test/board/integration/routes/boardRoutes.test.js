@@ -545,5 +545,310 @@ describe('boardRoutes integration test', () => {
 			expect(res.status).toBe(ResponseStatusCode.FORBIDDEN);
 			expect(res.body.message).toBe(ResponseStatus.FORBIDDEN.MESSAGE);
 		});
+
+		it('데이터가 없는 경우', async () => {
+			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const res = await request(app)
+								.patch('/board/0')
+								.set('Cookie', [
+									`Authorization=${accessToken}`,
+									`Authorization_Refresh=${refreshToken}`,
+									`Authorization_ino=${ino}`,
+								])
+								.send({
+									boardTitle: 'testUpdateTitle',
+									boardContent: 'testUpdateContent',
+								});
+
+			expect(res.status).toBe(ResponseStatusCode.NOT_FOUND);
+			expect(res.body.message).toBe(ResponseStatus.NOT_FOUND.MESSAGE);
+		});
+	});
+
+	describe('DELETE /:boardNo', () => {
+		it('정상 삭제', async () => {
+			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const res = await request(app)
+								.delete('/board/1')
+								.set('Cookie', [
+									`Authorization=${accessToken}`,
+									`Authorization_Refresh=${refreshToken}`,
+									`Authorization_ino=${ino}`,
+								]);
+
+			expect(res.status).toBe(ResponseStatusCode.NO_CONTENT);
+
+			const deleteBoard = await Board.findOne({ where: { boardNo: 1 } });
+			expect(deleteBoard).toBeNull();
+		});
+
+		it('비회원 접근', async () => {
+			const res = await request(app)
+								.delete('/board/1');
+								
+			expect(res.status).toBe(ResponseStatusCode.FORBIDDEN);
+			expect(res.body.message).toBe(ResponseStatus.FORBIDDEN.MESSAGE);
+		});
+
+		it('작성자가 아닌 경우', async () => {
+			const { accessToken, refreshToken, ino } = await createTestToken(WRONG_USER_ID);
+			const res = await request(app)
+								.delete('/board/1')
+								.set('Cookie', [
+									`Authorization=${accessToken}`,
+									`Authorization_Refresh=${refreshToken}`,
+									`Authorization_ino=${ino}`,
+								]);
+
+			expect(res.status).toBe(ResponseStatusCode.FORBIDDEN);
+			expect(res.body.message).toBe(ResponseStatus.FORBIDDEN.MESSAGE);
+		});
+
+		it('데이터가 없는 경우', async () => {
+			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const res = await request(app)
+								.delete('/board/0')
+								.set('Cookie', [
+									`Authorization=${accessToken}`,
+									`Authorization_Refresh=${refreshToken}`,
+									`Authorization_ino=${ino}`,
+								]);
+
+			expect(res.status).toBe(ResponseStatusCode.NOT_FOUND);
+			expect(res.body.message).toBe(ResponseStatus.NOT_FOUND.MESSAGE);
+		});
+	});
+
+	describe('GET /reply/:boardNo', () => {
+		it('정상 조회', async () => {
+			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const res = await request(app)
+								.get('/board/reply/1')
+								.set('Cookie', [
+									`Authorization=${accessToken}`,
+									`Authorization_Refresh=${refreshToken}`,
+									`Authorization_ino=${ino}`,
+								]);
+
+			expect(res.status).toBe(ResponseStatusCode.OK);
+			expect(res.body.content.boardGroupNo).toBe(1);
+			expect(res.body.content.boardUpperNo).toBe('1');
+			expect(res.body.content.boardIndent).toBe(1);
+			expect(res.body.userStatus.loggedIn).toBe(true);
+			expect(res.body.userStatus.uid).toBe(DEFAULT_USER_ID);
+		});
+
+		it('비회원 접근', async () => {
+			const res = await request(app)
+								.get('/board/reply/1');
+								
+			expect(res.status).toBe(ResponseStatusCode.FORBIDDEN);
+			expect(res.body.message).toBe(ResponseStatus.FORBIDDEN.MESSAGE);
+		});
+
+		it('데이터가 없는 경우', async () => {
+			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const res = await request(app)
+								.get('/board/reply/0')
+								.set('Cookie', [
+									`Authorization=${accessToken}`,
+									`Authorization_Refresh=${refreshToken}`,
+									`Authorization_ino=${ino}`,
+								]);
+
+			expect(res.status).toBe(ResponseStatusCode.NOT_FOUND);
+			expect(res.body.message).toBe(ResponseStatus.NOT_FOUND.MESSAGE);
+		});
+	});
+
+	describe('POST /reply', () => {
+		it('정상 저장', async () => {
+			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const res = await request(app)
+								.post('/board/reply')
+								.set('Cookie', [
+									`Authorization=${accessToken}`,
+									`Authorization_Refresh=${refreshToken}`,
+									`Authorization_ino=${ino}`,
+								])
+								.send({
+									boardTitle: 'testReplyTitle',
+									boardContent: 'testReplyContent',
+									boardGroupNo: 1,
+									boardIndent: 1,
+									boardUpperNo: '1',
+								});
+
+			expect(res.status).toBe(ResponseStatusCode.CREATED);
+			expect(res.body.boardNo).toBeDefined();
+
+			const saveReply = await Board.findOne({ where: { boardNo: res.body.boardNo } });
+			expect(saveReply.boardTitle).toBe('testReplyTitle');
+			expect(saveReply.boardContent).toBe('testReplyContent');
+			expect(saveReply.userId).toBe(DEFAULT_USER_ID);
+			expect(saveReply.boardDate).toBeDefined();
+			expect(saveReply.boardIndent).toBe(2);
+			expect(saveReply.boardGroupNo).toBe(1);
+			expect(saveReply.boardUpperNo).toBe(`1,${res.body.boardNo}`);
+		});
+
+		it('비회원 접근', async () => {
+			const res = await request(app)
+								.post('/board/reply')
+								.send({
+									boardTitle: 'testReplyTitle',
+									boardContent: 'testReplyContent',
+								});
+
+			expect(res.status).toBe(ResponseStatusCode.FORBIDDEN);
+			expect(res.body.message).toBe(ResponseStatus.FORBIDDEN.MESSAGE);
+		});
+
+		it('제목이 비어있는 경우', async () => {
+			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const res = await request(app)
+								.post('/board/reply')
+								.set('Cookie', [
+									`Authorization=${accessToken}`,
+									`Authorization_Refresh=${refreshToken}`,
+									`Authorization_ino=${ino}`,
+								])
+								.send({
+									boardTitle: '',
+									boardContent: 'testReplyContent',
+									boardGroupNo: 1,
+									boardIndent: 1,
+									boardUpperNo: '1',
+								});
+
+			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
+			expect(res.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
+		});
+
+		it('제목이 너무 긴 경우', async () => {
+			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const res = await request(app)
+								.post('/board/reply')
+								.set('Cookie', [
+									`Authorization=${accessToken}`,
+									`Authorization_Refresh=${refreshToken}`,
+									`Authorization_ino=${ino}`,
+								])
+								.send({
+									boardTitle: 'testReplyTitle'.repeat(100),
+									boardContent: 'testReplyContent',
+									boardGroupNo: 1,
+									boardIndent: 1,
+									boardUpperNo: '1',
+								});
+
+			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
+			expect(res.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
+		});
+
+		it('내용이 비어있는 경우', async () => {
+			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const res = await request(app)
+								.post('/board/reply')
+								.set('Cookie', [
+									`Authorization=${accessToken}`,
+									`Authorization_Refresh=${refreshToken}`,
+									`Authorization_ino=${ino}`,
+								])
+								.send({
+									boardTitle: 'testReplyTitle',
+									boardContent: '',
+									boardGroupNo: 1,
+									boardIndent: 1,
+									boardUpperNo: '1',
+								});
+
+			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
+			expect(res.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
+		});
+
+		it('내용이 너무 긴 경우', async () => {
+			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const res = await request(app)
+								.post('/board/reply')
+								.set('Cookie', [
+									`Authorization=${accessToken}`,
+									`Authorization_Refresh=${refreshToken}`,
+									`Authorization_ino=${ino}`,
+								])
+								.send({
+									boardTitle: 'testReplyTitle',
+									boardContent: 'testReplyContent'.repeat(1000),
+									boardGroupNo: 1,
+									boardIndent: 1,
+									boardUpperNo: '1',
+								});
+
+			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
+			expect(res.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
+		});
+
+		it('boardGroupNo가 문자열인 경우', async () => {
+			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const res = await request(app)
+								.post('/board/reply')
+								.set('Cookie', [
+									`Authorization=${accessToken}`,
+									`Authorization_Refresh=${refreshToken}`,
+									`Authorization_ino=${ino}`,
+								])
+								.send({
+									boardTitle: 'testReplyTitle',
+									boardContent: 'testReplyContent',
+									boardGroupNo: '0',
+									boardIndent: 1,
+									boardUpperNo: '1',
+								});
+
+			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
+			expect(res.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
+		});
+
+		it('boardIndent가 문자열인 경우', async () => {
+			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const res = await request(app)
+								.post('/board/reply')
+								.set('Cookie', [
+									`Authorization=${accessToken}`,
+									`Authorization_Refresh=${refreshToken}`,
+									`Authorization_ino=${ino}`,
+								])
+								.send({
+									boardTitle: 'testReplyTitle',
+									boardContent: 'testReplyContent',
+									boardGroupNo: 1,
+									boardIndent: '0',
+									boardUpperNo: '1',
+								});
+
+			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
+			expect(res.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
+		});
+
+		it('boardUpperNo가 문자열이 아닌 경우', async () => {
+			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const res = await request(app)
+								.post('/board/reply')
+								.set('Cookie', [
+									`Authorization=${accessToken}`,
+									`Authorization_Refresh=${refreshToken}`,
+									`Authorization_ino=${ino}`,
+								])
+								.send({
+									boardTitle: 'testReplyTitle',
+									boardContent: 'testReplyContent',
+									boardGroupNo: 1,
+									boardIndent: 1,
+									boardUpperNo: 1,
+								});
+
+			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
+			expect(res.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
+		});
 	});
 });
