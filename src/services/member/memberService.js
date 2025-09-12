@@ -1,4 +1,3 @@
-//TODO: import repositories
 import { MemberRepository } from "#repositories/memberRepository.js"
 import { AuthRepository } from "#repositories/authRepository.js"
 import logger from "#config/loggerConfig.js"

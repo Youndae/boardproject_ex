@@ -47,5 +47,11 @@ export default class ImageBoard extends Sequelize.Model {
             onDelete: 'CASCADE',
             onUpdate: 'CASCADE',
         });
+
+        db.ImageBoard.hasMany(db.ImageData, {
+            foreignKey: 'imageNo',
+            sourceKey: 'imageNo',
+            as: 'imageDatas',
+        });
     }
 }

@@ -1,4 +1,3 @@
-//TODO: import services
 import {
 	registerService,
 	checkIdService,
