@@ -133,3 +133,9 @@ Express 프로젝트 구조와 이해도 학습 목적
 >> 그러나 테스트 코드에서는 잘 됐기 때문에 그 이유를 찾아보니 jest에서는 jest.config.cjs의 moduleNameMapper를 참조하기 때문.   
 >> NODE_OPTIONS + --experimental-specifier-resolution=node 또는 module-alias/register를 직접 import 하는 방법도 있지만 ESM 전용 path alias를 사용하는 것으로 분제를 해결.   
 >> node 14+ 부터 package.json에 imports 필드를 지원했으며 이걸 사용하면 ESM 환경에서 alias가 native로 동작.
+
+<br/>
+
+## 25/09/12
+> board Routes, controller, service, repository 작성 및 테스트 전체 작성, 체크 완료.   
+> Board 모델에서 누락되었던 boardIndent 필드 추가.
