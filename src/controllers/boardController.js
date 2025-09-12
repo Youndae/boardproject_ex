@@ -82,7 +82,7 @@ export async function getBoardList(req, res, next) {
  * 			boardNo: Integer,
  * 			boardTitle: String,
  * 			boardContent: String,
- * 			nickname: String
+ * 			userId: String
  * 			boardDate: Date,
  * 		},
  * 		userStatus: {
