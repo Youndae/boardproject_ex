@@ -29,12 +29,17 @@ export default class Board extends Sequelize.Model {
                 },
                 boardGroupNo: {
                     type: Sequelize.BIGINT.UNSIGNED,
-                    allowNull: false,
+                    allowNull: true,
                 },
                 boardUpperNo: {
                     type: Sequelize.STRING(200),
                     allowNull: true,
-                }
+                },
+				boardIndent: {
+					type: Sequelize.INTEGER,
+					allowNull: false,
+					defaultValue: 1,
+				},
             }, {
                 sequelize,
                 timestamps: false,
