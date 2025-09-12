@@ -6,6 +6,7 @@ import { Op } from "sequelize";
 import CustomError from "#errors/customError.js";
 import { ResponseStatus } from "#constants/responseStatus.js";
 import logger from "#config/loggerConfig.js";
+import { ImageConstants } from "#constants/imageConstants.js";
 
 const imageBoardAmount = 15;
 
@@ -111,7 +112,7 @@ export class ImageBoardRepository {
 		let step = 1;
 
 		await ImageData.bulkCreate(files.map(file => ({
-			imageName: file.filename,
+			imageName: `${ImageConstants.BOARD_PREFIX}${file.filename}`,
 			oldName: file.originalname,
 			imageStep: step++,
 			imageNo: imageNo,
@@ -154,7 +155,7 @@ export class ImageBoardRepository {
 
 		if(files) {
 			await ImageData.bulkCreate(files.map(file => ({
-				imageName: file.filename,
+				imageName: `${ImageConstants.BOARD_PREFIX}${file.filename}`,
 				oldName: file.originalname,
 				imageStep: maxImageStep++,
 				imageNo: imageNo,
@@ -166,5 +167,28 @@ export class ImageBoardRepository {
 
 	static async deleteImageBoard(imageNo) {
 		await ImageBoard.destroy({ where: { imageNo: imageNo } });
+	}
+
+	static async getImageBoardWriter(imageNo) {
+		const imageBoard = await ImageBoard.findOne({
+			attributes: ['userId'],
+			where: { imageNo: imageNo },
+		});
+
+		if(!imageBoard) {
+			logger.error('Image board writer data not found, imageNo: ', { imageNo });
+			throw new CustomError(ResponseStatus.NOT_FOUND);
+		}
+
+		return imageBoard.userId;
+	}
+
+	static async getImageBoardDeleteFiles(imageNo) {
+		const imageData = await ImageData.findAll({
+			attributes: ['imageName'],
+			where: { imageNo: imageNo },
+		});
+
+		return imageData;
 	}
 }

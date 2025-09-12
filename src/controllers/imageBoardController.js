@@ -5,7 +5,6 @@ import {
 	getImageBoardPatchDetailService,
 	patchImageBoardService,
 	deleteImageBoardService,
-	getImageBoardDisplayService
 } from "#services/imageBoard/imageBoardService.js";
 import { boardResize } from "#utils/resize.js";
 import logger from "#config/loggerConfig.js";

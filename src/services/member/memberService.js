@@ -8,6 +8,8 @@ import { sequelize } from "#models/index.js"
 import { deleteImageFile } from "#utils/fileUtils.js";
 import { getResizeProfileName } from "#utils/fileNameUtils.js";
 
+const profilePrefix = 'profile_';
+
 export async function registerService ( userId, userPw, userName, nickName = null, email, profileThumbnail = null ) {
 	const transaction = await sequelize.transaction();
 	try {
@@ -16,10 +18,11 @@ export async function registerService ( userId, userPw, userName, nickName = nul
 			throw new CustomError(ResponseStatus.BAD_REQUEST);
 		const hashedPw = await bcrypt.hash(userPw, 10);
 
+		let dbProfileThumbnail = null;
 		if(profileThumbnail)
-			profileThumbnail = getResizeProfileName(profileThumbnail);
+			dbProfileThumbnail = `${profilePrefix}${getResizeProfileName(profileThumbnail)}`;
 		
-		await MemberRepository.createMember(userId, hashedPw, userName, nickName, email, profileThumbnail, { transaction });
+		await MemberRepository.createMember(userId, hashedPw, userName, nickName, email, dbProfileThumbnail, { transaction });
 		await AuthRepository.createMemberAuth(userId, 'ROLE_MEMBER', { transaction });
 
 		await transaction.commit();
@@ -72,17 +75,20 @@ export async function checkNicknameService (userId = null, nickName) {
 export async function patchProfileService (userId, nickName, profileThumbnail = null, deleteProfile = null) {
 	const transaction = await sequelize.transaction();
 	try {
+		let dbProfileThumbnail = null;
 		if(profileThumbnail)
-			profileThumbnail = getResizeProfileName(profileThumbnail);
+			dbProfileThumbnail = `${profilePrefix}${getResizeProfileName(profileThumbnail)}`;
 
 		if(!profileThumbnail && !deleteProfile)
 			profileThumbnail = undefined;
 
-		await MemberRepository.patchMemberProfile(userId, nickName, profileThumbnail, { transaction });
+		await MemberRepository.patchMemberProfile(userId, nickName, dbProfileThumbnail, { transaction });
 
-		if(deleteProfile)
-			deleteImageFile(deleteProfile, 'profile');
-
+		if(deleteProfile){
+			const deleteFilename = deleteProfile.replace(profilePrefix, '');
+			deleteImageFile(deleteFilename, 'profile');
+		}
+			
 		await transaction.commit();
 	}catch(error) {
 		await transaction.rollback();
