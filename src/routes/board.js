@@ -12,6 +12,7 @@ import {
 } from '#controllers/boardController.js';
 import { validate } from '#middleware/validateMiddleware.js';
 import {
+	boardListSearchValidator,
 	postBoardValidator,
 	patchBoardValidator,
 	postBoardReplyValidator,
@@ -19,7 +20,7 @@ import {
 
 const router = express.Router();
 
-router.get('/', getBoardList);
+router.get('/', validate(boardListSearchValidator, 'query'), getBoardList);
 router.get('/:boardNo', getBoardDetail);
 router.post('/', isLoggedIn, validate(postBoardValidator), postBoard);
 router.get('/patch-detail/:boardNo', isLoggedIn, patchBoardDetailData);

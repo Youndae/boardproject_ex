@@ -82,7 +82,7 @@ export async function getBoardList(req, res, next) {
  * 			boardNo: Integer,
  * 			boardTitle: String,
  * 			boardContent: String,
- * 			nickname: String
+ * 			userId: String
  * 			boardDate: Date,
  * 		},
  * 		userStatus: {
@@ -182,7 +182,11 @@ export async function patchBoardDetailData(req, res, next) {
 
 		const board = await patchBoardDetailDataService(userId, boardNo);
 		res.status(ResponseStatusCode.OK).json({
-			content: board,
+			content: {
+				boardNo: board.boardNo,
+				boardTitle: board.boardTitle,
+				boardContent: board.boardContent,
+			},
 			userStatus: {
 				loggedIn: req.userId !== undefined,
 				uid: req.userId
