@@ -84,7 +84,7 @@ export async function patchBoardService(userId, boardNo, {boardTitle, boardConte
 		if(checkResult) {
 			await BoardRepository.patchBoard(boardNo, boardTitle, boardContent);
 
-			return boardNo;
+			return parseInt(boardNo);
 		}
 	}catch (error) {
 		logger.error('Failed to patch board service.', error);
