@@ -37,10 +37,7 @@ import { ResponseStatusCode, ResponseStatus } from '#constants/responseStatus.js
  * 			}
  * 		],
  * 		empty: boolean,
- * 		first: Integer,
- * 		last: Integer,
- * 		number: Integer,
- * 		totalPages: Integer,
+ * 		totalElements: Integer,
  * 		userStatus: {
  * 			loggedIn: boolean,
  * 			uid: String
@@ -48,7 +45,25 @@ import { ResponseStatusCode, ResponseStatus } from '#constants/responseStatus.js
  * 	}
  * }
  */
-export async function getBoardList(req, res, next) {}
+export async function getBoardList(req, res, next) {
+	try {
+		const boardList = await getBoardListService(req.query);
+		res.status(ResponseStatusCode.OK)
+			.json({
+				content: boardList.content,
+				empty: boardList.empty,
+				totalElements: boardList.totalElements,
+				userStatus: {
+					loggedIn: req.userId !== undefined,
+					uid: req.userId
+				}
+			});
+	} catch (error) {
+		logger.error('getBoardList error: ', error);
+
+		next(error);
+	}
+}
 
 /**
  * 
@@ -78,7 +93,23 @@ export async function getBoardList(req, res, next) {}
  * 
  * }
  */
-export async function getBoardDetail(req, res, next) {}
+export async function getBoardDetail(req, res, next) {
+	try {
+		const { boardNo } = req.params;
+		const board = await getBoardDetailService(boardNo);
+		res.status(ResponseStatusCode.OK).json({
+			content: board,
+			userStatus: {
+				loggedIn: req.userId !== undefined,
+				uid: req.userId
+			}
+		});
+	} catch (error) {
+		logger.error('getBoardDetail error: ', error);
+
+		next(error);
+	}
+}
 
 /**
  * 
@@ -98,7 +129,23 @@ export async function getBoardDetail(req, res, next) {}
  * 	}
  * }
  */
-export async function postBoard(req, res, next) {}
+export async function postBoard(req, res, next) {
+	try {
+		const userId = req.userId;
+
+		if(userId === undefined)
+			throw new CustomError(ResponseStatus.FORBIDDEN);
+
+		const saveBoardNo = await postBoardService(userId, req.body);
+		res.status(ResponseStatusCode.CREATED).json({
+			boardNo: saveBoardNo
+		});
+	} catch (error) {
+		logger.error('postBoard error: ', error);
+
+		next(error);
+	}
+}
 
 /**
  * 
@@ -125,7 +172,28 @@ export async function postBoard(req, res, next) {}
  * 	}
  * }
  */
-export async function patchBoardDetailData(req, res, next) {}
+export async function patchBoardDetailData(req, res, next) {
+	try {
+		const { boardNo } = req.params;
+		const userId = req.userId;
+
+		if(userId === undefined)
+			throw new CustomError(ResponseStatus.FORBIDDEN);
+
+		const board = await patchBoardDetailDataService(userId, boardNo);
+		res.status(ResponseStatusCode.OK).json({
+			content: board,
+			userStatus: {
+				loggedIn: req.userId !== undefined,
+				uid: req.userId
+			}
+		});
+	} catch (error) {
+		logger.error('patchBoardDetailData error: ', error);
+
+		next(error);
+	}
+}
 
 /**
  * 
@@ -148,7 +216,24 @@ export async function patchBoardDetailData(req, res, next) {}
  * 	}
  * }
  */
-export async function patchBoard(req, res, next) {}
+export async function patchBoard(req, res, next) {
+	try {
+		const { boardNo } = req.params;
+		const userId = req.userId;
+
+		if(userId === undefined)
+			throw new CustomError(ResponseStatus.FORBIDDEN);
+
+		const patchBoardNo = await patchBoardService(userId, boardNo, req.body);
+		res.status(ResponseStatusCode.OK).json({
+			boardNo: patchBoardNo
+		});
+	} catch (error) {
+		logger.error('patchBoard error: ', error);
+
+		next(error);
+	}
+}
 
 /**
  * 
@@ -164,7 +249,22 @@ export async function patchBoard(req, res, next) {}
  * 	status: 204,
  * }
  */
-export async function deleteBoard(req, res, next) {}
+export async function deleteBoard(req, res, next) {
+	try {
+		const { boardNo } = req.params;
+		const userId = req.userId;
+
+		if(userId === undefined)
+			throw new CustomError(ResponseStatus.FORBIDDEN);
+
+		await deleteBoardService(userId, boardNo);
+		res.status(ResponseStatusCode.NO_CONTENT).json({});
+	} catch (error) {
+		logger.error('deleteBoard error: ', error);
+
+		next(error);
+	}
+}
 
 /**
  * 
@@ -191,7 +291,23 @@ export async function deleteBoard(req, res, next) {}
  * 	}
  * }
  */
-export async function getReplyDetail(req, res, next) {}
+export async function getReplyDetail(req, res, next) {
+	try {
+		const { boardNo } = req.params;
+		const reply = await getReplyDetailService(boardNo);
+		res.status(ResponseStatusCode.OK).json({
+			content: reply,
+			userStatus: {
+				loggedIn: req.userId !== undefined,
+				uid: req.userId
+			}
+		});
+	} catch (error) {
+		logger.error('getReplyDetail error: ', error);
+
+		next(error);
+	}
+}
 
 /**
  * 
@@ -214,4 +330,21 @@ export async function getReplyDetail(req, res, next) {}
  * 	}
  * }
  */
-export async function postBoardReply(req, res, next) {}
+export async function postBoardReply(req, res, next) {
+	try {
+		const userId = req.userId;
+
+		if(userId === undefined)
+			throw new CustomError(ResponseStatus.FORBIDDEN);
+
+		const postBoardReplyNo = await postBoardReplyService(userId, req.body);
+
+		res.status(ResponseStatusCode.CREATED).json({
+			boardNo: postBoardReplyNo
+		});
+	} catch (error) {
+		logger.error('postBoardReply error: ', error);
+
+		next(error);
+	}
+}
