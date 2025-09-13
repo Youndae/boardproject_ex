@@ -42,7 +42,26 @@ import { ResponseStatus, ResponseStatusCode } from "#constants/responseStatus.js
  * 	}
  * }
  */
-export async function getBoardCommentList(req, res, next) {}
+export async function getBoardCommentList(req, res, next) {
+	try {
+		const commentList = await getCommentListService(req.query);
+
+		res.status(ResponseStatusCode.OK)
+			.json({
+				content: commentList.content,
+				empty: commentList.empty,
+				totalElements: commentList.totalElements,
+				userStatus: {
+					loggedIn: req.userId !== undefined,
+					uid: req.userId
+				}
+			})
+	}catch(error) {
+		logger.error('getBoardCommentList error: ', error);
+
+		next(error);
+	}
+}
 
 /**
  * 
@@ -78,7 +97,26 @@ export async function getBoardCommentList(req, res, next) {}
 * 	}
 * }
 */
-export async function getImageBoardCommentList(req, res, next) {}
+export async function getImageBoardCommentList(req, res, next) {
+	try {
+		const commentList = await getCommentListService(req.query);
+
+		res.status(ResponseStatusCode.OK)
+			.json({
+				content: commentList.content,
+				empty: commentList.empty,
+				totalElements: commentList.totalElements,
+				userStatus: {
+					loggedIn: req.userId !== undefined,
+					uid: req.userId
+				}
+			})
+	}catch(error) {
+		logger.error('getImageBoardCommentList error: ', error);
+
+		next(error);
+	}
+}
 
 /**
  * 
@@ -97,7 +135,21 @@ export async function getImageBoardCommentList(req, res, next) {}
  * 	status: 201,
  * }
  */
-export async function postBoardComment(req, res, next) {}
+export async function postBoardComment(req, res, next) {
+	try {
+		const boardNo = req.params.boardNo;
+		const commentContent = req.body.commentContent;
+
+		const comment = await postCommentService({boardNo, commentContent}, req.userId);
+
+		res.status(ResponseStatusCode.CREATED)
+			.json(comment);
+	}catch(error) {
+		logger.error('postBoardComment error: ', error);
+
+		next(error);
+	}
+}
 
 /**
  * 
@@ -116,7 +168,21 @@ export async function postBoardComment(req, res, next) {}
 * 	status: 201,
 * }
 */
-export async function postImageBoardComment(req, res, next) {}
+export async function postImageBoardComment(req, res, next) {
+	try {
+		const imageNo = req.params.imageNo;
+		const commentContent = req.body.commentContent;
+
+		const comment = await postCommentService({imageNo, commentContent}, req.userId);
+
+		res.status(ResponseStatusCode.CREATED)
+			.json(comment);
+	}catch(error) {
+		logger.error('postImageBoardComment error: ', error);
+
+		next(error);
+	}
+}
 
 /**
  * 
@@ -132,7 +198,19 @@ export async function postImageBoardComment(req, res, next) {}
  * 	status: 204,
  * }
  */
-export async function deleteComment(req, res, next) {}
+export async function deleteComment(req, res, next) {
+	try {
+		const commentNo = req.params.commentNo;
+		await deleteCommentService(commentNo, req.userId);
+
+		res.status(ResponseStatusCode.NO_CONTENT)
+			.json({});
+	}catch(error) {
+		logger.error('deleteComment error: ', error);
+
+		next(error);
+	}
+}
 
 /**
  * 
@@ -154,7 +232,20 @@ export async function deleteComment(req, res, next) {}
  * 	status: 201,
  * }
 */
-export async function postBoardReplyComment(req, res, next) {}
+export async function postBoardReplyComment(req, res, next) {
+	try {
+		const boardNo = req.params.boardNo;
+
+		const comment = await postReplyCommentService({boardNo}, req.body, req.userId);
+
+		res.status(ResponseStatusCode.CREATED)
+			.json(comment);
+	}catch(error) {
+		logger.error('postBoardReplyComment error: ', error);
+
+		next(error);
+	}
+}
 
 /**
  * 
@@ -176,4 +267,17 @@ export async function postBoardReplyComment(req, res, next) {}
  * 	status: 201,
  * }
 */
-export async function postImageBoardReplyComment(req, res, next) {}
+export async function postImageBoardReplyComment(req, res, next) {
+	try {
+		const imageNo = req.params.imageNo;
+
+		const comment = await postReplyCommentService({imageNo}, req.body, req.userId);
+
+		res.status(ResponseStatusCode.CREATED)
+			.json(comment);
+	}catch(error) {
+		logger.error('postImageBoardReplyComment error: ', error);
+
+		next(error);
+	}
+}
