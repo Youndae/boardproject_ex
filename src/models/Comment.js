@@ -33,7 +33,7 @@ export default class Comment extends Sequelize.Model {
                 },
                 commentGroupNo: {
                     type: Sequelize.BIGINT.UNSIGNED,
-                    allowNull: false,
+                    allowNull: true,
                 },
                 commentIndent: {
                     type: Sequelize.INTEGER,

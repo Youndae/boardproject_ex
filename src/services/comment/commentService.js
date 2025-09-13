@@ -10,7 +10,11 @@ export async function getCommentListService({boardNo, imageNo, pageNum = 1}) {
 	try {
 		const commentList = await CommentRepository.getCommentListPageable({ boardNo, imageNo, pageNum });
 
-		return commentList;
+		return {
+			content: commentList.rows,
+			empty: commentList.count === 0,
+			totalElements: commentList.count,
+		};
 	}catch (error) {
 		logger.error('Failed to get comment list service.', error);
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
