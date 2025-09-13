@@ -108,7 +108,7 @@ export async function patchImageBoardService(userId, imageNo, {imageTitle, image
 		}
 	}catch (error) {
 		logger.error('Failed to patch image board service.', error);
-		console.error('patchImageBoardService error : ', error);
+		
 		await transaction.rollback();
 
 		if(files) {
@@ -140,7 +140,6 @@ export async function deleteImageBoardService(imageNo, userId) {
 		}
 	}catch(error) {
 		logger.error('Failed to delete image board service.', error);
-		console.error('deleteImageBoardService error : ', error);
 
 		if(error instanceof CustomError)
 			throw error;
