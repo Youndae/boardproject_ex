@@ -144,3 +144,8 @@ Express 프로젝트 구조와 이해도 학습 목적
 
 ## 25/09/13
 > ImageBoard Routes, controller, service, repository 작성 및 테스트 전체 작성, 체크 완료.   
+
+<br/>
+
+## 25/09/14
+> Comment Routes, controller, service, repository 작성 및 테스트 전체 작성, 체크 완료.
