@@ -139,3 +139,8 @@ Express 프로젝트 구조와 이해도 학습 목적
 ## 25/09/12
 > board Routes, controller, service, repository 작성 및 테스트 전체 작성, 체크 완료.   
 > Board 모델에서 누락되었던 boardIndent 필드 추가.
+
+<br/>
+
+## 25/09/13
+> ImageBoard Routes, controller, service, repository 작성 및 테스트 전체 작성, 체크 완료.   
