@@ -75,7 +75,7 @@ export async function postImageBoardService(userId, {imageTitle, imageContent}, 
 
 export async function getImageBoardPatchDetailService(imageNo, userId) {
 	try {
-		if(checkWriter(userId, imageNo)) {
+		if(await checkWriter(userId, imageNo)) {
 			const imageBoard = await ImageBoardRepository.getImageBoardPatchDetail(imageNo);
 
 			return imageBoard;
@@ -93,8 +93,8 @@ export async function getImageBoardPatchDetailService(imageNo, userId) {
 export async function patchImageBoardService(userId, imageNo, {imageTitle, imageContent}, files, deleteFiles) {
 	const transaction = await sequelize.transaction();
 	try {
-		if(checkWriter(userId, imageNo)) {
-			const imageNo = await ImageBoardRepository.patchImageBoard(imageNo, imageTitle, imageContent, files, deleteFiles, {transaction});
+		if(await checkWriter(userId, imageNo)) {
+			const patchImageNo = await ImageBoardRepository.patchImageBoard(imageNo, imageTitle, imageContent, files, deleteFiles, {transaction});
 
 			await transaction.commit();
 
@@ -104,10 +104,11 @@ export async function patchImageBoardService(userId, imageNo, {imageTitle, image
 				});
 			}
 
-			return imageNo;
+			return patchImageNo;
 		}
 	}catch (error) {
 		logger.error('Failed to patch image board service.', error);
+		console.error('patchImageBoardService error : ', error);
 		await transaction.rollback();
 
 		if(files) {
@@ -125,13 +126,13 @@ export async function patchImageBoardService(userId, imageNo, {imageTitle, image
 
 export async function deleteImageBoardService(imageNo, userId) {
 	try {
-		if(checkWriter(userId, imageNo)) {
+		if(await checkWriter(userId, imageNo)) {
 			const deleteFiles = await ImageBoardRepository.getImageBoardDeleteFiles(imageNo);
 			await ImageBoardRepository.deleteImageBoard(imageNo);
 
 			if(deleteFiles) {
 				deleteFiles.forEach(file => {
-					deleteImageFile(file.replace(ImageConstants.BOARD_PREFIX, ''), ImageConstants.BOARD_TYPE);
+					deleteImageFile(file.imageName.replace(ImageConstants.BOARD_PREFIX, ''), ImageConstants.BOARD_TYPE);
 				});
 			}
 
@@ -139,6 +140,7 @@ export async function deleteImageBoardService(imageNo, userId) {
 		}
 	}catch(error) {
 		logger.error('Failed to delete image board service.', error);
+		console.error('deleteImageBoardService error : ', error);
 
 		if(error instanceof CustomError)
 			throw error;
@@ -154,6 +156,6 @@ async function checkWriter(userId, imageNo) {
 		logger.error('User is not the author of the image board, imageNo: ', { imageNo });
 		throw new CustomError(ResponseStatus.FORBIDDEN);
 	}
-
+	
 	return true;
 }
