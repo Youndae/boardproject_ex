@@ -86,6 +86,11 @@ export class CommentRepository {
 			where: { commentNo: commentNo },
 		});
 
+		if(!comment) {
+			logger.error('Comment writer data not found, commentNo: ', { commentNo });
+			throw new CustomError(ResponseStatus.NOT_FOUND);
+		}
+
 		return comment;
 	}
 }

@@ -304,9 +304,13 @@ describe('commentRepository test', () => {
 		});
 
 		it('데이터가 없는 경우', async () => {
-			const result = await CommentRepository.checkCommentWriter(0, DEFAULT_USER_ID);
-
-			expect(result).toBeNull();
+			try {
+				await CommentRepository.checkCommentWriter(0, DEFAULT_USER_ID);
+			}catch(error) {
+				expect(error).toBeInstanceOf(CustomError);
+				expect(error.status).toBe(ResponseStatus.NOT_FOUND.CODE);
+				expect(error.message).toBe(ResponseStatus.NOT_FOUND.MESSAGE);
+			}
 		});
 	});
 })
