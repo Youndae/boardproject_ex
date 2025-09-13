@@ -44,7 +44,26 @@ import { ResponseStatus, ResponseStatusCode } from "#constants/responseStatus.js
  * 	}
  * }
  */
-export async function getImageBoardList(req, res, next){}
+export async function getImageBoardList(req, res, next){
+	try {
+		const imageBoardList = await getImageBoardListService(req.query);
+
+		res.status(ResponseStatusCode.OK)
+			.json({
+				content: imageBoardList.content,
+				empty: imageBoardList.empty,
+				totalElements: imageBoardList.totalElements,
+				userStatus: {
+					loggedIn: req.userId !== undefined,
+					uid: req.userId
+				}
+			})
+	}catch(error) {
+		logger.error('getImageBoardList error: ', error);
+
+		next(error);
+	}
+}
 
 /**
  * 
@@ -80,7 +99,24 @@ export async function getImageBoardList(req, res, next){}
  * 	}
  * }
  */
-export async function getImageBoardDetail(req, res, next) {}
+export async function getImageBoardDetail(req, res, next) {
+	try {
+		const imageBoardDetail = await getImageBoardDetailService(req.params.imageNo);
+
+		res.status(ResponseStatusCode.OK)
+			.json({
+				content: imageBoardDetail,
+				userStatus: {
+					loggedIn: req.userId !== undefined,
+					uid: req.userId
+				}
+			});
+	}catch(error) {
+		logger.error('getImageBoardDetail error: ', error);
+
+		next(error);
+	}
+}
 
 /**
  * 
@@ -103,7 +139,34 @@ export async function getImageBoardDetail(req, res, next) {}
  * 	}
  * }
  */
-export async function postImageBoard(req, res, next) {}
+export async function postImageBoard(req, res, next) {
+	try {
+		if(!req.file){
+			logger.error('postImageBoard error: no file');
+			next(new CustomError(ResponseStatus.BAD_REQUEST));
+		}
+
+		try {
+			req.files.forEach(file => {
+				boardResize(file.filename);
+			})
+		}catch(error) {
+			logger.error('postImageBoard error: resize error', error);
+			next(new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR));
+		}
+
+		const saveImageNo = await postImageBoardService(req.userId, req.body, req.files);
+
+		res.status(ResponseStatusCode.CREATED)
+			.json({
+				imageNo: saveImageNo
+			});
+	}catch(error) {
+		logger.error('postImageBoard error: ', error);
+
+		next(error);
+	}
+}
 
 /**
  * 
@@ -125,7 +188,24 @@ export async function postImageBoard(req, res, next) {}
  * 	}
  * }
  */
-export async function getImageBoardPatchDetail(req, res, next) {}
+export async function getImageBoardPatchDetail(req, res, next) {
+	try {
+		const imageBoardPatchDetail = await getImageBoardPatchDetailService(req.params.imageNo, req.userId);
+
+		res.status(ResponseStatusCode.OK)
+			.json({
+				content: imageBoardPatchDetail,
+				userStatus: {
+					loggedIn: req.userId !== undefined,
+					uid: req.userId
+				}
+			});
+	}catch(error) {
+		logger.error('getImageBoardPatchDetail error: ', error);
+
+		next(error);
+	}
+}
 
 /**
  * 
@@ -150,7 +230,37 @@ export async function getImageBoardPatchDetail(req, res, next) {}
  * 	}
  * }
  */
-export async function patchImageBoard(req, res, next) {}
+export async function patchImageBoard(req, res, next) {
+	try {
+		if(req.files) {
+			try {
+				req.files.forEach(file => {
+					boardResize(file.filename);
+				})
+			}catch(error) {
+				logger.error('patchImageBoard error: resize error', error);
+				next(new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR));
+			}
+		}
+
+		const patchImageNo = await patchImageBoardService(
+			req.userId, 
+			req.params.imageNo, 
+			req.body, 
+			req.files, 
+			req.body.deleteFiles
+		);
+
+		res.status(ResponseStatusCode.OK)
+			.json({
+				imageNo: patchImageNo
+			});
+	}catch(error) {
+		logger.error('patchImageBoard error: ', error);
+
+		next(error);
+	}
+}
 
 /**
  * 
@@ -166,7 +276,17 @@ export async function patchImageBoard(req, res, next) {}
  * 	status: 204,
  * }
  */
-export async function deleteImageBoard(req, res, next) {}
+export async function deleteImageBoard(req, res, next) {
+	try {
+		await deleteImageBoardService(req.params.imageNo, req.userId);
+
+		res.status(ResponseStatusCode.NO_CONTENT).json({});
+	}catch(error) {
+		logger.error('deleteImageBoard error: ', error);
+
+		next(error);
+	}
+}
 
 /**
  * 

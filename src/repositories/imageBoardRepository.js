@@ -123,7 +123,7 @@ export class ImageBoardRepository {
 
 	static async getImageBoardPatchDetail(imageNo) {
 		const imageBoard = await ImageBoard.findOne({
-			attributes: ['imageNo', 'imageTitle', 'imageContent', 'imageDate'],
+			attributes: ['imageNo', 'imageTitle', 'imageContent'],
 			where: { imageNo: imageNo },
 			include: [{
 				model: ImageData,
