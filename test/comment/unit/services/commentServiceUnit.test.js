@@ -167,9 +167,9 @@ describe('commentService unit test', () => {
 			}
 			jest.spyOn(sequelize, 'transaction').mockResolvedValue(mockTransaction);
 			jest.spyOn(CommentRepository, 'postReplyComment').mockResolvedValue(1);
-			await postReplyCommentService({ boardNo: 1, commentContent: 'testCommentContent', commentGroupNo: 1, commentIndent: 1, commentUpperNo: '1' }, DEFAULT_USER_ID);
+			await postReplyCommentService({ boardNo: 1, }, {commentContent: 'testCommentContent', commentGroupNo: 1, commentIndent: 1, commentUpperNo: '1' }, DEFAULT_USER_ID);
 			expect(CommentRepository.postReplyComment)
-				.toHaveBeenCalledWith(1, null, 'testCommentContent', 1, 1, '1', DEFAULT_USER_ID, { transaction: mockTransaction });
+				.toHaveBeenCalledWith(1, null, 'testCommentContent', 1, 2, '1', DEFAULT_USER_ID, { transaction: mockTransaction });
 			expect(mockTransaction.commit).toHaveBeenCalled();
 			expect(mockTransaction.rollback).not.toHaveBeenCalled();
 		});
@@ -182,7 +182,7 @@ describe('commentService unit test', () => {
 			jest.spyOn(sequelize, 'transaction').mockResolvedValue(mockTransaction);
 			jest.spyOn(CommentRepository, 'postReplyComment').mockRejectedValue(new Error('오류 발생'));
 			try {
-				await postReplyCommentService({ boardNo: 1, commentContent: 'testCommentContent', commentGroupNo: 1, commentIndent: 1, commentUpperNo: '1' }, DEFAULT_USER_ID);
+				await postReplyCommentService({ boardNo: 1, }, { commentContent: 'testCommentContent', commentGroupNo: 1, commentIndent: 1, commentUpperNo: '1' }, DEFAULT_USER_ID);
 			}catch(error) {
 				expect(error).toBeInstanceOf(CustomError);
 				expect(error.status).toBe(ResponseStatusCode.INTERNAL_SERVER_ERROR);

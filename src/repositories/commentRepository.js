@@ -62,6 +62,7 @@ export class CommentRepository {
 		userId,
 		options = {}
 	) {
+
 		const comment = await Comment.create({
 			boardNo: boardNo,
 			imageNo: imageNo,
@@ -72,16 +73,14 @@ export class CommentRepository {
 			commentUpperNo: commentUpperNo,
 		}, { transaction: options.transaction });
 
-		const updateUpperNo = `${comment.commentUpperNo},${comment.commentNo}`;
-
 		await Comment.update({
-			commentUpperNo: updateUpperNo,
+			commentUpperNo: `${commentUpperNo},${comment.commentNo}`,
 		}, { where: { commentNo: comment.commentNo }, transaction: options.transaction });
 
 		return comment;
 	}
 
-	static async checkCommentWriter(commentNo, userId) {
+	static async checkCommentWriter(commentNo) {
 		const comment = await Comment.findOne({
 			attributes: ['userId'],
 			where: { commentNo: commentNo },

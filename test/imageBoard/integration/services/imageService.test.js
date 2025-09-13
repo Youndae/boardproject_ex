@@ -158,7 +158,7 @@ describe('imageService integration test', () => {
 			expect(result.imageTitle).toBe('testTitle1');
 			expect(result.imageContent).toBe('testContent1');
 			expect(result.userId).toBe(DEFAULT_USER_ID);
-			expect(result.imageDate).toBe(new Date().toISOString().split('T')[0]);
+			expect(result.imageDate).toBe(new Date().toLocaleDateString('sv-SE'));
 			expect(result.imageData.length).toBe(3);
 			expect(result.imageData[0].imageName).toBe('testImage1_1.jpg');
 			expect(result.imageData[0].oldName).toBe('testImage_old_1_1.jpg');

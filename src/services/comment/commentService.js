@@ -58,6 +58,8 @@ export async function postReplyCommentService(
 	{ 
 		boardNo = null, 
 		imageNo = null, 
+	},
+	{
 		commentContent, 
 		commentGroupNo, 
 		commentIndent, 
@@ -65,12 +67,13 @@ export async function postReplyCommentService(
 	}, userId) {
 	const transaction = await sequelize.transaction();
 	try {
+
 		await CommentRepository.postReplyComment(
 			boardNo, 
 			imageNo, 
 			commentContent, 
 			commentGroupNo, 
-			commentIndent, 
+			commentIndent + 1, 
 			commentUpperNo, 
 			userId, 
 			{ transaction }
@@ -79,6 +82,7 @@ export async function postReplyCommentService(
 		await transaction.commit();
 	}catch (error) {
 		logger.error('Failed to post reply comment service.', error);
+		console.error('error: ', error);
 		await transaction.rollback();
 
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
@@ -86,7 +90,7 @@ export async function postReplyCommentService(
 }
 
 async function checkCommentWriter(commentNo, userId) {
-	const comment = await CommentRepository.checkCommentWriter(commentNo, userId);
+	const comment = await CommentRepository.checkCommentWriter(commentNo);
 
 	if(comment.userId !== userId) {
 		logger.error('User is not the author of the comment, commentNo: ', { commentNo });
