@@ -43,11 +43,6 @@ export default class Comment extends Sequelize.Model {
                 commentUpperNo: {
                     type: Sequelize.STRING(200),
                     allowNull: true,
-                },
-                commentStatus: {
-                    type: Sequelize.BOOLEAN,
-                    allowNull: false,
-                    defaultValue: false,
                 }
             }, {
                 sequelize,
