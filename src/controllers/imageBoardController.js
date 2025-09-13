@@ -261,7 +261,7 @@ export async function patchImageBoard(req, res, next) {
 
 		res.status(ResponseStatusCode.OK)
 			.json({
-				imageNo: patchImageNo
+				imageNo: parseInt(patchImageNo)
 			});
 	}catch(error) {
 		logger.error('patchImageBoard error: ', error);

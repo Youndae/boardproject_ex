@@ -25,6 +25,5 @@ router.post('/', isLoggedIn, boardUpload, validate(postImageBoardValidator), pos
 router.get('/patch-detail/:imageNo', isLoggedIn, getImageBoardPatchDetail);
 router.patch('/:imageNo', isLoggedIn, boardUpload, validate(patchImageBoardValidator), patchImageBoard);
 router.delete('/:imageNo', isLoggedIn, deleteImageBoard);
-router.get('/display/:imageName', getImageBoardDisplay);
 
 export default router;
