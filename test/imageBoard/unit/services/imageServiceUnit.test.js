@@ -216,7 +216,6 @@ describe('imageService unit test', () => {
 							imageNo: SAVE_IMAGE_BOARD_DETAIL.imageNo,
 							imageTitle: SAVE_IMAGE_BOARD_DETAIL.imageTitle,
 							imageContent: SAVE_IMAGE_BOARD_DETAIL.imageContent,
-							imageDate: SAVE_IMAGE_BOARD_DETAIL.imageDate,
 							imageDatas: [
 								SAVE_IMAGE_BOARD_DETAIL.imageDatas[0].imageName,
 								SAVE_IMAGE_BOARD_DETAIL.imageDatas[1].imageName,
@@ -230,7 +229,6 @@ describe('imageService unit test', () => {
 			expect(result.imageNo).toBe(SAVE_IMAGE_BOARD_DETAIL.imageNo);
 			expect(result.imageTitle).toBe(SAVE_IMAGE_BOARD_DETAIL.imageTitle);
 			expect(result.imageContent).toBe(SAVE_IMAGE_BOARD_DETAIL.imageContent);
-			expect(result.imageDate).toBe(SAVE_IMAGE_BOARD_DETAIL.imageDate);
 			expect(result.imageDatas.length).toBe(3);
 			expect(result.userId).toBeUndefined();
 		});

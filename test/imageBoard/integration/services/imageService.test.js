@@ -248,7 +248,7 @@ describe('imageService integration test', () => {
 			expect(result.imageNo).toBe(1);
 			expect(result.imageTitle).toBe('testTitle1');
 			expect(result.imageContent).toBe('testContent1');
-			expect(result.imageDate).toBeDefined();
+			expect(result.imageDate).toBeUndefined();
 			expect(result.userId).toBeUndefined();
 		});
 

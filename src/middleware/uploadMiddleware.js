@@ -75,4 +75,4 @@ export const boardUpload = multer({
 	fileFilter: imageFileFilter,
 	limits: { fileSize: 1024 * 1024 * 5 },
 })
-.array('boardImages', 5);
+.array('files', 5);

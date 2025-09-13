@@ -11,6 +11,7 @@ import { jwtConfig } from '#config/jwtConfig.js';
 
 await jest.unstable_mockModule('#utils/resize.js', () => ({
 	  profileResize: jest.fn(),
+	  boardResize: jest.fn(),
 }));
   
 // deleteImageFile 모듈 최소 모킹
@@ -18,9 +19,9 @@ await jest.unstable_mockModule('#utils/fileUtils.js',  () => ({
 	deleteImageFile: jest.fn(),
 }));
 
-const { profileResize } = await import('#utils/resize.js');
+const { profileResize, boardResize } = await import('#utils/resize.js');
 const { deleteImageFile } = await import('#utils/fileUtils.js');
-const app = (await import('../../../../src/app.js')).default;
+const app = (await import('#src/app.js')).default;
 
 const SAVE_MEMBER = {
 	userId: 'tester',

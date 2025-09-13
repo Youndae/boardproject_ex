@@ -10,6 +10,7 @@ import { dirname, join } from 'path';
 import { tokenMiddleware } from '#middleware/tokenMiddleware.js';
 import { initRedis, closeRedis } from '#config/redisConfig.js';
 import cors from 'cors';
+import { ResponseStatusCode, ResponseStatus } from '#constants/responseStatus.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -23,6 +24,7 @@ import { sequelize } from '#models/index.js';
 import passportConfig from '#passport/index.js';
 import memberRouter from '#routes/member.js';
 import boardRouter from '#routes/board.js';
+import imageBoardRouter from '#routes/imageBoard.js';
 
 const corsOptions = {
 	origin: 'http://localhost:3000',
@@ -69,6 +71,7 @@ app.use(passport.initialize());
 // TODO: Router 등록
 app.use('/member', memberRouter);
 app.use('/board', boardRouter);
+app.use('/image-board', imageBoardRouter);
 
 
 // 404
@@ -82,6 +85,22 @@ app.use((req, res, next) => {
 app.use((err, req, res, next) => {
     console.error(err);
 
+	if(err.constructor.name === 'MulterError') {
+		let errorStatus = ResponseStatus.FILE_UPLOAD_ERROR;
+
+		if(err.code === 'LIMIT_UNEXPECTED_FILE')
+			errorStatus = ResponseStatus.TOO_MANY_FILES;
+		else if(err.code === 'LIMIT_FILE_SIZE')
+			errorStatus = ResponseStatus.FILE_SIZE_TOO_LARGE;
+		
+		return res.status(errorStatus.CODE)
+			.json({
+				status: errorStatus.CODE,
+				message: errorStatus.MESSAGE,
+			})
+	}
+
+	console.error('app error handling : ', err);
     const status = err.status || 500;
     const message = err.message || 'Server Error';
 

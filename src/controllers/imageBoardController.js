@@ -10,6 +10,8 @@ import { boardResize } from "#utils/resize.js";
 import logger from "#config/loggerConfig.js";
 import CustomError from "#errors/customError.js";
 import { ResponseStatus, ResponseStatusCode } from "#constants/responseStatus.js";
+import { ImageConstants } from "#constants/imageConstants.js";
+import { deleteImageFile } from "#utils/fileUtils.js";
 
 /**
  * 
@@ -141,7 +143,8 @@ export async function getImageBoardDetail(req, res, next) {
  */
 export async function postImageBoard(req, res, next) {
 	try {
-		if(!req.file){
+		console.error('req.files: ', req.files);
+		if(req.files.length === 0){
 			logger.error('postImageBoard error: no file');
 			next(new CustomError(ResponseStatus.BAD_REQUEST));
 		}
@@ -152,6 +155,11 @@ export async function postImageBoard(req, res, next) {
 			})
 		}catch(error) {
 			logger.error('postImageBoard error: resize error', error);
+
+			req.files.forEach(file => {
+				deleteImageFile(file.filename, ImageConstants.BOARD_TYPE);
+			});
+
 			next(new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR));
 		}
 

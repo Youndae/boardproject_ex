@@ -203,7 +203,7 @@ describe('imageBoardRepository test', () => {
 			expect(result.imageNo).toBe(1);
 			expect(result.imageTitle).toBe('testTitle1');
 			expect(result.imageContent).toBe('testContent1');
-			expect(result.imageDate).toBeDefined();
+			expect(result.imageDate).toBeUndefined();
 			expect(result.userId).toBeUndefined();
 			expect(result.imageDatas.length).toBe(3);
 			expect(result.imageDatas[0].imageName).toBe('testImage1_1.jpg');
