@@ -26,6 +26,7 @@ import memberRouter from '#routes/member.js';
 import boardRouter from '#routes/board.js';
 import imageBoardRouter from '#routes/imageBoard.js';
 import commentRouter from '#routes/comment.js';
+import imageRouter from '#routes/image.js';
 
 const corsOptions = {
 	origin: 'http://localhost:3000',
@@ -74,6 +75,7 @@ app.use('/member', memberRouter);
 app.use('/board', boardRouter);
 app.use('/image-board', imageBoardRouter);
 app.use('/comment', commentRouter);
+app.use('/image', imageRouter);
 
 
 // 404
