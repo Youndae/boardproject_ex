@@ -48,16 +48,8 @@ import { ResponseStatusCode, ResponseStatus } from '#constants/responseStatus.js
 export async function getBoardList(req, res, next) {
 	try {
 		const boardList = await getBoardListService(req.query);
-		res.status(ResponseStatusCode.OK)
-			.json({
-				content: boardList.content,
-				empty: boardList.empty,
-				totalElements: boardList.totalElements,
-				userStatus: {
-					loggedIn: req.userId !== undefined,
-					uid: req.userId
-				}
-			});
+
+		res.success(boardList);
 	} catch (error) {
 		logger.error('getBoardList error: ', error);
 

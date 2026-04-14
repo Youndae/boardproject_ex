@@ -6,11 +6,11 @@ import CustomError from '#errors/customError.js';
 export class MemberRepository {
 
 	static async findMemberByUserId(userId) {
-		return await Member.findOne({ where: { userId } });
+		return await Member.findOne({ where: { userId: userId } });
 	}
 
 	static async findMemberByUserIdFromLocal(userId) {
-		return await Member.findOne({ where: { userId, provider: 'local' } });
+		return await Member.findOne({ where: { userId: userId, provider: 'local' } });
 	}
 
 	static async findUserIdWithRoles(userId) {
@@ -62,35 +62,35 @@ export class MemberRepository {
 		return await Member.create({
 			userId: userId,
 			email: email,
-			userName: userName,
+			username: userName,
 			provider: provider,
-			userPw: userPw,
+			password: userPw,
 		}, { transaction: options.transaction });
 	}
 
 	static async createMember(userId, hashedPw, userName, nickName, email, profileThumbnail, options = {}) {
 		return await Member.create({
 			userId: userId,
-			userPw: hashedPw,
+			password: hashedPw,
 			email: email,
-			userName: userName,
-			nickName: nickName,
-			profileThumbnail: profileThumbnail,
+			username: userName,
+			nickname: nickName,
+			profile: profileThumbnail,
 		}, { transaction: options.transaction });
 	}
 
 	static async findMemberByNickname(nickname) {
 		return await Member.findOne({
-			where: { nickName: nickname },
+			where: { nickname: nickname },
 			attributes: ['userId'],
 		});
 	}
 
 	static async patchMemberProfile(userId, nickname, profileImage, options = {}) {
-		const updateData = { nickName: nickname };
+		const updateData = { nickname: nickname };
 
 		if(profileImage !== undefined)
-			updateData.profileThumbnail = profileImage;
+			updateData.profile = profileImage;
 
 		return await Member.update(updateData, { where: { userId }, transaction: options.transaction });
 	}
@@ -98,7 +98,7 @@ export class MemberRepository {
 	static async getMemberProfile(userId) {
 		return await Member.findOne({
 			where: { userId },
-			attributes: ['nickName', 'profileThumbnail'],
+			attributes: ['nickname', 'profile'],
 		});
 	}
 }

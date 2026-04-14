@@ -1,4 +1,4 @@
-import { Board } from "#models/index.js"
+import { Board, Member } from "#models/index.js"
 import logger from "#config/loggerConfig.js"
 import { ResponseStatus } from "#constants/responseStatus.js"
 import CustomError from "#errors/customError.js"
@@ -8,135 +8,142 @@ import { Op } from "sequelize"
 const boardAmount = 20;
 
 export class BoardRepository {
-	static async getBoardListPageable({keyword, searchType, pageNum = 1}) {
-		const offset = getOffset(pageNum, boardAmount);
+	static async getBoardListPageable({keyword, searchType, page = 1}) {
+		const offset = getOffset(page, boardAmount);
 		const searchKeyword = keyword ? `%${keyword}%` : '';
 		const where = {};
 
+		const memberInclude = {
+			model: Member,
+			as: 'Member',
+			attributes: ['nickname']
+		}
+
 		switch (searchType) {
 			case 't':
-				where.boardTitle = { [Op.like]: `${searchKeyword}` };
+				where.title = { [Op.like]: `${searchKeyword}` };
 				break;
 			case 'c':
-				where.boardContent = { [Op.like]: `${searchKeyword}` };
+				where.content = { [Op.like]: `${searchKeyword}` };
 				break;
 			case 'tc':
 				where[Op.or] = [
-					{ boardTitle: { [Op.like]: `${searchKeyword}` } },
-					{ boardContent: { [Op.like]: `${searchKeyword}` } },
+					{ title: { [Op.like]: `${searchKeyword}` } },
+					{ content: { [Op.like]: `${searchKeyword}` } },
 				]
 				break;
 			case 'u':
-				where.userId = { [Op.like]: `${searchKeyword}` };
+				where['$Member.nickname$'] = { [Op.like]: `${searchKeyword}` };
 				break;
 			default:
 				break;
 		}
 
 		const boardList = await Board.findAndCountAll({
-			attributes: ['boardNo', 'boardTitle', 'userId', 'boardDate', 'boardIndent'],
+			attributes: ['id', 'title', 'userId', 'createdAt', 'indent'],
 			where,
+			include: [memberInclude],
 			limit: boardAmount,
 			offset,
-			order: [['boardGroupNo', 'DESC'], ['boardUpperNo', 'ASC']],
+			order: [['groupNo', 'DESC'], ['upperNo', 'ASC']],
 		});
 
 		return boardList;
 	}
 
-	static async getBoardDetail(boardNo) {
+	static async getBoardDetail(id) {
 		const board = await Board.findOne({
-			attributes: ['boardNo', 'boardTitle', 'boardContent', 'userId', 'boardDate'],
-			where: { boardNo: boardNo}
+			attributes: ['id', 'title', 'content', 'userId', 'createdAt'],
+			where: { id: id}
 		});
 
 		if(!board) {
-			logger.error('Board detail data not found, boardNo: ', { boardNo });
+			logger.error('Board detail data not found, boardNo: ', { id });
 			throw new CustomError(ResponseStatus.NOT_FOUND);
 		}
 
 		return board;
 	}
 
-	static async postBoard(boardTitle, boardContent, userId, options = {}) {
+	static async postBoard(title, content, userId, options = {}) {
 		const board = await Board.create({
-			boardTitle: boardTitle,
-			boardContent: boardContent,
+			title: title,
+			content: content,
 			userId: userId,
 		}, { transaction: options.transaction });
 
-		const boardNo = board.boardNo;
+		const id = board.id;
 
 		// 최초 저장 이후 해당 게시글 기준으로 UpperNo, groupNo 갱신 필요.
 		await Board.update({
-			boardGroupNo: boardNo,
-			boardUpperNo: boardNo.toString(),
-		}, { where: { boardNo: boardNo }, transaction: options.transaction });
+			groupNo: id,
+			upperNo: id.toString(),
+		}, { where: { id }, transaction: options.transaction });
 
-		return boardNo;
+		return id;
 	}
 
-	static async getPatchDetailData(boardNo, userId) {
+	static async getPatchDetailData(id, userId) {
 		const board = await Board.findOne({
-			attributes: ['boardNo', 'boardTitle', 'boardContent', 'userId'],
-			where: { boardNo: boardNo }
+			attributes: ['id', 'title', 'content', 'userId'],
+			where: { id }
 		});
 
 		if(!board) {
-			logger.error('Board detail data not found, boardNo: ', { boardNo });
+			logger.error('Board detail data not found, boardNo: ', { id });
 			throw new CustomError(ResponseStatus.NOT_FOUND);
 		}
 
 		if(board.userId !== userId) {
 			// 작성자가 아닌 경우
-			logger.error('User is not the author of the board, boardNo: ', { boardNo });
+			logger.error('User is not the author of the board, boardNo: ', { id });
 			throw new CustomError(ResponseStatus.FORBIDDEN);
 		}
 
 		return board;
 	}
 
-	static async patchBoard(boardNo, boardTitle, boardContent) {
+	static async patchBoard(id, title, content) {
 		await Board.update({
-			boardTitle: boardTitle,
-			boardContent: boardContent,
-		}, { where: { boardNo: boardNo } });
+			title: title,
+			content: content,
+		}, { where: { id } });
 	}
 
-	static async deleteBoard(boardNo) {
-		await Board.destroy({ where: { boardNo: boardNo } });
+	static async deleteBoard(id) {
+		await Board.destroy({ where: { id } });
 	}
 
-	static async getReplyDetail(boardNo) {
+	static async getReplyDetail(id) {
 		const reply = await Board.findOne({
-			attributes: ['boardGroupNo', 'boardUpperNo', 'boardIndent'],
-			where: { boardNo: boardNo }
+			attributes: ['groupNo', 'upperNo', 'indent'],
+			where: { id }
 		})
 
 		if(!reply) {
-			logger.error('Reply detail data not found, boardNo: ', { boardNo });
+			logger.error('Reply detail data not found, boardNo: ', { id });
 			throw new CustomError(ResponseStatus.NOT_FOUND);
 		}
 
 		return reply;
 	}
 
-	static async postBoardReply(boardTitle, boardContent, boardGroupNo, boardIndent, boardUpperNo, userId, options = {}) {
+	static async postBoardReply(title, content, groupNo, indent, upperNo, userId, options = {}) {
 		const reply = await Board.create({
-			boardTitle: boardTitle,
-			boardContent: boardContent,
-			boardGroupNo: boardGroupNo,
-			boardIndent: boardIndent,
-			boardUpperNo: boardUpperNo,
+			title: title,
+			content: content,
+			groupNo: groupNo,
+			indent: indent,
+			upperNo: upperNo,
 			userId: userId,
 		}, { transaction: options.transaction });
 
-		const replyNo = reply.boardNo;
-		const updateUpperNo = `${boardUpperNo},${replyNo}`;
+		const replyNo = reply.id;
+		const updateUpperNo = `${upperNo},${replyNo}`;
 
 		await Board.update({
-			boardUpperNo: updateUpperNo,
-		}, { where: { boardNo: replyNo }, transaction: options.transaction });
+			upperNo: updateUpperNo,
+		}, { where: { id: replyNo }, transaction: options.transaction });
 
 		return replyNo;
 	}

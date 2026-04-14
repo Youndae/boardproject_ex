@@ -23,5 +23,6 @@ module.exports = {
 		'^@services/(.*)$': '<rootDir>/src/services/$1',
 		'^@utils/(.*)$': '<rootDir>/src/utils/$1',
 		'^@validators/(.*)$': '<rootDir>/src/validators/$1',
+		'^@dto/(.*)$': '<rootDir>/src/dto/$1'
 	}
 }

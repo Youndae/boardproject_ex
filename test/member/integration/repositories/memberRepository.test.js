@@ -5,12 +5,13 @@ import CustomError from '#errors/customError.js';
 import { ResponseStatus } from '#constants/responseStatus.js';
 
 const SAVE_MEMBER = {
+	id: 1,
 	userId: 'tester',
-	userPw: 'tester1234',
-	userName: 'testerName',
-	nickName: 'testerNickName',
+	password: 'tester1234',
+	username: 'testerName',
+	nickname: 'testerNickName',
 	email: 'tester@tester.com',
-	profileThumbnail: 'testerProfileThumbnail.jpg',
+	profile: 'testerProfileThumbnail.jpg',
 	provider: 'local',
 }
 
@@ -26,27 +27,29 @@ describe('memberRepository test', () => {
 
 	beforeEach(async () => {
 		await Member.create({
+			id: SAVE_MEMBER.id,
 			userId: SAVE_MEMBER.userId,
-			userPw: await bcrypt.hash(SAVE_MEMBER.userPw, 10),
-			userName: SAVE_MEMBER.userName,
-			nickName: SAVE_MEMBER.nickName,
+			password: await bcrypt.hash(SAVE_MEMBER.password, 10),
+			username: SAVE_MEMBER.username,
+			nickname: SAVE_MEMBER.nickname,
 			email: SAVE_MEMBER.email,
-			profileThumbnail: SAVE_MEMBER.profileThumbnail,
+			profile: SAVE_MEMBER.profile,
 			provider: SAVE_MEMBER.provider,
 		});
 
 		await Auth.create({
-			userId: SAVE_MEMBER.userId,
+			userId: SAVE_MEMBER.id,
 			auth: 'ROLE_MEMBER',
 		});
 
 		await Member.create({
+			id: 2,
 			userId: 'noAuthUser',
-			userPw: await bcrypt.hash('noAuthUser1234', 10),
-			userName: 'noAuthUserName',
-			nickName: 'noAuthNickName',
+			password: await bcrypt.hash('noAuthUser1234', 10),
+			username: 'noAuthUserName',
+			nickname: 'noAuthNickName',
 			email: 'noAuthUser@noAuthUser.com',
-			profileThumbnail: 'noAuthUserProfileThumbnail.jpg',
+			profile: 'noAuthUserProfileThumbnail.jpg',
 			provider: 'local',
 		})
 	});
@@ -59,16 +62,17 @@ describe('memberRepository test', () => {
 	describe('findMemberByUserId', () => {
 		it('정상 조회', async () => {
 			const member = await MemberRepository.findMemberByUserId(SAVE_MEMBER.userId);
-			console.log('member : ', member);
-			const pwValid = await bcrypt.compare(SAVE_MEMBER.userPw, member.userPw);
+
+			const pwValid = await bcrypt.compare(SAVE_MEMBER.password, member.password);
 
 			expect(member).toBeDefined();
+			expect(member.id).toBe(SAVE_MEMBER.id);
 			expect(member.userId).toBe(SAVE_MEMBER.userId);
 			expect(pwValid).toBe(true);
-			expect(member.userName).toBe(SAVE_MEMBER.userName);
-			expect(member.nickName).toBe(SAVE_MEMBER.nickName);
+			expect(member.username).toBe(SAVE_MEMBER.username);
+			expect(member.nickname).toBe(SAVE_MEMBER.nickname);
 			expect(member.email).toBe(SAVE_MEMBER.email);
-			expect(member.profileThumbnail).toBe(SAVE_MEMBER.profileThumbnail);
+			expect(member.profile).toBe(SAVE_MEMBER.profile);
 			expect(member.provider).toBe(SAVE_MEMBER.provider);
 		})
 	});
@@ -82,11 +86,12 @@ describe('memberRepository test', () => {
 			expect(userWithRoles.roles).toStrictEqual(['ROLE_MEMBER']); // 배열, 객체 내용 비교는 toStrictEqual 사용.
 			expect(userWithRoles.roles.length).toBe(1);
 			// userId 외 데이터는 존재하지 않음.
-			expect(userWithRoles.userPw).toBeUndefined();
-			expect(userWithRoles.userName).toBeUndefined();
-			expect(userWithRoles.nickName).toBeUndefined();
+			expect(userWithRoles.id).toBeUndefined();
+			expect(userWithRoles.password).toBeUndefined();
+			expect(userWithRoles.username).toBeUndefined();
+			expect(userWithRoles.nickname).toBeUndefined();
 			expect(userWithRoles.email).toBeUndefined();
-			expect(userWithRoles.profileThumbnail).toBeUndefined();
+			expect(userWithRoles.profile).toBeUndefined();
 			expect(userWithRoles.provider).toBeUndefined();
 		})
 
@@ -138,16 +143,16 @@ describe('memberRepository test', () => {
 				await bcrypt.hash(userPw, 10)
 			);
 
-			const pwValid = await bcrypt.compare(userPw, member.userPw);
+			const pwValid = await bcrypt.compare(userPw, member.password);
 
 			expect(member).toBeDefined();
 			expect(member.userId).toBe('newOAuthUser');
 			expect(member.provider).toBe('local');
 			expect(member.email).toBe('newOAuthUser@newOAuthUser.com');
-			expect(member.userName).toBe('newOAuthUserName');
+			expect(member.username).toBe('newOAuthUserName');
 			expect(pwValid).toBe(true);
-			expect(member.nickName).toBeUndefined();
-			expect(member.profileThumbnail).toBeUndefined();
+			expect(member.nickname).toBeUndefined();
+			expect(member.profile).toBeUndefined();
 		})
 	});
 
@@ -163,30 +168,30 @@ describe('memberRepository test', () => {
 				'newMemberProfileThumbnail.jpg'
 			);
 
-			const pwValid = await bcrypt.compare(userPw, member.userPw);
+			const pwValid = await bcrypt.compare(userPw, member.password);
 
 			expect(member).toBeDefined();
 			expect(member.userId).toBe('newMember');
 			expect(member.provider).toBe('local');
 			expect(member.email).toBe('newMember@newMember.com');
-			expect(member.userName).toBe('newMemberUserName');
+			expect(member.username).toBe('newMemberUserName');
 			expect(pwValid).toBe(true);
-			expect(member.nickName).toBe('newMemberNickName');
-			expect(member.profileThumbnail).toBe('newMemberProfileThumbnail.jpg');
+			expect(member.nickname).toBe('newMemberNickName');
+			expect(member.profile).toBe('newMemberProfileThumbnail.jpg');
 		})
 	});
 
 	describe('findMemberByNickname', () => {
 		it('정상 조회', async () => {
-			const member = await MemberRepository.findMemberByNickname(SAVE_MEMBER.nickName);
+			const member = await MemberRepository.findMemberByNickname(SAVE_MEMBER.nickname);
 
 			expect(member).toBeDefined();
 			expect(member.userId).toBe(SAVE_MEMBER.userId);
-			expect(member.nickName).toBeUndefined();
-			expect(member.userPw).toBeUndefined();
-			expect(member.userName).toBeUndefined();
+			expect(member.nickname).toBeUndefined();
+			expect(member.password).toBeUndefined();
+			expect(member.username).toBeUndefined();
 			expect(member.email).toBeUndefined();
-			expect(member.profileThumbnail).toBeUndefined();
+			expect(member.profile).toBeUndefined();
 			expect(member.provider).toBeUndefined();
 		})
 	});
@@ -198,8 +203,8 @@ describe('memberRepository test', () => {
 			const member = await MemberRepository.findMemberByUserId(SAVE_MEMBER.userId);
 
 			expect(member).toBeDefined();
-			expect(member.nickName).toBe('newNickName');
-			expect(member.profileThumbnail).toBe('newProfileThumbnail.jpg');
+			expect(member.nickname).toBe('newNickName');
+			expect(member.profile).toBe('newProfileThumbnail.jpg');
 		})
 	});
 
@@ -208,11 +213,11 @@ describe('memberRepository test', () => {
 			const member = await MemberRepository.getMemberProfile(SAVE_MEMBER.userId);
 
 			expect(member).toBeDefined();
-			expect(member.nickName).toBe(SAVE_MEMBER.nickName);
-			expect(member.profileThumbnail).toBe(SAVE_MEMBER.profileThumbnail);
+			expect(member.nickname).toBe(SAVE_MEMBER.nickname);
+			expect(member.profile).toBe(SAVE_MEMBER.profile);
 			expect(member.userId).toBeUndefined();
-			expect(member.userPw).toBeUndefined();
-			expect(member.userName).toBeUndefined();
+			expect(member.password).toBeUndefined();
+			expect(member.username).toBeUndefined();
 			expect(member.email).toBeUndefined();
 			expect(member.provider).toBeUndefined();
 		});

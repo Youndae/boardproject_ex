@@ -17,27 +17,20 @@ export const boardListSearchValidator = z.object({
 				.max(50, { message: '검색어는 50자 이하이어야 합니다.'})
 				.optional(),
 	searchType: searchTypeValidator.optional(),
-	pageNum: z.number().int().positive().optional(),
+	page: z.number().int().positive().optional(),
 });
 
 export const postBoardValidator = z.object({
-	boardTitle: boardTitleValidator,
-	boardContent: boardContentValidator,
+	title: boardTitleValidator,
+	content: boardContentValidator,
 });
 
 export const patchBoardValidator = z.object({
-	boardTitle: boardTitleValidator,
-	boardContent: boardContentValidator,
+	title: boardTitleValidator,
+	content: boardContentValidator,
 });
 
 export const postBoardReplyValidator = z.object({
-	boardTitle: boardTitleValidator,
-	boardContent: boardContentValidator,
-	boardGroupNo: z.number().int().positive(),
-	boardIndent: z.number().int().positive(),
-	boardUpperNo: z.string()
-				.regex(
-					/^(\d+,)*\d+$/, 
-					{ message: 'boardUpperNo의 구조가 올바르지 않습니다.'}
-				),
+	title: boardTitleValidator,
+	content: boardContentValidator,
 });

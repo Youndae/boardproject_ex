@@ -1,7 +1,7 @@
-import { ImageBoard, ImageData } from "#models/index.js";
+import { ImageBoard, ImageData, Member } from "#models/index.js";
 import { getOffset } from "#utils/paginationUtils.js";
 import { sequelize } from "#models/index.js";
-import { Sequelize } from "sequelize";
+import {Sequelize} from "sequelize";
 import { Op } from "sequelize";
 import CustomError from "#errors/customError.js";
 import { ResponseStatus } from "#constants/responseStatus.js";
@@ -11,182 +11,181 @@ import { ImageConstants } from "#constants/imageConstants.js";
 const imageBoardAmount = 15;
 
 export class ImageBoardRepository {
-	static async getImageBoardListPageable({keyword, searchType, pageNum = 1}) {
-		const offset = getOffset(pageNum, imageBoardAmount);
-		const searchKeyword = keyword ? `%${keyword}%` : '';
-		const replacements = { offset, limit: imageBoardAmount };
-		let whereClause = '';
-		const countWhere = {};
 
-		switch (searchType) {
-			case 't':
-				whereClause = 'WHERE ib.imageTitle LIKE :keyword';
-				countWhere.imageTitle = { [Op.like]: `${searchKeyword}` };
-				break;
-			case 'c':
-				whereClause = 'WHERE ib.imageContent LIKE :keyword';
-				countWhere.imageContent = { [Op.like]: `${searchKeyword}` };
-				break;
-			case 'tc':
-				whereClause = 'WHERE (ib.imageTitle LIKE :keyword OR ib.imageContent LIKE :keyword)';
-				countWhere[Op.or] = [
-					{ imageTitle: { [Op.like]: `${searchKeyword}` } },
-					{ imageContent: { [Op.like]: `${searchKeyword}` } },
-				];
-				break;
-			case 'u':
-				whereClause = 'WHERE ib.userId LIKE :keyword';
-				countWhere.userId = { [Op.like]: `${searchKeyword}` };
-				break;
-			default:
-				break;
+	// query check
+	static async getImageBoardListPageable({keyword, searchType, page = 1}) {
+		const offset = getOffset(page, imageBoardAmount);
+		const searchKeyword = keyword ? `%${keyword}%` : '';
+		const where = {};
+		const include = [
+			{
+				model: ImageData,
+				as: 'imageDatas',
+				attributes: [],
+				required: true,
+			}
+		];
+
+		if(searchType && keyword) {
+			switch (searchType) {
+				case 't':
+					where.title = { [Op.like]: `${searchKeyword}` };
+					break;
+				case 'c':
+					where.content = { [Op.like]: `${searchKeyword}` };
+					break;
+				case 'tc':
+					where[Op.or] = [
+						{ title: { [Op.like]: `${searchKeyword}` } },
+						{ content: { [Op.like]: `${searchKeyword}` } },
+					];
+					break;
+				case 'u':
+					include.push({
+						model: Member,
+						as: 'Member',
+						attributes: [],
+						required: true
+					});
+					where['$Member.nickname$'] = { [Op.like]: `${searchKeyword}` };
+					break;
+			}
 		}
 
-		if(whereClause !== '')
-			replacements.keyword = searchKeyword;
-
-		const query = `
-			WITH image_datas AS (
-				SELECT 
-					imageNo, 
-					imageName,
-					ROW_NUMBER() OVER (PARTITION BY imageNo ORDER BY imageStep ASC) AS rn
-				FROM imageData
-			)
-			SELECT
-				ib.imageNo AS imageNo,
-				ib.imageTitle AS imageTitle,
-				ib.userId AS userId,
-				ib.imageDate AS imageDate,
-				id.imageName AS imageName
-			FROM imageBoard ib
-			LEFT JOIN image_datas id
-				ON ib.imageNo = id.imageNo AND id.rn = 1
-			${whereClause}
-			ORDER BY ib.imageNo DESC
-			LIMIT :limit
-			OFFSET :offset
-		`;
-
-		const result = await sequelize.query(query, {
-			replacements,
-			type: Sequelize.QueryTypes.SELECT,
+		const { count, rows } = await ImageBoard.findAndCountAll({
+			attributes: [
+				'id',
+				'title',
+				[Sequelize.fn('MIN', Sequelize.col('imageDatas.image_name')), 'imageName']
+			],
+			include,
+			where,
+			group: ['ImageBoard.id'],
+			order: [['id', 'DESC']],
+			limit: imageBoardAmount,
+			offset,
+			distinct: true,
+			subQuery: false,
+			raw: true,
 		});
 
-		const totalElements = await ImageBoard.count({
-			where: countWhere,
-		});
+		const totalElements = Array.isArray(count) ? count.length : count;
 
-		return { content: result, totalElements };
+		return { content: rows, totalElements };
 	}
 
-	static async getImageBoardDetail(imageNo) {
+	static async getImageBoardDetail(id) {
 		const boardDetail = await ImageBoard.findOne({
-			attributes: ['imageNo', 'imageTitle', 'imageContent', 'userId', 'imageDate'],
-			where: { imageNo: imageNo },
+			attributes: ['id', 'title', 'content', 'userId', 'createdAt'],
+			where: { id },
 			include: [{
 				model: ImageData,
 				as: 'imageDatas',
-				attributes: ['imageName', 'oldName', 'imageStep'],
-				where: { imageNo: imageNo },
+				attributes: ['imageName', 'originName', 'imageStep'],
+				where: { imageId: id },
 				order: [['imageStep', 'ASC']]
 			}]
 		});
 
 		if(!boardDetail) {
-			logger.error('Image board detail data not found, imageNo: ', { imageNo });
+			logger.error('Image board detail data not found, imageNo: ', { id });
 			throw new CustomError(ResponseStatus.NOT_FOUND);
 		}
 
 		return boardDetail;
 	}
 
-	static async postImageBoard(userId, imageTitle, imageContent, files, options = { }) {
+	static async postImageBoard(userId, title, content, files, options = { }) {
 		const imageBoard = await ImageBoard.create({
 			userId: userId,
-			imageTitle: imageTitle,
-			imageContent: imageContent,
+			title: title,
+			content: content,
 		}, { transaction: options.transaction });
 
-		const imageNo = imageBoard.imageNo;
+		const imageNo = imageBoard.id;
 		let step = 1;
 
 		await ImageData.bulkCreate(files.map(file => ({
 			imageName: `${ImageConstants.BOARD_PREFIX}${file.filename}`,
-			oldName: file.originalname,
+			originName: file.originalname,
 			imageStep: step++,
-			imageNo: imageNo,
+			imageId: imageNo,
 		})), { transaction: options.transaction });
 
 		return imageNo;
 	}
 
-	static async getImageBoardPatchDetail(imageNo) {
+	static async getImageBoardPatchDetail(id) {
 		const imageBoard = await ImageBoard.findOne({
-			attributes: ['imageNo', 'imageTitle', 'imageContent'],
-			where: { imageNo: imageNo },
+			attributes: ['id', 'title', 'content'],
+			where: { id },
 			include: [{
 				model: ImageData,
 				as: 'imageDatas',
 				attributes: ['imageName'],
-				where: { imageNo: imageNo },
+				where: { imageId: id },
 				order: [['imageStep', 'ASC']]
 			}]
 		});
 
 		if(!imageBoard) {
-			logger.error('Image board patch detail data not found, imageNo: ', { imageNo });
+			logger.error('Image board patch detail data not found, imageNo: ', { id });
 			throw new CustomError(ResponseStatus.NOT_FOUND);
 		}
 
 		return imageBoard;
 	}
 
-	static async patchImageBoard(imageNo, imageTitle, imageContent, files, deleteFiles, options = {}) {
-		let maxImageStep = await ImageData.max('imageStep', { where: { imageNo: imageNo } }) + 1;
+	static async patchImageBoard(id, title, content, files, deleteFiles, options = {}) {
+		let maxImageStep = await ImageData.max('imageStep', { where: { imageId: id } }) + 1;
 
 		await ImageBoard.update({
-			imageTitle: imageTitle,
-			imageContent: imageContent,
-		}, { where: { imageNo: imageNo }, transaction: options.transaction });
+			title: title,
+			content: content,
+		}, { where: { id }, transaction: options.transaction });
 
 		if(deleteFiles) 
-			await ImageData.destroy({ where: { imageNo: imageNo, imageName: { [Op.in]: deleteFiles } }, transaction: options.transaction });
+			await ImageData.destroy(
+				{
+					where: { imageId: id, imageName: { [Op.in]: deleteFiles } },
+					transaction: options.transaction
+				}
+			);
 
 		if(files) {
 			await ImageData.bulkCreate(files.map(file => ({
 				imageName: `${ImageConstants.BOARD_PREFIX}${file.filename}`,
-				oldName: file.originalname,
+				originName: file.originalname,
 				imageStep: maxImageStep++,
-				imageNo: imageNo,
+				imageId: id,
 			})), { transaction: options.transaction });
 		}
 
-		return imageNo;
+		return id;
 	}
 
-	static async deleteImageBoard(imageNo) {
-		await ImageBoard.destroy({ where: { imageNo: imageNo } });
+	static async deleteImageBoard(id) {
+		await ImageBoard.destroy({ where: { id } });
 	}
 
-	static async getImageBoardWriter(imageNo) {
+	static async getImageBoardWriter(id) {
 		const imageBoard = await ImageBoard.findOne({
 			attributes: ['userId'],
-			where: { imageNo: imageNo },
+			where: { id },
 		});
 
 		if(!imageBoard) {
-			logger.error('Image board writer data not found, imageNo: ', { imageNo });
+			logger.error('Image board writer data not found, imageNo: ', { id });
 			throw new CustomError(ResponseStatus.NOT_FOUND);
 		}
 
 		return imageBoard.userId;
 	}
 
-	static async getImageBoardDeleteFiles(imageNo) {
+	static async getImageBoardDeleteFiles(imageId) {
 		const imageData = await ImageData.findAll({
 			attributes: ['imageName'],
-			where: { imageNo: imageNo },
+			where: { imageId },
 		});
 
 		return imageData;

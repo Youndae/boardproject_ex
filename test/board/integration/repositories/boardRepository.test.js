@@ -5,21 +5,23 @@ import CustomError from '#errors/customError.js';
 
 const SAVE_MEMBER = [
 	{
+		id: 1,
 		userId: 'tester',
-		userPw: 'tester1234',
-		userName: 'testerName',
-		nickName: 'testerNickName',
+		password: 'tester1234',
+		username: 'testerName',
+		nickname: 'testernickname',
 		email: 'tester@tester.com',
-		profileThumbnail: 'testerProfileThumbnail.jpg',
+		profile: 'testerprofile.jpg',
 		provider: 'local',
 	},
 	{
+		id: 2,
 		userId: 'tester2',
-		userPw: 'tester1234',
-		userName: 'testerName2',
-		nickName: 'testerNickName2',
+		password: 'tester1234',
+		username: 'testerName2',
+		nickname: 'testernickname2',
 		email: 'tester2@tester.com',
-		profileThumbnail: 'testerProfileThumbnail2.jpg',
+		profile: 'testerprofile2.jpg',
 		provider: 'local',
 	}
 ]
@@ -34,17 +36,18 @@ describe('boardRepository test', () => {
 
 		for(const member of SAVE_MEMBER) {
 			await Member.create({
+				id: member.id,
 				userId: member.userId,
-				userPw: member.userPw,
-				userName: member.userName,
-				nickName: member.nickName,
+				password: member.userPw,
+				username: member.username,
+				nickname: member.nickname,
 				email: member.email,
-				profileThumbnail: member.profileThumbnail,
+				profile: member.profile,
 				provider: member.provider,
 			});
 
 			await Auth.create({
-				userId: member.userId,
+				userId: member.id,
 				auth: 'ROLE_MEMBER',
 			});
 		}
@@ -59,43 +62,43 @@ describe('boardRepository test', () => {
 	beforeEach(async () => {
 		for(let i = 1; i <= BOARD_FIXTURE_LENGTH; i++) {
 			await Board.create({
-				boardNo: i,
-				userId: DEFAULT_MEMBER.userId,
-				boardTitle: `testTitle${i}`,
-				boardContent: `testContent${i}`,
-				boardGroupNo: i,
-				boardUpperNo: i.toString(),
+				id: i,
+				userId: DEFAULT_MEMBER.id,
+				title: `testTitle${i}`,
+				content: `testContent${i}`,
+				groupNo: i,
+				upperNo: i.toString(),
 			});
 		}
 
 		await Board.create({
-			boardNo: BOARD_FIXTURE_LENGTH + 1,
-			userId: DEFAULT_MEMBER.userId,
-			boardTitle: `testTitle${BOARD_FIXTURE_LENGTH + 1}`,
-			boardContent: `testContent${BOARD_FIXTURE_LENGTH + 1}`,
-			boardGroupNo: BOARD_FIXTURE_LENGTH,
-			boardUpperNo: `${BOARD_FIXTURE_LENGTH},${BOARD_FIXTURE_LENGTH + 1}`,
-			boardIndent: 2,
+			id: BOARD_FIXTURE_LENGTH + 1,
+			userId: DEFAULT_MEMBER.id,
+			title: `testTitle${BOARD_FIXTURE_LENGTH + 1}`,
+			content: `testContent${BOARD_FIXTURE_LENGTH + 1}`,
+			groupNo: BOARD_FIXTURE_LENGTH,
+			upperNo: `${BOARD_FIXTURE_LENGTH},${BOARD_FIXTURE_LENGTH + 1}`,
+			indent: 2,
 		});
 
 		await Board.create({
-			boardNo: BOARD_FIXTURE_LENGTH + 2,
-			userId: DEFAULT_MEMBER.userId,
-			boardTitle: `testTitle${BOARD_FIXTURE_LENGTH + 2}`,
-			boardContent: `testContent${BOARD_FIXTURE_LENGTH + 2}`,
-			boardGroupNo: BOARD_FIXTURE_LENGTH,
-			boardUpperNo: `${BOARD_FIXTURE_LENGTH},${BOARD_FIXTURE_LENGTH + 2}`,
-			boardIndent: 2,
+			id: BOARD_FIXTURE_LENGTH + 2,
+			userId: DEFAULT_MEMBER.id,
+			title: `testTitle${BOARD_FIXTURE_LENGTH + 2}`,
+			content: `testContent${BOARD_FIXTURE_LENGTH + 2}`,
+			groupNo: BOARD_FIXTURE_LENGTH,
+			upperNo: `${BOARD_FIXTURE_LENGTH},${BOARD_FIXTURE_LENGTH + 2}`,
+			indent: 2,
 		})
 
 		await Board.create({
-			boardNo: BOARD_FIXTURE_LENGTH + 3,
-			userId: DEFAULT_MEMBER.userId,
-			boardTitle: `testTitle${BOARD_FIXTURE_LENGTH + 3}`,
-			boardContent: `testContent${BOARD_FIXTURE_LENGTH + 3}`,
-			boardGroupNo: BOARD_FIXTURE_LENGTH,
-			boardUpperNo: `${BOARD_FIXTURE_LENGTH},${BOARD_FIXTURE_LENGTH + 1},${BOARD_FIXTURE_LENGTH + 3}`,
-			boardIndent: 3,
+			id: BOARD_FIXTURE_LENGTH + 3,
+			userId: DEFAULT_MEMBER.id,
+			title: `testTitle${BOARD_FIXTURE_LENGTH + 3}`,
+			content: `testContent${BOARD_FIXTURE_LENGTH + 3}`,
+			groupNo: BOARD_FIXTURE_LENGTH,
+			upperNo: `${BOARD_FIXTURE_LENGTH},${BOARD_FIXTURE_LENGTH + 1},${BOARD_FIXTURE_LENGTH + 3}`,
+			indent: 3,
 		})
 	})
 
@@ -109,10 +112,10 @@ describe('boardRepository test', () => {
 			expect(boardList.count).toBe(BOARD_FIXTURE_LENGTH + 3);
 			expect(boardList.rows.length).toBe(20);
 
-			expect(boardList.rows[0].boardNo).toBe(BOARD_FIXTURE_LENGTH);
-			expect(boardList.rows[1].boardNo).toBe(BOARD_FIXTURE_LENGTH + 1);
-			expect(boardList.rows[2].boardNo).toBe(BOARD_FIXTURE_LENGTH + 3);
-			expect(boardList.rows[3].boardNo).toBe(BOARD_FIXTURE_LENGTH + 2);
+			expect(boardList.rows[0].id).toBe(BOARD_FIXTURE_LENGTH);
+			expect(boardList.rows[1].id).toBe(BOARD_FIXTURE_LENGTH + 1);
+			expect(boardList.rows[2].id).toBe(BOARD_FIXTURE_LENGTH + 3);
+			expect(boardList.rows[3].id).toBe(BOARD_FIXTURE_LENGTH + 2);
 		});
 
 		it('제목 기준 검색 조회. 다중 결과', async () => {
@@ -121,10 +124,10 @@ describe('boardRepository test', () => {
 			expect(boardList.count).toBe(BOARD_FIXTURE_LENGTH + 3);
 			expect(boardList.rows.length).toBe(20);
 
-			expect(boardList.rows[0].boardNo).toBe(BOARD_FIXTURE_LENGTH);
-			expect(boardList.rows[1].boardNo).toBe(BOARD_FIXTURE_LENGTH + 1);
-			expect(boardList.rows[2].boardNo).toBe(BOARD_FIXTURE_LENGTH + 3);
-			expect(boardList.rows[3].boardNo).toBe(BOARD_FIXTURE_LENGTH + 2);
+			expect(boardList.rows[0].id).toBe(BOARD_FIXTURE_LENGTH);
+			expect(boardList.rows[1].id).toBe(BOARD_FIXTURE_LENGTH + 1);
+			expect(boardList.rows[2].id).toBe(BOARD_FIXTURE_LENGTH + 3);
+			expect(boardList.rows[3].id).toBe(BOARD_FIXTURE_LENGTH + 2);
 		});
 
 		it('제목 기준 검색 조회. 단일 결과', async () => {
@@ -133,7 +136,7 @@ describe('boardRepository test', () => {
 			expect(boardList.count).toBe(1);
 			expect(boardList.rows.length).toBe(1);
 
-			expect(boardList.rows[0].boardNo).toBe(11);
+			expect(boardList.rows[0].id).toBe(11);
 		});
 
 		it('제목 기준 검색 조회. 다중 결과', async () => {
@@ -142,10 +145,10 @@ describe('boardRepository test', () => {
 			expect(boardList.count).toBe(BOARD_FIXTURE_LENGTH + 3);
 			expect(boardList.rows.length).toBe(20);
 
-			expect(boardList.rows[0].boardNo).toBe(BOARD_FIXTURE_LENGTH);
-			expect(boardList.rows[1].boardNo).toBe(BOARD_FIXTURE_LENGTH + 1);
-			expect(boardList.rows[2].boardNo).toBe(BOARD_FIXTURE_LENGTH + 3);
-			expect(boardList.rows[3].boardNo).toBe(BOARD_FIXTURE_LENGTH + 2);
+			expect(boardList.rows[0].id).toBe(BOARD_FIXTURE_LENGTH);
+			expect(boardList.rows[1].id).toBe(BOARD_FIXTURE_LENGTH + 1);
+			expect(boardList.rows[2].id).toBe(BOARD_FIXTURE_LENGTH + 3);
+			expect(boardList.rows[3].id).toBe(BOARD_FIXTURE_LENGTH + 2);
 		})
 
 		it('내용 기준 검색 조회. 단일 결과', async () => {
@@ -154,7 +157,7 @@ describe('boardRepository test', () => {
 			expect(boardList.count).toBe(1);
 			expect(boardList.rows.length).toBe(1);
 
-			expect(boardList.rows[0].boardNo).toBe(11);
+			expect(boardList.rows[0].id).toBe(11);
 		});
 
 		it('제목 및 내용 기준 검색 조회. 다중 결과', async () => {
@@ -163,10 +166,10 @@ describe('boardRepository test', () => {
 			expect(boardList.count).toBe(BOARD_FIXTURE_LENGTH + 3);
 			expect(boardList.rows.length).toBe(20);
 			
-			expect(boardList.rows[0].boardNo).toBe(BOARD_FIXTURE_LENGTH);
-			expect(boardList.rows[1].boardNo).toBe(BOARD_FIXTURE_LENGTH + 1);
-			expect(boardList.rows[2].boardNo).toBe(BOARD_FIXTURE_LENGTH + 3);
-			expect(boardList.rows[3].boardNo).toBe(BOARD_FIXTURE_LENGTH + 2);
+			expect(boardList.rows[0].id).toBe(BOARD_FIXTURE_LENGTH);
+			expect(boardList.rows[1].id).toBe(BOARD_FIXTURE_LENGTH + 1);
+			expect(boardList.rows[2].id).toBe(BOARD_FIXTURE_LENGTH + 3);
+			expect(boardList.rows[3].id).toBe(BOARD_FIXTURE_LENGTH + 2);
 		});
 		
 		it('재목 및 내용 기준 검색 조회. 단일 결과', async () => {
@@ -175,11 +178,11 @@ describe('boardRepository test', () => {
 			expect(boardList.count).toBe(1);
 			expect(boardList.rows.length).toBe(1);
 
-			expect(boardList.rows[0].boardNo).toBe(11);
+			expect(boardList.rows[0].id).toBe(11);
 		});
 
 		it('유저 기준 검색 조회.', async () => {
-			const boardList = await BoardRepository.getBoardListPageable({ keyword: 'tester', searchType: 'u', pageNum: 1 });
+			const boardList = await BoardRepository.getBoardListPageable({ keyword: DEFAULT_MEMBER.nickname, searchType: 'u', pageNum: 1 });
 
 			expect(boardList.count).toBe(BOARD_FIXTURE_LENGTH + 3);
 			expect(boardList.rows.length).toBe(20);
@@ -198,14 +201,14 @@ describe('boardRepository test', () => {
 		it('정상 조회', async () => {
 			const board = await BoardRepository.getBoardDetail(1);
 
-			expect(board.boardNo).toBe(1);
-			expect(board.boardTitle).toBe('testTitle1');
-			expect(board.boardContent).toBe('testContent1');
-			expect(board.userId).toBe('tester');
-			expect(board.boardDate).toBeDefined();
-			expect(board.boardIndent).toBeUndefined();
-			expect(board.boardGroupNo).toBeUndefined();
-			expect(board.boardUpperNo).toBeUndefined();
+			expect(board.id).toBe(1);
+			expect(board.title).toBe('testTitle1');
+			expect(board.content).toBe('testContent1');
+			expect(board.userId).toBe(DEFAULT_MEMBER.id);
+			expect(board.createdAt).toBeDefined();
+			expect(board.indent).toBeUndefined();
+			expect(board.groupNo).toBeUndefined();
+			expect(board.upperNo).toBeUndefined();
 		});
 
 		it('데이터가 없는 경우', async () => {
@@ -221,39 +224,39 @@ describe('boardRepository test', () => {
 
 	describe('postBoard', () => {
 		it('정상 저장', async () => {
-			const boardNo = await BoardRepository.postBoard('testTitle', 'testContent', 'tester');
+			const id = await BoardRepository.postBoard('testTitle', 'testContent', DEFAULT_MEMBER.id);
 
-			expect(boardNo).toBeDefined();
+			expect(id).toBeDefined();
 
-			const saveBoard = await Board.findOne({ where: { boardNo: boardNo } });
+			const saveBoard = await Board.findOne({ where: { id: id} });
 
-			expect(saveBoard.boardTitle).toBe('testTitle');
-			expect(saveBoard.boardContent).toBe('testContent');
-			expect(saveBoard.userId).toBe('tester');
-			expect(saveBoard.boardDate).toBeDefined();
-			expect(saveBoard.boardIndent).toBe(1);
-			expect(saveBoard.boardGroupNo).toBe(boardNo);
-			expect(saveBoard.boardUpperNo).toBe(boardNo.toString());
+			expect(saveBoard.title).toBe('testTitle');
+			expect(saveBoard.content).toBe('testContent');
+			expect(saveBoard.userId).toBe(DEFAULT_MEMBER.id);
+			expect(saveBoard.createdAt).toBeDefined();
+			expect(saveBoard.indent).toBe(1);
+			expect(saveBoard.groupNo).toBe(id);
+			expect(saveBoard.upperNo).toBe(id.toString());
 		});
 	});
 
 	describe('getPatchDetailData', () => {
 		it('정상 조회', async () => {
-			const board = await BoardRepository.getPatchDetailData(1, 'tester');
+			const board = await BoardRepository.getPatchDetailData(1, DEFAULT_MEMBER.id);
 
-			expect(board.boardNo).toBe(1);
-			expect(board.boardTitle).toBe('testTitle1');
-			expect(board.boardContent).toBe('testContent1');
-			expect(board.userId).toBe('tester');
-			expect(board.boardDate).toBeUndefined();
-			expect(board.boardIndent).toBeUndefined();
-			expect(board.boardGroupNo).toBeUndefined();
-			expect(board.boardUpperNo).toBeUndefined();
+			expect(board.id).toBe(1);
+			expect(board.title).toBe('testTitle1');
+			expect(board.content).toBe('testContent1');
+			expect(board.userId).toBe(DEFAULT_MEMBER.id);
+			expect(board.createdAt).toBeUndefined();
+			expect(board.indent).toBeUndefined();
+			expect(board.groupNo).toBeUndefined();
+			expect(board.upperNo).toBeUndefined();
 		});
 		
 		it('데이터가 없는 경우', async () => {
 			try {
-				await BoardRepository.getPatchDetailData(0, 'tester');
+				await BoardRepository.getPatchDetailData(0, DEFAULT_MEMBER.id);
 			}catch (error) {
 				expect(error).toBeInstanceOf(CustomError);
 				expect(error.status).toBe(ResponseStatus.NOT_FOUND.CODE);
@@ -263,7 +266,7 @@ describe('boardRepository test', () => {
 
 		it('작성자가 아닌 경우', async () => {
 			try {
-				await BoardRepository.getPatchDetailData(1, 'tester2');
+				await BoardRepository.getPatchDetailData(1, 3);
 			}catch (error) {
 				expect(error).toBeInstanceOf(CustomError);
 				expect(error.status).toBe(ResponseStatus.FORBIDDEN.CODE);
@@ -276,9 +279,9 @@ describe('boardRepository test', () => {
 		it('정상 수정', async () => {
 			await BoardRepository.patchBoard(1, 'testTitle1', 'testContent1');
 
-			const board = await Board.findOne({ where: { boardNo: 1 } });
-			expect(board.boardTitle).toBe('testTitle1');
-			expect(board.boardContent).toBe('testContent1');
+			const board = await Board.findOne({ where: { id: 1 } });
+			expect(board.title).toBe('testTitle1');
+			expect(board.content).toBe('testContent1');
 		});
 	});
 
@@ -286,7 +289,7 @@ describe('boardRepository test', () => {
 		it('정상 삭제', async () => {
 			await BoardRepository.deleteBoard(1);
 
-			const board = await Board.findOne({ where: { boardNo: 1 } });
+			const board = await Board.findOne({ where: { id: 1 } });
 			expect(board).toBeNull();
 		});
 	});
@@ -295,9 +298,9 @@ describe('boardRepository test', () => {
 		it('정상 조회', async () => {
 			const reply = await BoardRepository.getReplyDetail(1);
 
-			expect(reply.boardGroupNo).toBe(1);
-			expect(reply.boardUpperNo).toBe('1');
-			expect(reply.boardIndent).toBe(1);
+			expect(reply.groupNo).toBe(1);
+			expect(reply.upperNo).toBe('1');
+			expect(reply.indent).toBe(1);
 		});
 
 		it('데이터가 없는 경우', async () => {
@@ -313,19 +316,19 @@ describe('boardRepository test', () => {
 
 	describe('postBoardReply', () => {
 		it('정상 저장', async () => {
-			const replyNo = await BoardRepository.postBoardReply('testReplyTitle', 'testReplyContent', 1, 2, '1', 'tester');
+			const replyNo = await BoardRepository.postBoardReply('testReplyTitle', 'testReplyContent', 1, 2, '1', DEFAULT_MEMBER.id);
 
 			expect(replyNo).toBeDefined();
 
-			const saveReply = await Board.findOne({ where: { boardNo: replyNo } });
+			const saveReply = await Board.findOne({ where: { id: replyNo } });
 
-			expect(saveReply.boardTitle).toBe('testReplyTitle');
-			expect(saveReply.boardContent).toBe('testReplyContent');
-			expect(saveReply.userId).toBe('tester');
-			expect(saveReply.boardDate).toBeDefined();
-			expect(saveReply.boardIndent).toBe(2);
-			expect(saveReply.boardGroupNo).toBe(1);
-			expect(saveReply.boardUpperNo).toBe(`1,${replyNo}`);
+			expect(saveReply.title).toBe('testReplyTitle');
+			expect(saveReply.content).toBe('testReplyContent');
+			expect(saveReply.userId).toBe(DEFAULT_MEMBER.id);
+			expect(saveReply.createdAt).toBeDefined();
+			expect(saveReply.indent).toBe(2);
+			expect(saveReply.groupNo).toBe(1);
+			expect(saveReply.upperNo).toBe(`1,${replyNo}`);
 		});
 	})
 });

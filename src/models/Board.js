@@ -4,38 +4,42 @@ export default class Board extends Sequelize.Model {
     static init(sequelize) {
         return super.init(
             {
-                boardNo: {
+                id: {
                     type: Sequelize.BIGINT.UNSIGNED,
                     allowNull: false,
                     autoIncrement: true,
                     primaryKey: true,
                 },
                 userId: {
-                    type: Sequelize.STRING(50),
+                    type: Sequelize.BIGINT.UNSIGNED,
+                    allowNull: false,
+                    field: 'user_id',
+                },
+                title: {
+                    type: Sequelize.STRING(200),
                     allowNull: false,
                 },
-                boardTitle: {
-                    type: Sequelize.STRING(100),
-                    allowNull: false,
-                },
-                boardContent: {
+                content: {
                     type: Sequelize.TEXT,
                     allowNull: true,
                 },
-                boardDate: {
-                    type: Sequelize.DATE,
+                createdAt: {
+                    type: Sequelize.DATE(3),
                     allowNull: false,
                     defaultValue: Sequelize.NOW,
+                    field: 'created_at',
                 },
-                boardGroupNo: {
+                groupNo: {
                     type: Sequelize.BIGINT.UNSIGNED,
                     allowNull: true,
+                    field: 'group_no',
                 },
-                boardUpperNo: {
-                    type: Sequelize.STRING(200),
+                upperNo: {
+                    type: Sequelize.STRING(255),
                     allowNull: true,
+                    field: 'upper_no',
                 },
-				boardIndent: {
+				indent: {
 					type: Sequelize.INTEGER,
 					allowNull: false,
 					defaultValue: 1,
@@ -45,7 +49,7 @@ export default class Board extends Sequelize.Model {
                 timestamps: false,
                 underscored: false,
                 modelName: 'Board',
-                tableName: 'hierarchicalBoard',
+                tableName: 'board',
                 paranoid: false,
                 charset: 'utf8mb4',
                 collate: 'utf8mb4_0900_ai_ci',
@@ -56,7 +60,7 @@ export default class Board extends Sequelize.Model {
     static associate(db) {
         db.Board.belongsTo(db.Member, {
             foreignKey: 'userId',
-            targetKey: 'userId',
+            targetKey: 'id',
             onDelete: 'CASCADE',
             onUpdate: 'CASCADE',
         });

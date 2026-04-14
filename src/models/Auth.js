@@ -11,8 +11,9 @@ export default class Auth extends Sequelize.Model {
                     primaryKey: true,
                 },
                 userId: {
-                    type: Sequelize.STRING(50),
+                    type: Sequelize.BIGINT.UNSIGNED,
                     allowNull: false,
+                    field: 'user_id',
                 },
                 auth: {
                     type: Sequelize.STRING(20),
@@ -35,7 +36,7 @@ export default class Auth extends Sequelize.Model {
     static associate(db) {
         db.Auth.belongsTo(db.Member, {
             foreignKey: 'userId',
-            targetKey: 'userId',
+            targetKey: 'id',
             onDelete: 'CASCADE',
             onUpdate: 'CASCADE',
         });

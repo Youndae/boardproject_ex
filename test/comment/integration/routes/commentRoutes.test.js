@@ -112,7 +112,10 @@ describe('commentRoutes integration test', () => {
 	});
 
 	afterEach(async () => {
-		await Comment.destroy({ where: {} });
+		await Comment.destroy({
+			where: {},
+			force: true
+		});
 	});
 
 	describe('GET /board', () => {

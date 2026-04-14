@@ -8,86 +8,88 @@ const commentAmount = 20;
 
 export class CommentRepository {
 
-	static async getCommentListPageable({ boardNo, imageNo, pageNum = 1 }) {
-		const offset = getOffset(pageNum, commentAmount);
-		const where = boardNo ? { boardNo: boardNo } : { imageNo: imageNo };
+
+	// CASE WHEN 추가 필요.
+	static async getCommentListPageable({ boardId, imageId, page = 1 }) {
+		const offset = getOffset(page, commentAmount);
+		const where = boardId ? { boardId: boardId } : { imageId: imageId };
 
 		const commentList = await Comment.findAndCountAll({
 			attributes: [
-				'commentNo', 
+				'id',
 				'userId', 
-				'commentDate', 
-				'commentContent', 
-				'commentGroupNo', 
-				'commentIndent', 
-				'commentUpperNo'
+				'createdAt',
+				'content',
+				'groupNo',
+				'indent',
+				'upperNo'
 			],
 			where: where,
 			limit: commentAmount,
 			offset: offset,
-			order: [ ['commentGroupNo', 'DESC'], ['commentUpperNo', 'ASC'] ],
+			order: [ ['groupNo', 'DESC'], ['upperNo', 'ASC'] ],
 		});
 
 		return commentList;
 	}
 
-	static async postComment(boardNo, imageNo, userId, commentContent, options = {}) {
+	static async postComment(boardId, imageId, userId, content, options = {}) {
 		const comment = await Comment.create({
-			boardNo: boardNo,
-			imageNo: imageNo,
+			boardId: boardId,
+			imageId: imageId,
 			userId: userId,
-			commentContent: commentContent,
-			commentIndent: 1,
+			content: content,
+			indent: 1,
 		}, { transaction: options.transaction });
 
 		await Comment.update({
-			commentGroupNo: comment.commentNo,
-			commentUpperNo: `${comment.commentNo}`,
-		}, { where: { commentNo: comment.commentNo }, transaction: options.transaction });
+			groupNo: comment.id,
+			upperNo: `${comment.id}`,
+		}, { where: { id: comment.id }, transaction: options.transaction });
 
 		return comment;
 	}
 
-	static async deleteComment(commentNo) {
-		await Comment.destroy({ where: { commentNo: commentNo } });
+	static async deleteComment(id) {
+		await Comment.destroy({ where: { id: id } });
 	}
 
 	static async postReplyComment(
-		boardNo,
-		imageNo,
-		commentContent,
-		commentGroupNo,
-		commentIndent,
-		commentUpperNo,
+		boardId,
+		imageId,
+		content,
+		groupNo,
+		indent,
+		upperNo,
 		userId,
 		options = {}
 	) {
 
 		const comment = await Comment.create({
-			boardNo: boardNo,
-			imageNo: imageNo,
+			boardId: boardId,
+			imageId: imageId,
 			userId: userId,
-			commentContent: commentContent,
-			commentGroupNo: commentGroupNo,
-			commentIndent: commentIndent,
-			commentUpperNo: commentUpperNo,
+			content: content,
+			groupNo: groupNo,
+			indent: indent,
+			upperNo: upperNo,
 		}, { transaction: options.transaction });
 
 		await Comment.update({
-			commentUpperNo: `${commentUpperNo},${comment.commentNo}`,
-		}, { where: { commentNo: comment.commentNo }, transaction: options.transaction });
+			upperNo: `${upperNo},${comment.id}`,
+		}, { where: { id: comment.id }, transaction: options.transaction });
 
 		return comment;
 	}
 
-	static async checkCommentWriter(commentNo) {
+	static async checkCommentWriter(id) {
 		const comment = await Comment.findOne({
 			attributes: ['userId'],
-			where: { commentNo: commentNo },
+			where: { id },
 		});
 
 		if(!comment) {
-			logger.error('Comment writer data not found, commentNo: ', { commentNo });
+			logger.error('Comment writer data not found, id: ', { id });
 			throw new CustomError(ResponseStatus.NOT_FOUND);
 		}
 

@@ -5,28 +5,32 @@ export default class ImageData extends Sequelize.Model {
         return super.init(
             {
                 imageName: {
-                    type: Sequelize.STRING(200),
+                    type: Sequelize.STRING(255),
                     allowNull: false,
                     primaryKey: true,
+                    field: 'image_name'
                 },
-                imageNo: {
+                imageId: {
                     type: Sequelize.BIGINT.UNSIGNED,
                     allowNull: false,
+                    field: 'image_id'
                 },
-                oldName: {
-                    type: Sequelize.STRING(200),
+                originName: {
+                    type: Sequelize.STRING(255),
                     allowNull: false,
+                    field: 'origin_name',
                 },
                 imageStep: {
                     type: Sequelize.INTEGER,
                     allowNull: false,
+                    field: 'image_step',
                 }
             }, {
                 sequelize,
                 timestamps: false,
                 underscored: false,
                 modelName: 'ImageData',
-                tableName: 'imageData',
+                tableName: 'image_data',
                 paranoid: false,
                 charset: 'utf8mb4',
                 collate: 'utf8mb4_0900_ai_ci',
@@ -36,8 +40,8 @@ export default class ImageData extends Sequelize.Model {
 
     static associate(db) {
         db.ImageData.belongsTo(db.ImageBoard, {
-            foreignKey: 'imageNo',
-            targetKey: 'imageNo',
+            foreignKey: 'imageId',
+            targetKey: 'id',
             onDelete: 'CASCADE',
             onUpdate: 'CASCADE',
         });

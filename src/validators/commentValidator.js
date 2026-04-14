@@ -6,16 +6,9 @@ const commentContentValidator = z.string()
 
 
 export const postCommentValidator = z.object({
-	commentContent: commentContentValidator
+	content: commentContentValidator
 });
 
 export const postReplyCommentValidator = z.object({
-	commentContent: commentContentValidator,
-	commentGroupNo: z.number().int().positive(),
-	commentIndent: z.number().int().positive(),
-	commentUpperNo: z.string()
-				.regex(
-					/^(\d+,)*\d+$/, 
-					{ message: 'commentUpperNo의 구조가 올바르지 않습니다.'}
-				),
+	content: commentContentValidator,
 });

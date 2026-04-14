@@ -4,34 +4,42 @@ export default class Member extends Sequelize.Model {
     static init(sequelize) {
         return super.init(
             {
+                id: {
+                  type: Sequelize.BIGINT.UNSIGNED,
+                  allowNull: false,
+                  autoIncrement: true,
+                  primaryKey: true,
+                },
                 userId: {
-                    type: Sequelize.STRING(50),
+                    type: Sequelize.STRING(100),
                     allowNull: false,
                     unique: true,
-                    primaryKey: true
+                    field: 'user_id'
                 },
-                userPw: {
-                    type: Sequelize.STRING(200),
+                password: {
+                    type: Sequelize.STRING(255),
                     allowNull: true,
                 },
-                userName: {
+                username: {
                     type: Sequelize.STRING(50),
                     allowNull: false,
+                    field: 'user_name',
                 },
-				nickName: {
+				nickname: {
 					type: Sequelize.STRING(50),
 					allowNull: true,
+                    unique: true,
 				},
                 email: {
-                    type: Sequelize.STRING(200),
+                    type: Sequelize.STRING(100),
                     allowNull: false,
                 },
-                profileThumbnail: {
-                    type: Sequelize.STRING(200),
+                profile: {
+                    type: Sequelize.STRING(255),
                     allowNull: true,
                 },
                 provider: {
-                    type: Sequelize.STRING(45),
+                    type: Sequelize.STRING(20),
                     allowNull: false,
                     defaultValue: 'local',
                 }
@@ -51,7 +59,7 @@ export default class Member extends Sequelize.Model {
     static associate(db) {
 		db.Member.hasMany(db.Auth, {
 			foreignKey: 'userId',
-			sourceKey: 'userId',
+			sourceKey: 'id',
 			as: 'auths',
 		})
 	}

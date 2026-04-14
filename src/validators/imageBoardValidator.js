@@ -16,15 +16,15 @@ export const imageBoardListSearchValidator = z.object({
 				.max(50, { message: '검색어는 50자 이하이어야 합니다.'})
 				.optional(),
 	searchType: searchTypeValidator.optional(),
-	pageNum: z.number().int().positive().optional(),
+	page: z.number().int().positive().optional(),
 });
 
 export const postImageBoardValidator = z.object({
-	imageTitle: boardTitleValidator,
-	imageContent: boardContentValidator,
+	title: boardTitleValidator,
+	content: boardContentValidator,
 });
 
 export const patchImageBoardValidator = z.object({
-	imageTitle: boardTitleValidator,
-	imageContent: boardContentValidator,
+	title: boardTitleValidator,
+	content: boardContentValidator,
 });

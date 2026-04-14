@@ -21,21 +21,22 @@ describe('authRepository test', () => {
 	describe('createMemberAUth', () => {
 		it('정상 생성', async() => {
 			Member.create({
+				id: 1,
 				userId: 'tester',
-				userPw: 'testerPasword',
+				password: 'testerPasword',
 				email: 'tester@tester.com',
-				userName: 'testerName',
-				nickName: 'testerNickName',
-				profileThumbnail: 'testerProfileThumbnail.jpg',
+				username: 'testerName',
+				nickname: 'testerNickName',
+				profile: 'testerProfileThumbnail.jpg',
 				provider: 'local',
 			});
 
-			await AuthRepository.createMemberAuth('tester', 'ROLE_MEMBER');
+			await AuthRepository.createMemberAuth(1, 'ROLE_MEMBER');
 
-			const auth = await Auth.findOne({ where: { userId: 'tester' } });
+			const auth = await Auth.findOne({ where: { userId: 1 } });
 
 			expect(auth).toBeDefined();
-			expect(auth.userId).toBe('tester');
+			expect(auth.userId).toBe(1);
 			expect(auth.auth).toBe('ROLE_MEMBER');
 		});
 

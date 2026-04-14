@@ -4,45 +4,56 @@ export default class Comment extends Sequelize.Model {
     static init(sequelize) {
         return super.init(
             {
-                commentNo: {
+                id: {
                     type: Sequelize.BIGINT.UNSIGNED,
                     allowNull: false,
                     autoIncrement: true,
                     primaryKey: true,
                 },
-                boardNo: {
+                boardId: {
                     type: Sequelize.BIGINT.UNSIGNED,
                     allowNull: true,
+                    field: 'board_id'
                 },
-                imageNo: {
+                imageId: {
                     type: Sequelize.BIGINT.UNSIGNED,
                     allowNull: true,
+                    field: 'image_board_id'
                 },
                 userId: {
-                    type: Sequelize.STRING(50),
+                    type: Sequelize.BIGINT.UNSIGNED,
                     allowNull: false,
+                    field: 'user_id'
                 },
-                commentContent: {
+                content: {
                     type: Sequelize.TEXT,
                     allowNull: true,
                 },
-                commentDate: {
-                    type: Sequelize.DATE,
-                    allowNull: false,
-                    defaultValue: Sequelize.NOW,
-                },
-                commentGroupNo: {
+                groupNo: {
                     type: Sequelize.BIGINT.UNSIGNED,
                     allowNull: true,
+                    field: 'group_no',
                 },
-                commentIndent: {
+                indent: {
                     type: Sequelize.INTEGER,
                     allowNull: false,
                     defaultValue: 1,
                 },
-                commentUpperNo: {
-                    type: Sequelize.STRING(200),
+                upperNo: {
+                    type: Sequelize.STRING(255),
                     allowNull: true,
+                    field: 'upper_no',
+                },
+                createdAt: {
+                    type: Sequelize.DATE(3),
+                    allowNull: false,
+                    defaultValue: Sequelize.NOW,
+                    field: 'created_at',
+                },
+                deletedAt: {
+                    type: Sequelize.DATE(3),
+                    allowNull: true,
+                    field: 'deleted_at'
                 }
             }, {
                 sequelize,
@@ -50,7 +61,8 @@ export default class Comment extends Sequelize.Model {
                 underscored: false,
                 modelName: 'Comment',
                 tableName: 'comment',
-                paranoid: false,
+                paranoid: true,
+                deletedAt: 'deletedAt',
                 charset: 'utf8mb4',
                 collate: 'utf8mb4_0900_ai_ci',
             }
@@ -59,22 +71,22 @@ export default class Comment extends Sequelize.Model {
 
     static associate(db) {
         db.Comment.belongsTo(db.Board, {
-            foreignKey: 'boardNo',
-            targetKey: 'boardNo',
+            foreignKey: 'boardId',
+            targetKey: 'id',
             onDelete: 'CASCADE',
             onUpdate: 'CASCADE',
         });
 
         db.Comment.belongsTo(db.ImageBoard, {
-            foreignKey: 'imageNo',
-            targetKey: 'imageNo',
+            foreignKey: 'imageId',
+            targetKey: 'id',
             onDelete: 'CASCADE',
             onUpdate: 'CASCADE',
         });
 
         db.Comment.belongsTo(db.Member, {
             foreignKey: 'userId',
-            targetKey: 'userId',
+            targetKey: 'id',
             onDelete: 'CASCADE',
             onUpdate: 'CASCADE',
         });

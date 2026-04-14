@@ -8,6 +8,7 @@ import morgan from 'morgan';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { tokenMiddleware } from '#middleware/tokenMiddleware.js';
+import { responseHandler } from '#middleware/responseHandler.js'
 import { initRedis, closeRedis } from '#config/redisConfig.js';
 import cors from 'cors';
 import { ResponseStatusCode, ResponseStatus } from '#constants/responseStatus.js';
@@ -68,6 +69,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(tokenMiddleware);
+app.use(responseHandler);
 app.use(passport.initialize());
 
 // TODO: Router 등록
