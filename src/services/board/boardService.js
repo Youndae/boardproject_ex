@@ -5,17 +5,11 @@ import { ResponseStatus } from "#constants/responseStatus.js"
 import { sequelize } from "#models/index.js"
 
 
-export async function getBoardListService({keyword, searchType, pageNum = 1}) {
+export async function getBoardListService({keyword, searchType, page = 1}) {
 	try {
-		const boardList = await BoardRepository.getBoardListPageable({keyword, searchType, pageNum});
-
-		return {
-				content: boardList.rows,
-				empty: boardList.count === 0,
-				totalElements: boardList.count
-			}
+		return await BoardRepository.getBoardListPageable({keyword, searchType, page});
 	}catch (error) {
-		logger.error('Failed to get board list service.')
+		logger.error('Failed to get board list service.');
 
 		if(error instanceof CustomError)
 			throw error;
@@ -25,11 +19,18 @@ export async function getBoardListService({keyword, searchType, pageNum = 1}) {
 }
 
 
-export async function getBoardDetailService(boardNo) {
+export async function getBoardDetailService(id) {
 	try {
-		const board = await BoardRepository.getBoardDetail(boardNo);
+		const result = await BoardRepository.getBoardDetail(id);
 
-		return board;
+		console.log('boardDetailService  result : ', result);
+
+		if(!result) {
+			logger.warn('Board detail data not found.', {id});
+			throw new CustomError(ResponseStatus.BAD_REQUEST);
+		}
+
+		return result;
 	}catch (error) {
 		logger.error('Failed to get board detail service.')
 
@@ -41,10 +42,10 @@ export async function getBoardDetailService(boardNo) {
 }
 
 
-export async function postBoardService(userId, {boardTitle, boardContent}) {
+export async function postBoardService(userId, {title, content}) {
 	const transaction = await sequelize.transaction();
 	try {
-		const boardNo = await BoardRepository.postBoard(boardTitle, boardContent, userId, {transaction});
+		const boardNo = await BoardRepository.postBoard(title, content, userId, {transaction});
 
 		await transaction.commit();
 
@@ -61,31 +62,39 @@ export async function postBoardService(userId, {boardTitle, boardContent}) {
 }
 
 
-export async function patchBoardDetailDataService(userId, boardNo) {
+export async function patchBoardDetailDataService(userId, id) {
 	try {
-		const board = await BoardRepository.getPatchDetailData(boardNo, userId);
+		const board = await BoardRepository.getPatchDetailData(id);
 
-		return board;
+		if(!board) {
+			logger.error('Patch board detail data not found.', { id });
+			throw new CustomError(ResponseStatus.BAD_REQUEST);
+		}
+
+		if(board.userId === userId) {
+			logger.error('User is not the author of the board.', { id, userId });
+			throw new CustomError(ResponseStatus.FORBIDDEN);
+		}
+
+		return {
+			title: board.title,
+			content: board.content,
+		};
 	}catch (error) {
 		logger.error('Failed to get patch detail data service.', error);
-
-		if(error instanceof CustomError)
-			throw error;
 
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
 	}
 }
 
 
-export async function patchBoardService(userId, boardNo, {boardTitle, boardContent}) {
+export async function patchBoardService(userId, id, {title, content}) {
 	try {
-		const checkResult = await checkWriter(userId, boardNo);
+		await checkWriter(userId, id);
 
-		if(checkResult) {
-			await BoardRepository.patchBoard(boardNo, boardTitle, boardContent);
+		await BoardRepository.patchBoard(id, title, content);
 
-			return parseInt(boardNo);
-		}
+		return parseInt(id);
 	}catch (error) {
 		logger.error('Failed to patch board service.', error);
 
@@ -97,13 +106,11 @@ export async function patchBoardService(userId, boardNo, {boardTitle, boardConte
 }
 
 
-export async function deleteBoardService(userId, boardNo) {
+export async function deleteBoardService(userId, id) {
 	try {
-		const checkResult = await checkWriter(userId, boardNo);
+		await checkWriter(userId, id);
 
-		if(checkResult) {
-			await BoardRepository.deleteBoard(boardNo);
-		}
+		await BoardRepository.deleteBoard(id);
 	}catch (error) {
 		logger.error('Failed to delete board service.', error);
 
@@ -115,11 +122,14 @@ export async function deleteBoardService(userId, boardNo) {
 }
 
 
-export async function getReplyDetailService(boardNo) {
+export async function getReplyDetailService(id) {
 	try {
-		const reply = await BoardRepository.getReplyDetail(boardNo);
+		const board = await BoardRepository.getReplyDetail(id);
 
-		return reply;
+		if(!board) {
+			logger.error('Reply detail data not found.', { id });
+			throw new CustomError(ResponseStatus.BAD_REQUEST);
+		}
 	}catch (error) {
 		logger.error('Failed to get reply detail service.', error);
 
@@ -130,15 +140,17 @@ export async function getReplyDetailService(boardNo) {
 	}
 }
 
-export async function postBoardReplyService(userId, {boardTitle, boardContent, boardGroupNo, boardIndent, boardUpperNo}) {
+export async function postBoardReplyService(userId, id, {title, content}) {
 	const transaction = await sequelize.transaction();
 	try {
+		const targetBoard = await BoardRepository.getReplyDetail(id);
+
 		const replyNo = await BoardRepository.postBoardReply(
-								boardTitle, 
-								boardContent, 
-								boardGroupNo, 
-								boardIndent + 1, 
-								boardUpperNo, 
+								title,
+								content,
+								targetBoard.groupNo,
+								targetBoard.indent + 1,
+								targetBoard.upperNo,
 								userId, 
 								{transaction}
 							);
@@ -158,13 +170,16 @@ export async function postBoardReplyService(userId, {boardTitle, boardContent, b
 }
 
 // 기존 데이터 조회 후 작성자 체크
-async function checkWriter(userId, boardNo) {
-	const originalBoard = await BoardRepository.getBoardDetail(boardNo);
+async function checkWriter(userId, id) {
+	const board = await BoardRepository.getBoardWriter(id);
 
-	if(originalBoard.userId !== userId) {
-		logger.error('User is not the author of the board, boardNo: ', boardNo);
-		throw new CustomError(ResponseStatus.FORBIDDEN);
+	if(!board) {
+		logger.warn('CheckWriter getBoardWriter not found.', {id});
+		throw new CustomError(ResponseStatus.BAD_REQUEST);
 	}
 
-	return true;
+	if(board.userId !== userId) {
+		logger.error('User is not the author of the board.', {id, userId});
+		throw new CustomError(ResponseStatus.FORBIDDEN);
+	}
 }

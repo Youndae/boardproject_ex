@@ -21,12 +21,12 @@ import {
 const router = express.Router();
 
 router.get('/', validate(boardListSearchValidator, 'query'), getBoardList);
-router.get('/:boardNo', getBoardDetail);
+router.get('/:id', getBoardDetail);
 router.post('/', isLoggedIn, validate(postBoardValidator), postBoard);
-router.get('/patch-detail/:boardNo', isLoggedIn, patchBoardDetailData);
-router.patch('/:boardNo', isLoggedIn, validate(patchBoardValidator), patchBoard);
-router.delete('/:boardNo', isLoggedIn, deleteBoard);
-router.get('/reply/:boardNo', isLoggedIn, getReplyDetail);
+router.get('/patch-detail/:id', isLoggedIn, patchBoardDetailData);
+router.patch('/:id', isLoggedIn, validate(patchBoardValidator), patchBoard);
+router.delete('/:id', isLoggedIn, deleteBoard);
+router.get('/reply/:id', isLoggedIn, getReplyDetail);
 router.post('/reply', isLoggedIn, validate(postBoardReplyValidator), postBoardReply);
 
 

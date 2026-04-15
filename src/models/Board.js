@@ -63,6 +63,7 @@ export default class Board extends Sequelize.Model {
             targetKey: 'id',
             onDelete: 'CASCADE',
             onUpdate: 'CASCADE',
+            as: 'Member'
         });
     }
 }

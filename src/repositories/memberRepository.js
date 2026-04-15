@@ -17,7 +17,7 @@ export class MemberRepository {
 		try {
 			const member = await Member.findOne({
 				where: { userId },
-				attributes: ['userId'],
+				attributes: ['id'],
 				include: [
 					{
 						model: Auth,

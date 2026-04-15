@@ -2,8 +2,8 @@ import { Board, Member } from "#models/index.js"
 import logger from "#config/loggerConfig.js"
 import { ResponseStatus } from "#constants/responseStatus.js"
 import CustomError from "#errors/customError.js"
-import { getOffset } from "#utils/paginationUtils.js"
-import { Op } from "sequelize"
+import { getOffset, toPage } from "#utils/paginationUtils.js"
+import {Op, Sequelize} from "sequelize"
 
 const boardAmount = 20;
 
@@ -40,7 +40,13 @@ export class BoardRepository {
 		}
 
 		const boardList = await Board.findAndCountAll({
-			attributes: ['id', 'title', 'userId', 'createdAt', 'indent'],
+			attributes: [
+				'id',
+				'title',
+				[Sequelize.col('Member.nickname'), 'writer'],
+				'createdAt',
+				'indent'
+			],
 			where,
 			include: [memberInclude],
 			limit: boardAmount,
@@ -48,19 +54,29 @@ export class BoardRepository {
 			order: [['groupNo', 'DESC'], ['upperNo', 'ASC']],
 		});
 
-		return boardList;
+		return toPage(boardList, page, boardAmount);
 	}
 
 	static async getBoardDetail(id) {
+		console.log('getBoardDetail id : ', id);
 		const board = await Board.findOne({
-			attributes: ['id', 'title', 'content', 'userId', 'createdAt'],
-			where: { id: id}
+			attributes: [
+				'title',
+				[Sequelize.col('Member.nickname'), 'writer'],
+				[Sequelize.col('Member.user_id'), 'writerId'],
+				'content',
+				'createdAt'
+			],
+			include: [
+				{
+					model: Member,
+					as: 'Member',
+					attributes: []
+				}
+			],
+			where: { id: id},
+			raw: true
 		});
-
-		if(!board) {
-			logger.error('Board detail data not found, boardNo: ', { id });
-			throw new CustomError(ResponseStatus.NOT_FOUND);
-		}
 
 		return board;
 	}
@@ -83,22 +99,23 @@ export class BoardRepository {
 		return id;
 	}
 
-	static async getPatchDetailData(id, userId) {
+	static async getPatchDetailData(id) {
 		const board = await Board.findOne({
-			attributes: ['id', 'title', 'content', 'userId'],
-			where: { id }
+			attributes: [
+				'id',
+				'title',
+				'content',
+				'userId',
+			],
+			include: [
+				{
+					model: Member,
+					as: 'Member'
+				}
+			],
+			where: { id },
+			raw: true,
 		});
-
-		if(!board) {
-			logger.error('Board detail data not found, boardNo: ', { id });
-			throw new CustomError(ResponseStatus.NOT_FOUND);
-		}
-
-		if(board.userId !== userId) {
-			// 작성자가 아닌 경우
-			logger.error('User is not the author of the board, boardNo: ', { id });
-			throw new CustomError(ResponseStatus.FORBIDDEN);
-		}
 
 		return board;
 	}
@@ -115,17 +132,10 @@ export class BoardRepository {
 	}
 
 	static async getReplyDetail(id) {
-		const reply = await Board.findOne({
-			attributes: ['groupNo', 'upperNo', 'indent'],
-			where: { id }
-		})
-
-		if(!reply) {
-			logger.error('Reply detail data not found, boardNo: ', { id });
-			throw new CustomError(ResponseStatus.NOT_FOUND);
-		}
-
-		return reply;
+		return await Board.findOne({
+			where: { id },
+			raw: true,
+		});
 	}
 
 	static async postBoardReply(title, content, groupNo, indent, upperNo, userId, options = {}) {
@@ -146,5 +156,12 @@ export class BoardRepository {
 		}, { where: { id: replyNo }, transaction: options.transaction });
 
 		return replyNo;
+	}
+
+	static async getBoardWriter(id){
+		return await Board.findOne({
+			attributes: ['userId'],
+			where: {id}
+		});
 	}
 }

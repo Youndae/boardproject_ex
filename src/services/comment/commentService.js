@@ -4,46 +4,51 @@ import CustomError from "#errors/customError.js";
 import { ResponseStatus } from "#constants/responseStatus.js";
 import { sequelize } from "#models/index.js";
 
-export async function getCommentListService({boardNo, imageNo, pageNum = 1}) {
-	await checkCommentBoardStatus(boardNo, imageNo);
+export async function getCommentListService({boardId, imageId, pageNum = 1}) {
+	checkCommentBoardStatus(boardId, imageId);
 
 	try {
-		const commentList = await CommentRepository.getCommentListPageable({ boardNo, imageNo, pageNum });
+		const commentList = await CommentRepository.getCommentListPageable({ boardId, imageId, pageNum });
+
+		const items = commentList.items.map(toCommentResponse);
 
 		return {
-			content: commentList.rows,
-			empty: commentList.count === 0,
-			totalElements: commentList.count,
+			...commentList,
+			items,
 		};
 	}catch (error) {
 		logger.error('Failed to get comment list service.', error);
+
+		if(error instanceof CustomError)
+			throw error;
+
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
 	}
 }
 
-export async function postCommentService({ boardNo = null, imageNo = null, commentContent }, userId) {
-	await checkCommentBoardStatus(boardNo, imageNo);
+export async function postCommentService(boardId = null, imageId = null, { content }, userId) {
+	checkCommentBoardStatus(boardId, imageId);
 
 	const transaction = await sequelize.transaction();
 	try {
-		const comment = await CommentRepository.postComment(boardNo, imageNo, userId, commentContent, { transaction });
+		await CommentRepository.postComment(boardId, imageId, userId, content, { transaction });
 
 		await transaction.commit();
-
-		return comment;
 	}catch (error) {
 		logger.error('Failed to post comment service.', error);
 		await transaction.rollback();
 
+		if(error instanceof CustomError)
+			throw error;
+
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
 	}
 }
 
-export async function deleteCommentService(commentNo, userId) {
+export async function deleteCommentService(id, userId) {
+	await checkCommentWriter(id, userId)
 	try {
-		if(await checkCommentWriter(commentNo, userId)) {
-			await CommentRepository.deleteComment(commentNo);
-		}
+		await CommentRepository.deleteComment(id);
 	}catch (error) {
 		logger.error('Failed to delete comment service.', error);
 
@@ -59,22 +64,23 @@ export async function postReplyCommentService(
 		boardNo = null, 
 		imageNo = null, 
 	},
+	{ id },
 	{
-		commentContent, 
-		commentGroupNo, 
-		commentIndent, 
-		commentUpperNo 
-	}, userId) {
+		content,
+	},
+	userId) {
 	const transaction = await sequelize.transaction();
 	try {
+
+		const targetComment = await CommentRepository.findById(id)
 
 		await CommentRepository.postReplyComment(
 			boardNo, 
 			imageNo, 
-			commentContent, 
-			commentGroupNo, 
-			commentIndent + 1, 
-			commentUpperNo, 
+			content,
+			targetComment.groupNo,
+			targetComment.indent + 1,
+			targetComment.upperNo,
 			userId, 
 			{ transaction }
 		);
@@ -82,29 +88,49 @@ export async function postReplyCommentService(
 		await transaction.commit();
 	}catch (error) {
 		logger.error('Failed to post reply comment service.', error);
-		console.error('error: ', error);
+
 		await transaction.rollback();
+
+		if(error instanceof CustomError)
+			throw error
 
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
 	}
 }
 
-async function checkCommentWriter(commentNo, userId) {
-	const comment = await CommentRepository.checkCommentWriter(commentNo);
+async function checkCommentWriter(id, userId) {
+	const comment = await CommentRepository.checkCommentWriter(id);
 
-	if(comment.userId !== userId) {
-		logger.error('User is not the author of the comment, commentNo: ', { commentNo });
-		throw new CustomError(ResponseStatus.FORBIDDEN);
+	if(!comment) {
+		logger.error('Comment writer data not found.', { id });
+		throw new CustomError(ResponseStatus.BAD_REQUEST);
 	}
 
-	return true;
+	if(comment.userId !== userId) {
+		logger.error('User is not the author of the comment.', { id, userId });
+		throw new CustomError(ResponseStatus.FORBIDDEN);
+	}
 }
 
-async function checkCommentBoardStatus(boardNo, imageNo) {
+function checkCommentBoardStatus(boardNo, imageNo) {
 	if((!boardNo && !imageNo) || (boardNo && imageNo)) {
 		logger.error('boardNo and imageNo must be provided together');
 		throw new CustomError(ResponseStatus.BAD_REQUEST);
 	}
 
 	return true;
+}
+
+const toCommentResponse = (row) => {
+	const isDeleted = !!row.deletedAt;
+
+	return {
+		id: row.id,
+		writer: isDeleted ? "" : row.nickname,
+		writerId: isDeleted ? "" : row.userId,
+		createdAt: row.createdAt.toISOString().slice(0, 10),
+		content: isDeleted ? "삭제된 댓글입니다." : row.content,
+		indent: row.indent,
+		isDeleted
+	}
 }

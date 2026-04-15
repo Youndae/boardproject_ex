@@ -28,6 +28,7 @@ const SAVE_MEMBER = [
 
 const DEFAULT_MEMBER = SAVE_MEMBER[0];
 const BOARD_FIXTURE_LENGTH = 30;
+const AMOUNT = 20;
 
 describe('boardRepository test', () => {
 	beforeAll(async () => {
@@ -109,91 +110,100 @@ describe('boardRepository test', () => {
 	describe('getBoardListPageable', () => {
 		it('정상 조회', async () => {
 			const boardList = await BoardRepository.getBoardListPageable({ keyword: '', searchType: '', pageNum: 1 });
-			expect(boardList.count).toBe(BOARD_FIXTURE_LENGTH + 3);
-			expect(boardList.rows.length).toBe(20);
+			expect(boardList.totalPages).toBe(Math.ceil(BOARD_FIXTURE_LENGTH / AMOUNT));
+			expect(boardList.items.length).toBe(20);
 
-			expect(boardList.rows[0].id).toBe(BOARD_FIXTURE_LENGTH);
-			expect(boardList.rows[1].id).toBe(BOARD_FIXTURE_LENGTH + 1);
-			expect(boardList.rows[2].id).toBe(BOARD_FIXTURE_LENGTH + 3);
-			expect(boardList.rows[3].id).toBe(BOARD_FIXTURE_LENGTH + 2);
+			expect(boardList.items[0].id).toBe(BOARD_FIXTURE_LENGTH);
+			expect(boardList.items[1].id).toBe(BOARD_FIXTURE_LENGTH + 1);
+			expect(boardList.items[2].id).toBe(BOARD_FIXTURE_LENGTH + 3);
+			expect(boardList.items[3].id).toBe(BOARD_FIXTURE_LENGTH + 2);
 		});
 
 		it('제목 기준 검색 조회. 다중 결과', async () => {
 			const boardList = await BoardRepository.getBoardListPageable({ keyword: 'testTitle', searchType: 't', pageNum: 1 });
 
-			expect(boardList.count).toBe(BOARD_FIXTURE_LENGTH + 3);
-			expect(boardList.rows.length).toBe(20);
+			expect(boardList.totalPages).toBe(Math.ceil(BOARD_FIXTURE_LENGTH / AMOUNT));
+			expect(boardList.items.length).toBe(AMOUNT);
 
-			expect(boardList.rows[0].id).toBe(BOARD_FIXTURE_LENGTH);
-			expect(boardList.rows[1].id).toBe(BOARD_FIXTURE_LENGTH + 1);
-			expect(boardList.rows[2].id).toBe(BOARD_FIXTURE_LENGTH + 3);
-			expect(boardList.rows[3].id).toBe(BOARD_FIXTURE_LENGTH + 2);
+			expect(boardList.items[0].id).toBe(BOARD_FIXTURE_LENGTH);
+			expect(boardList.items[1].id).toBe(BOARD_FIXTURE_LENGTH + 1);
+			expect(boardList.items[2].id).toBe(BOARD_FIXTURE_LENGTH + 3);
+			expect(boardList.items[3].id).toBe(BOARD_FIXTURE_LENGTH + 2);
 		});
 
 		it('제목 기준 검색 조회. 단일 결과', async () => {
 			const boardList = await BoardRepository.getBoardListPageable({ keyword: 'testTitle11', searchType: 't', pageNum: 1 });
 
-			expect(boardList.count).toBe(1);
-			expect(boardList.rows.length).toBe(1);
+			expect(boardList.totalPages).toBe(1);
+			expect(boardList.items.length).toBe(1);
 
-			expect(boardList.rows[0].id).toBe(11);
+			expect(boardList.items[0].id).toBe(11);
 		});
 
 		it('제목 기준 검색 조회. 다중 결과', async () => {
 			const boardList = await BoardRepository.getBoardListPageable({ keyword: 'testContent', searchType: 'c', pageNum: 1 });
 
-			expect(boardList.count).toBe(BOARD_FIXTURE_LENGTH + 3);
-			expect(boardList.rows.length).toBe(20);
+			expect(boardList.totalPages).toBe(Math.ceil(BOARD_FIXTURE_LENGTH / AMOUNT));
+			expect(boardList.items.length).toBe(AMOUNT);
 
-			expect(boardList.rows[0].id).toBe(BOARD_FIXTURE_LENGTH);
-			expect(boardList.rows[1].id).toBe(BOARD_FIXTURE_LENGTH + 1);
-			expect(boardList.rows[2].id).toBe(BOARD_FIXTURE_LENGTH + 3);
-			expect(boardList.rows[3].id).toBe(BOARD_FIXTURE_LENGTH + 2);
+			expect(boardList.items[0].id).toBe(BOARD_FIXTURE_LENGTH);
+			expect(boardList.items[1].id).toBe(BOARD_FIXTURE_LENGTH + 1);
+			expect(boardList.items[2].id).toBe(BOARD_FIXTURE_LENGTH + 3);
+			expect(boardList.items[3].id).toBe(BOARD_FIXTURE_LENGTH + 2);
 		})
 
 		it('내용 기준 검색 조회. 단일 결과', async () => {
 			const boardList = await BoardRepository.getBoardListPageable({ keyword: 'testContent11', searchType: 'c', pageNum: 1 });
 
-			expect(boardList.count).toBe(1);
-			expect(boardList.rows.length).toBe(1);
+			expect(boardList.totalPages).toBe(1);
+			expect(boardList.items.length).toBe(1);
+			expect(boardList.isEmpty).toBe(false);
+			expect(boardList.currentPage).toBe(1);
 
-			expect(boardList.rows[0].id).toBe(11);
+			expect(boardList.items[0].id).toBe(11);
 		});
 
 		it('제목 및 내용 기준 검색 조회. 다중 결과', async () => {
-			const boardList = await BoardRepository.getBoardListPageable({ keyword: 'testTitle', searchType: 'tc', pageNum: 1 });
+			const boardList = await BoardRepository.getBoardListPageable({ keyword: 'testTitle', searchType: 'tc', page: 1 });
 
-			expect(boardList.count).toBe(BOARD_FIXTURE_LENGTH + 3);
-			expect(boardList.rows.length).toBe(20);
+			expect(boardList.totalPages).toBe(Math.ceil(BOARD_FIXTURE_LENGTH / AMOUNT));
+			expect(boardList.items.length).toBe(AMOUNT);
+			expect(boardList.isEmpty).toBe(false);
+			expect(boardList.currentPage).toBe(1);
 			
-			expect(boardList.rows[0].id).toBe(BOARD_FIXTURE_LENGTH);
-			expect(boardList.rows[1].id).toBe(BOARD_FIXTURE_LENGTH + 1);
-			expect(boardList.rows[2].id).toBe(BOARD_FIXTURE_LENGTH + 3);
-			expect(boardList.rows[3].id).toBe(BOARD_FIXTURE_LENGTH + 2);
+			expect(boardList.items[0].id).toBe(BOARD_FIXTURE_LENGTH);
+			expect(boardList.items[1].id).toBe(BOARD_FIXTURE_LENGTH + 1);
+			expect(boardList.items[2].id).toBe(BOARD_FIXTURE_LENGTH + 3);
+			expect(boardList.items[3].id).toBe(BOARD_FIXTURE_LENGTH + 2);
 		});
 		
 		it('재목 및 내용 기준 검색 조회. 단일 결과', async () => {
-			const boardList = await BoardRepository.getBoardListPageable({ keyword: 'testTitle11', searchType: 'tc', pageNum: 1 });
+			const boardList = await BoardRepository.getBoardListPageable({ keyword: 'testTitle11', searchType: 'tc', page: 1 });
 
-			expect(boardList.count).toBe(1);
-			expect(boardList.rows.length).toBe(1);
-
-			expect(boardList.rows[0].id).toBe(11);
+			expect(boardList.totalPages).toBe(1);
+			expect(boardList.items.length).toBe(1);
+			expect(boardList.items[0].id).toBe(11);
+			expect(boardList.isEmpty).toBe(false);
+			expect(boardList.currentPage).toBe(1);
 		});
 
 		it('유저 기준 검색 조회.', async () => {
-			const boardList = await BoardRepository.getBoardListPageable({ keyword: DEFAULT_MEMBER.nickname, searchType: 'u', pageNum: 1 });
+			const boardList = await BoardRepository.getBoardListPageable({ keyword: DEFAULT_MEMBER.nickname, searchType: 'u', page: 1 });
 
-			expect(boardList.count).toBe(BOARD_FIXTURE_LENGTH + 3);
-			expect(boardList.rows.length).toBe(20);
+			expect(boardList.totalPages).toBe(Math.ceil(BOARD_FIXTURE_LENGTH / AMOUNT));
+			expect(boardList.items.length).toBe(AMOUNT);
+			expect(boardList.isEmpty).toBe(false);
+			expect(boardList.currentPage).toBe(1);
 		});
 
 		it('데이터가 하나도 없는 경우', async () => {
 			await Board.destroy({ where: {} });
 			const boardList = await BoardRepository.getBoardListPageable({ keyword: '', searchType: '', pageNum: 1 });
 
-			expect(boardList.count).toBe(0);
-			expect(boardList.rows.length).toBe(0);
+			expect(boardList.totalPages).toBe(0);
+			expect(boardList.items.length).toBe(0);
+			expect(boardList.isEmpty).toBe(true);
+			expect(boardList.currentPage).toBe(1);
 		});
 	});
 
@@ -201,10 +211,10 @@ describe('boardRepository test', () => {
 		it('정상 조회', async () => {
 			const board = await BoardRepository.getBoardDetail(1);
 
-			expect(board.id).toBe(1);
 			expect(board.title).toBe('testTitle1');
 			expect(board.content).toBe('testContent1');
-			expect(board.userId).toBe(DEFAULT_MEMBER.id);
+			expect(board.writer).toBe(DEFAULT_MEMBER.nickname);
+			expect(board.writerId).toBe(DEFAULT_MEMBER.userId);
 			expect(board.createdAt).toBeDefined();
 			expect(board.indent).toBeUndefined();
 			expect(board.groupNo).toBeUndefined();

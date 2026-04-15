@@ -1,8 +1,6 @@
-import { Comment } from "#models/index.js";
-import logger from "#config/loggerConfig.js";
-import { ResponseStatus } from "#constants/responseStatus.js";
-import CustomError from "#errors/customError.js";
-import { getOffset } from "#utils/paginationUtils.js";
+import { Comment, Member } from "#models/index.js";
+import {getOffset, toPage} from "#utils/paginationUtils.js";
+import {Sequelize} from "sequelize";
 
 const commentAmount = 20;
 
@@ -17,20 +15,28 @@ export class CommentRepository {
 		const commentList = await Comment.findAndCountAll({
 			attributes: [
 				'id',
-				'userId', 
+				[Sequelize.col('Member.user_id'), 'writerId'],
+				[Sequelize.col('Member.nickname'), 'writer'],
 				'createdAt',
 				'content',
-				'groupNo',
 				'indent',
-				'upperNo'
+				'deletedAt'
+			],
+			include: [
+				{
+					model: Member,
+					as: 'Member',
+					attributes: []
+				}
 			],
 			where: where,
 			limit: commentAmount,
 			offset: offset,
 			order: [ ['groupNo', 'DESC'], ['upperNo', 'ASC'] ],
+			raw: true
 		});
 
-		return commentList;
+		return toPage(commentList, page, commentAmount);
 	}
 
 	static async postComment(boardId, imageId, userId, content, options = {}) {
@@ -82,17 +88,18 @@ export class CommentRepository {
 		return comment;
 	}
 
+	static async findById(id) {
+		return await Comment.findOne({
+			where: id,
+			raw: true
+		})
+	}
+
 	static async checkCommentWriter(id) {
-		const comment = await Comment.findOne({
+		return await Comment.findOne({
 			attributes: ['userId'],
 			where: { id },
+			raw: true
 		});
-
-		if(!comment) {
-			logger.error('Comment writer data not found, id: ', { id });
-			throw new CustomError(ResponseStatus.NOT_FOUND);
-		}
-
-		return comment;
 	}
 }

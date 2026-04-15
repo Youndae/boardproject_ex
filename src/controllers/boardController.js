@@ -36,12 +36,9 @@ import { ResponseStatusCode, ResponseStatus } from '#constants/responseStatus.js
  * 				boardIndent: Integer,
  * 			}
  * 		],
- * 		empty: boolean,
- * 		totalElements: Integer,
- * 		userStatus: {
- * 			loggedIn: boolean,
- * 			uid: String
- * 		}
+ *		totalPages: Integer,
+ * 		isEmpty: boolean,
+ * 		currentPage: Integer,
  * 	}
  * }
  */
@@ -76,26 +73,19 @@ export async function getBoardList(req, res, next) {
  * 			boardContent: String,
  * 			userId: String
  * 			boardDate: Date,
- * 		},
- * 		userStatus: {
- * 			loggedIn: boolean,
- * 			uid: String
  * 		}
  * 	}
- * 
  * }
  */
 export async function getBoardDetail(req, res, next) {
 	try {
-		const { boardNo } = req.params;
-		const board = await getBoardDetailService(boardNo);
-		res.status(ResponseStatusCode.OK).json({
-			content: board,
-			userStatus: {
-				loggedIn: req.userId !== undefined,
-				uid: req.userId
-			}
-		});
+		const { id } = req.params;
+
+		console.log('getBoardDetail controller id : ', id);
+
+		const board = await getBoardDetailService(id);
+
+		res.success(board);
 	} catch (error) {
 		logger.error('getBoardDetail error: ', error);
 
@@ -117,7 +107,7 @@ export async function getBoardDetail(req, res, next) {
  * @returns {
  * 	status: 201,
  * 	data: {
- * 		boardNo: Integer
+ * 		content: Integer
  * 	}
  * }
  */
@@ -129,9 +119,8 @@ export async function postBoard(req, res, next) {
 			throw new CustomError(ResponseStatus.FORBIDDEN);
 
 		const saveBoardNo = await postBoardService(userId, req.body);
-		res.status(ResponseStatusCode.CREATED).json({
-			boardNo: saveBoardNo
-		});
+
+		res.created(saveBoardNo);
 	} catch (error) {
 		logger.error('postBoard error: ', error);
 
@@ -166,24 +155,15 @@ export async function postBoard(req, res, next) {
  */
 export async function patchBoardDetailData(req, res, next) {
 	try {
-		const { boardNo } = req.params;
+		const { id } = req.params;
 		const userId = req.userId;
 
 		if(userId === undefined)
 			throw new CustomError(ResponseStatus.FORBIDDEN);
 
-		const board = await patchBoardDetailDataService(userId, boardNo);
-		res.status(ResponseStatusCode.OK).json({
-			content: {
-				boardNo: board.boardNo,
-				boardTitle: board.boardTitle,
-				boardContent: board.boardContent,
-			},
-			userStatus: {
-				loggedIn: req.userId !== undefined,
-				uid: req.userId
-			}
-		});
+		const board = await patchBoardDetailDataService(userId, id);
+
+		res.success(board);
 	} catch (error) {
 		logger.error('patchBoardDetailData error: ', error);
 
@@ -214,16 +194,15 @@ export async function patchBoardDetailData(req, res, next) {
  */
 export async function patchBoard(req, res, next) {
 	try {
-		const { boardNo } = req.params;
+		const { id } = req.params;
 		const userId = req.userId;
 
 		if(userId === undefined)
 			throw new CustomError(ResponseStatus.FORBIDDEN);
 
-		const patchBoardNo = await patchBoardService(userId, boardNo, req.body);
-		res.status(ResponseStatusCode.OK).json({
-			boardNo: patchBoardNo
-		});
+		const patchBoardNo = await patchBoardService(userId, id, req.body);
+
+		res.success(patchBoardNo);
 	} catch (error) {
 		logger.error('patchBoard error: ', error);
 
@@ -247,13 +226,13 @@ export async function patchBoard(req, res, next) {
  */
 export async function deleteBoard(req, res, next) {
 	try {
-		const { boardNo } = req.params;
+		const { id } = req.params;
 		const userId = req.userId;
 
 		if(userId === undefined)
 			throw new CustomError(ResponseStatus.FORBIDDEN);
 
-		await deleteBoardService(userId, boardNo);
+		await deleteBoardService(userId, id);
 		res.status(ResponseStatusCode.NO_CONTENT).json({});
 	} catch (error) {
 		logger.error('deleteBoard error: ', error);
@@ -289,15 +268,9 @@ export async function deleteBoard(req, res, next) {
  */
 export async function getReplyDetail(req, res, next) {
 	try {
-		const { boardNo } = req.params;
-		const reply = await getReplyDetailService(boardNo);
-		res.status(ResponseStatusCode.OK).json({
-			content: reply,
-			userStatus: {
-				loggedIn: req.userId !== undefined,
-				uid: req.userId
-			}
-		});
+		const { id } = req.params;
+		await getReplyDetailService(id);
+		res.success();
 	} catch (error) {
 		logger.error('getReplyDetail error: ', error);
 
@@ -335,9 +308,7 @@ export async function postBoardReply(req, res, next) {
 
 		const postBoardReplyNo = await postBoardReplyService(userId, req.body);
 
-		res.status(ResponseStatusCode.CREATED).json({
-			boardNo: postBoardReplyNo
-		});
+		res.created(postBoardReplyNo);
 	} catch (error) {
 		logger.error('postBoardReply error: ', error);
 

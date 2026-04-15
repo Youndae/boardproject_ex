@@ -75,6 +75,7 @@ export default class Comment extends Sequelize.Model {
             targetKey: 'id',
             onDelete: 'CASCADE',
             onUpdate: 'CASCADE',
+            as: 'Board',
         });
 
         db.Comment.belongsTo(db.ImageBoard, {
@@ -82,6 +83,7 @@ export default class Comment extends Sequelize.Model {
             targetKey: 'id',
             onDelete: 'CASCADE',
             onUpdate: 'CASCADE',
+            as: 'ImageBoard',
         });
 
         db.Comment.belongsTo(db.Member, {
@@ -89,6 +91,7 @@ export default class Comment extends Sequelize.Model {
             targetKey: 'id',
             onDelete: 'CASCADE',
             onUpdate: 'CASCADE',
+            as: 'Member',
         });
     }
 }

@@ -17,7 +17,7 @@ export const boardListSearchValidator = z.object({
 				.max(50, { message: '검색어는 50자 이하이어야 합니다.'})
 				.optional(),
 	searchType: searchTypeValidator.optional(),
-	page: z.number().int().positive().optional(),
+	page: z.coerce.number().int().positive().optional(),
 });
 
 export const postBoardValidator = z.object({

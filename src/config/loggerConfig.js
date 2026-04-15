@@ -12,10 +12,12 @@ if(!fs.existsSync(logDir))
     fs.mkdirSync(logDir, { recursive: true });
 
 const timestampFormat = winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' });
-const printfFormat = winston.format.printf(({ timestamp, level, message, stack }) => {
+const printfFormat = winston.format.printf(({ timestamp, level, message, stack, ...meta }) => {
+    const metaString = Object.keys(meta).length ? JSON.stringify(meta) : '';
+
     return stack
-    ? `${timestamp} [${level}] ${message} - ${stack}`
-    : `${timestamp} [${level}] ${message}`;
+    ? `${timestamp} [${level}] ${message} ${metaString} - ${stack}`
+    : `${timestamp} [${level}] ${message} ${metaString}`;
 });
 const timestampAndJsonFormat = winston.format.combine(timestampFormat, winston.format.json());
 

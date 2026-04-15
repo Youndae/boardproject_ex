@@ -7,6 +7,6 @@ export const validate = (schema, property = 'body') => (req, res, next) => {
 		schema.parse(req[property]);
 		next();
 	}catch(error) {
-		next(new CustomError(ResponseStatus.BAD_REQUEST, error.errors));
+		next(new CustomError(ResponseStatus.BAD_REQUEST));
 	}
 }

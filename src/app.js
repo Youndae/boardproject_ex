@@ -74,7 +74,7 @@ app.use(passport.initialize());
 
 // TODO: Router 등록
 app.use('/member', memberRouter);
-app.use('/board', boardRouter);
+app.use('/api/board', boardRouter);
 app.use('/image-board', imageBoardRouter);
 app.use('/comment', commentRouter);
 app.use('/image', imageRouter);

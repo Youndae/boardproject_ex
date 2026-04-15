@@ -74,8 +74,11 @@ export const tokenMiddleware = async (req, res, next) => {
 
 		if(username) {
 			// username은 userId이기 때문에 사용자, 권한 조회 후 req에 아이디와 권한 리스트를 추가.
-			const { userId, roles } = await MemberRepository.findUserIdWithRoles(username);
-			req.userId = userId;
+			// id의 경우 user_id 컬럼이 아닌 PK id 를 가져와 사용.
+			// user_id를 주는 경우 모든 service에서 MemberRepository를 참조해야 하는 문제가 발생하기 때문.
+			// 작성자 체크를 할 때 약간의 불편이 있긴 하지만 기본적으로 id 컬럼이 FK로 들어가므로 오히려 이게 영향이 적을것으로 판단.
+			const { id, roles } = await MemberRepository.findUserIdWithRoles(username);
+			req.userId = id;
 			req.roles = roles;
 		}
 

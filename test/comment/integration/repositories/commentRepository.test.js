@@ -44,7 +44,8 @@ describe('commentRepository test', () => {
 		await sequelize.sync({ force: true });
 
 		await Member.create({
-			userId: DEFAULT_USER_ID,
+			id: SAVE_MEMBER.id,
+			userId: SAVE_MEMBER.userId,
 			password: SAVE_MEMBER.password,
 			username: SAVE_MEMBER.username,
 			nickname: SAVE_MEMBER.nickname,
@@ -126,15 +127,18 @@ describe('commentRepository test', () => {
 			const commentList = await CommentRepository.getCommentListPageable({ boardId: SAVE_BOARD.id, page: 1 });
 
 			expect(commentList).toBeDefined();
-			expect(commentList.rows.length).toBe(COMMENT_AMOUNT);
-			expect(commentList.count).toBe(COMMENT_FIXTURE_LENGTH);
-			commentList.rows.forEach((comment) => {
+			expect(commentList.items.length).toBe(COMMENT_AMOUNT);
+			expect(commentList.totalPages).toBe(Math.ceil(COMMENT_FIXTURE_LENGTH / COMMENT_AMOUNT));
+
+			commentList.items.forEach((comment) => {
 				expect(comment.id).toBeLessThanOrEqual(COMMENT_FIXTURE_LENGTH);
-				expect(comment.userId).toBe(DEFAULT_USER_ID);
+				expect(comment.writer).toBe(SAVE_MEMBER.nickname);
+				expect(comment.writerId).toBe(SAVE_MEMBER.userId);
 				expect(comment.content).toBe(`testBoardContent${comment.id}`);
-				expect(comment.groupNo).toBe(comment.id);
+				expect(comment.groupNo).toBeUndefined();
 				expect(comment.indent).toBe(1);
-				expect(comment.upperNo).toBe(`${comment.id}`);
+				expect(comment.upperNo).toBeUndefined();
+				expect(comment.deletedAt).toBeNull();
 			});
 		});
 
@@ -142,15 +146,17 @@ describe('commentRepository test', () => {
 			const commentList = await CommentRepository.getCommentListPageable({ imageId: SAVE_IMAGE_BOARD.id, page: 1 });
 
 			expect(commentList).toBeDefined();
-			expect(commentList.rows.length).toBe(COMMENT_AMOUNT);
-			expect(commentList.count).toBe(COMMENT_FIXTURE_LENGTH);
-			commentList.rows.forEach((comment) => {
+			expect(commentList.items.length).toBe(COMMENT_AMOUNT);
+			expect(commentList.totalPages).toBe(Math.ceil(COMMENT_FIXTURE_LENGTH / COMMENT_AMOUNT));
+			commentList.items.forEach((comment) => {
 				expect(comment.id).toBeGreaterThan(COMMENT_FIXTURE_LENGTH);
-				expect(comment.userId).toBe(DEFAULT_USER_ID);
+				expect(comment.writer).toBe(SAVE_MEMBER.nickname);
+				expect(comment.writerId).toBe(SAVE_MEMBER.userId);
 				expect(comment.content).toBe(`testImageBoardContent${comment.id}`);
-				expect(comment.groupNo).toBe(comment.id);
+				expect(comment.groupNo).toBeUndefined();
 				expect(comment.indent).toBe(1);
-				expect(comment.upperNo).toBe(`${comment.id}`);
+				expect(comment.upperNo).toBeUndefined();
+				expect(comment.deletedAt).toBeNull();
 			});
 		});
 
@@ -159,8 +165,8 @@ describe('commentRepository test', () => {
 			const commentList = await CommentRepository.getCommentListPageable({ boardId: SAVE_BOARD.id, page: 1 });
 
 			expect(commentList).toBeDefined();
-			expect(commentList.rows.length).toBe(0);
-			expect(commentList.count).toBe(0);
+			expect(commentList.items.length).toBe(0);
+			expect(commentList.totalPages).toBe(0);
 		});
 
 		it('계층형 구조', async () => {
@@ -206,13 +212,13 @@ describe('commentRepository test', () => {
 			const commentList = await CommentRepository.getCommentListPageable({ imageId: SAVE_IMAGE_BOARD.id, page: 1 });
 
 			expect(commentList).toBeDefined();
-			expect(commentList.rows.length).toBe(COMMENT_AMOUNT);
-			expect(commentList.count).toBe(COMMENT_FIXTURE_LENGTH + 3);
-			expect(commentList.rows[0].id).toBe(startCommentNo - 1);
-			expect(commentList.rows[1].id).toBe(startCommentNo);
-			expect(commentList.rows[2].id).toBe(startCommentNo + 2);
-			expect(commentList.rows[3].id).toBe(startCommentNo + 1);
-			expect(commentList.rows[4].id).toBe(startCommentNo - 2);
+			expect(commentList.items.length).toBe(COMMENT_AMOUNT);
+			expect(commentList.totalPages).toBe(Math.ceil(COMMENT_FIXTURE_LENGTH / COMMENT_AMOUNT));
+			expect(commentList.items[0].id).toBe(startCommentNo - 1);
+			expect(commentList.items[1].id).toBe(startCommentNo);
+			expect(commentList.items[2].id).toBe(startCommentNo + 2);
+			expect(commentList.items[3].id).toBe(startCommentNo + 1);
+			expect(commentList.items[4].id).toBe(startCommentNo - 2);
 		})
 	});
 
