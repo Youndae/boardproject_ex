@@ -27,7 +27,6 @@ import memberRouter from '#routes/member.js';
 import boardRouter from '#routes/board.js';
 import imageBoardRouter from '#routes/imageBoard.js';
 import commentRouter from '#routes/comment.js';
-import imageRouter from '#routes/image.js';
 
 const corsOptions = {
 	origin: 'http://localhost:3000',
@@ -73,11 +72,11 @@ app.use(responseHandler);
 app.use(passport.initialize());
 
 // TODO: Router 등록
-app.use('/member', memberRouter);
+app.use('/oauth2/authorization', memberRouter);
+app.use('/api/member', memberRouter);
 app.use('/api/board', boardRouter);
-app.use('/image-board', imageBoardRouter);
-app.use('/comment', commentRouter);
-app.use('/image', imageRouter);
+app.use('/api/image-board', imageBoardRouter);
+app.use('/api/comment', commentRouter);
 
 
 // 404

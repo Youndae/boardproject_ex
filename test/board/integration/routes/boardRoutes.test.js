@@ -9,29 +9,31 @@ import app from '#src/app.js';
 
 const SAVE_MEMBER = [
 	{
+		id: 1,
 		userId: 'tester',
-		userPw: 'tester1234',
-		userName: 'testerName',
-		nickName: 'testerNickName',
+		password: 'tester1234',
+		username: 'testerName',
+		nickname: 'testerNickName',
 		email: 'tester@tester.com',
-		profileThumbnail: 'testerProfileThumbnail.jpg',
+		profile: 'testerProfileThumbnail.jpg',
 		provider: 'local',
 	},
 	{
+		id: 2,
 		userId: 'tester2',
-		userPw: 'tester1234',
-		userName: 'testerName2',
-		nickName: 'testerNickName2',
+		password: 'tester1234',
+		username: 'testerName2',
+		nickname: 'testerNickName2',
 		email: 'tester2@tester.com',
-		profileThumbnail: 'testerProfileThumbnail2.jpg',
+		profile: 'testerProfileThumbnail2.jpg',
 		provider: 'local',
 	}
 ]
 
 const BOARD_AMOUNT = 20;
 const BOARD_TOTAL_ELEMENTS = 30;
-const DEFAULT_USER_ID = SAVE_MEMBER[0].userId;
-const WRONG_USER_ID = SAVE_MEMBER[1].userId;
+const DEFAULT_USER_ID = SAVE_MEMBER[0].id;
+const WRONG_USER_ID = SAVE_MEMBER[1].id;
 
 describe('boardRoutes integration test', () => {
 	beforeAll(async () => {
@@ -42,16 +44,16 @@ describe('boardRoutes integration test', () => {
 		for(const member of SAVE_MEMBER) {
 			await Member.create({
 				userId: member.userId,
-				userPw: member.userPw,
-				userName: member.userName,
-				nickName: member.nickName,
+				password: member.password,
+				username: member.username,
+				nickname: member.nickname,
 				email: member.email,
-				profileThumbnail: member.profileThumbnail,
+				profile: member.profile,
 				provider: member.provider,
 			});
 
 			await Auth.create({
-				userId: member.userId,
+				userId: member.id,
 				auth: 'ROLE_MEMBER',
 			});
 		}
@@ -72,13 +74,13 @@ describe('boardRoutes integration test', () => {
 	beforeEach(async () => {
 		for(let i = 1; i <= BOARD_TOTAL_ELEMENTS; i++) {
 			await Board.create({
-				boardNo: i,
+				id: i,
 				userId: DEFAULT_USER_ID,
-				boardTitle: `testTitle${i}`,
-				boardContent: `testContent${i}`,
-				boardGroupNo: i,
-				boardUpperNo: i.toString(),
-				boardIndent: 1,
+				title: `testTitle${i}`,
+				content: `testContent${i}`,
+				groupNo: i,
+				upperNo: i.toString(),
+				indent: 0,
 			});
 		}
 	});
@@ -86,62 +88,46 @@ describe('boardRoutes integration test', () => {
 	describe('GET /', () => {
 		it('목록 정상 조회', async () => {
 			const res = await request(app)
-			.get('/board');
+			.get('/api/board');
 			
 			expect(res.status).toBe(ResponseStatusCode.OK);
-			expect(res.body.content.length).toBe(BOARD_AMOUNT);
-			expect(res.body.empty).toBe(false);
-			expect(res.body.totalElements).toBe(BOARD_TOTAL_ELEMENTS);
-			expect(res.body.userStatus.loggedIn).toBe(false);
-			expect(res.body.userStatus.uid).toBeUndefined();
-		});
-
-		it('목록 정상 조회. 로그인한 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const res = await request(app)
-								.get('/board')
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-
-			expect(res.status).toBe(ResponseStatusCode.OK);
-			expect(res.body.content.length).toBe(BOARD_AMOUNT);
-			expect(res.body.empty).toBe(false);
-			expect(res.body.totalElements).toBe(BOARD_TOTAL_ELEMENTS);
-			expect(res.body.userStatus.loggedIn).toBe(true);
-			expect(res.body.userStatus.uid).toBe(DEFAULT_USER_ID);
+			expect(res.body.code).toBe(ResponseStatusCode.OK);
+			expect(res.body.message).toBe(ResponseStatus.OK.MESSAGE);
+			expect(res.body.content.items.length).toBe(BOARD_AMOUNT);
+			expect(res.body.content.isEmpty).toBe(false);
+			expect(res.body.content.totalPages).toBe(Math.ceil(BOARD_TOTAL_ELEMENTS / BOARD_AMOUNT));
+			expect(res.body.content.currentPage).toBe(1);
+			expect(res.body.timestamp).toBeDefined();
 		});
 
 		it('목록 정상 조회. 검색어 적용', async () => {
 			const res = await request(app)
-								.get('/board')
+								.get('/api/board')
 								.query({
 									keyword: 'testTitle11',
 									searchType: 't',
 								});
 
 			expect(res.status).toBe(ResponseStatusCode.OK);
-			expect(res.body.content.length).toBe(1);
-			expect(res.body.empty).toBe(false);
-			expect(res.body.totalElements).toBe(1);
-			expect(res.body.userStatus.loggedIn).toBe(false);
-			expect(res.body.userStatus.uid).toBeUndefined();
+			expect(res.body.code).toBe(ResponseStatusCode.OK);
+			expect(res.body.message).toBe(ResponseStatus.OK.MESSAGE);
+			expect(res.body.content.items.length).toBe(1);
+			expect(res.body.content.isEmpty).toBe(false);
+			expect(res.body.content.totalPages).toBe(1);
+			expect(res.body.content.currentPage).toBe(1);
+			expect(res.body.timestamp).toBeDefined();
 
-			const resultData = res.body.content[0];
-			expect(resultData.boardNo).toBe(11);
-			expect(resultData.boardTitle).toBe('testTitle11');
-			expect(resultData.userId).toBe(DEFAULT_USER_ID);
-			expect(resultData.boardDate).toBeDefined();
-			expect(resultData.boardIndent).toBe(1);
-			expect(resultData.boardGroupNo).toBeUndefined();
-			expect(resultData.boardUpperNo).toBeUndefined();
+			const resultData = res.body.content.items[0];
+			expect(resultData.id).toBe(11);
+			expect(resultData.title).toBe('testTitle11');
+			expect(resultData.writer).toBe(SAVE_MEMBER[0].nickname);
+			expect(resultData.createdAt).toBeDefined();
+			expect(resultData.indent).toBe(0);
 		});
 
 		it('검색어 적용. 검색어가 1글자로 짧은 경우', async () => {
 			const res = await request(app)
-								.get('/board')
+								.get('/api/board')
 								.query({
 									keyword: 't',
 									searchType: 't',
@@ -153,7 +139,7 @@ describe('boardRoutes integration test', () => {
 
 		it('검색어 적용. 검색 타입이 잘못 된 경우', async () => {
 			const res = await request(app)
-								.get('/board')
+								.get('/api/board')
 								.query({
 									keyword: 'title',
 									searchType: 'abc',
@@ -165,11 +151,11 @@ describe('boardRoutes integration test', () => {
 
 		it('검색어 적용. 페이지 번호가 잘못 된 경우', async () => {
 			const res = await request(app)
-								.get('/board')
+								.get('/api/board')
 								.query({
 									keyword: 'title',
 									searchType: 't',
-									pageNum: 'abc',
+									page: 'abc',
 								});
 
 			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
@@ -180,102 +166,81 @@ describe('boardRoutes integration test', () => {
 			await Board.destroy({ where: {} });
 
 			const res = await request(app)
-								.get('/board');
+								.get('/api/board');
 
 			expect(res.status).toBe(ResponseStatusCode.OK);
-			expect(res.body.content.length).toBe(0);
-			expect(res.body.empty).toBe(true);
-			expect(res.body.totalElements).toBe(0);
-			expect(res.body.userStatus.loggedIn).toBe(false);
-			expect(res.body.userStatus.uid).toBeUndefined();
+			expect(res.body.content.items.length).toBe(0);
+			expect(res.body.content.isEmpty).toBe(true);
+			expect(res.body.content.totalPages).toBe(0);
+			expect(res.body.content.currentPage).toBe(1);
 		})
 	});
 
 	describe('GET /:boardNo', () => {
 		it('정상 조회', async () => {
 			const res = await request(app)
-								.get('/board/1');
+								.get('/api/board/1');
 
 			expect(res.status).toBe(ResponseStatusCode.OK);
-			expect(res.body.content.boardNo).toBe(1);
-			expect(res.body.content.boardTitle).toBe('testTitle1');
-			expect(res.body.content.boardContent).toBe('testContent1');
-			expect(res.body.content.userId).toBe(DEFAULT_USER_ID);
-			expect(res.body.content.boardDate).toBeDefined();
+			expect(res.body.message).toBe(ResponseStatus.OK.MESSAGE);
+			expect(res.body.content.id).toBeUndefined();
+			expect(res.body.content.title).toBe('testTitle1');
+			expect(res.body.content.content).toBe('testContent1');
+			expect(res.body.content.writer).toBe(SAVE_MEMBER[0].nickname);
+			expect(res.body.content.writerId).toBe(SAVE_MEMBER[0].userId);
+			expect(res.body.content.createdAt).toBeDefined();
 			expect(res.body.content.boardIndent).toBeUndefined();
 			expect(res.body.content.boardGroupNo).toBeUndefined();
 			expect(res.body.content.boardUpperNo).toBeUndefined();
-			expect(res.body.userStatus.loggedIn).toBe(false);
-			expect(res.body.userStatus.uid).toBeUndefined();
-		});
-
-		it('정상 조회. 로그인한 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const res = await request(app)
-								.get('/board/1')
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-
-			expect(res.status).toBe(ResponseStatusCode.OK);
-			expect(res.body.content.boardNo).toBe(1);
-			expect(res.body.content.boardTitle).toBe('testTitle1');
-			expect(res.body.content.boardContent).toBe('testContent1');
-			expect(res.body.content.userId).toBe(DEFAULT_USER_ID);
-			expect(res.body.content.boardDate).toBeDefined();
-			expect(res.body.content.boardIndent).toBeUndefined();
-			expect(res.body.content.boardGroupNo).toBeUndefined();
-			expect(res.body.content.boardUpperNo).toBeUndefined();
-			expect(res.body.userStatus.loggedIn).toBe(true);
-			expect(res.body.userStatus.uid).toBe(DEFAULT_USER_ID);
+			expect(res.body.timestamp).toBeDefined();
 		});
 
 		it('잘못된 아이디 전달로 데이터가 없는 경우', async () => {
 			const res = await request(app)
-								.get('/board/0');
+								.get('/api/board/0');
 
-			expect(res.status).toBe(ResponseStatusCode.NOT_FOUND);
-			expect(res.body.message).toBe(ResponseStatus.NOT_FOUND.MESSAGE);
+			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
+			expect(res.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
 		});
 	});
 
 	describe('POST /', () => {
 		it('정상 저장', async () => {
 			await Board.destroy({ where: {} });
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[0].userId);
 			const res = await request(app)
-								.post('/board')
+								.post('/api/board')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
 									`Authorization_ino=${ino}`,
 								])
 								.send({
-									boardTitle: 'testPostTitle',
-									boardContent: 'testPostContent',
+									title: 'testPostTitle',
+									content: 'testPostContent',
 								});
 
 			expect(res.status).toBe(ResponseStatusCode.CREATED);
-			expect(res.body.boardNo).toBeDefined();
+			expect(res.body.content).toBeDefined();
 
-			const saveBoard = await Board.findOne({ where: { boardNo: res.body.boardNo } });
-			expect(saveBoard.boardTitle).toBe('testPostTitle');
-			expect(saveBoard.boardContent).toBe('testPostContent');
+			const saveId = res.body.content;
+
+			const saveBoard = await Board.findOne({ where: { id: saveId } });
+			expect(saveBoard.title).toBe('testPostTitle');
+			expect(saveBoard.content).toBe('testPostContent');
 			expect(saveBoard.userId).toBe(DEFAULT_USER_ID);
-			expect(saveBoard.boardDate).toBeDefined();
-			expect(saveBoard.boardIndent).toBe(1);
-			expect(saveBoard.boardGroupNo).toBe(res.body.boardNo);
-			expect(saveBoard.boardUpperNo).toBe(res.body.boardNo.toString());
+			expect(saveBoard.createdAt).toBeDefined();
+			expect(saveBoard.indent).toBe(0);
+			expect(saveBoard.groupNo).toBe(saveId);
+			expect(saveBoard.upperNo).toBe(saveId.toString());
 		});
 
 		it('비회원 접근', async () => {
 			const res = await request(app)
-								.post('/board')
+								.post('/api/board')
 								.send({
-									boardTitle: 'testPostTitle',
-									boardContent: 'testPostContent',
+									title: 'testPostTitle',
+									content: 'testPostContent',
 								});
 								
 			expect(res.status).toBe(ResponseStatusCode.FORBIDDEN);
@@ -283,35 +248,37 @@ describe('boardRoutes integration test', () => {
 		});
 
 		it('제목이 비어있는 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[0].userId);
 			const res = await request(app)
-								.post('/board')
+								.post('/api/board')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
 									`Authorization_ino=${ino}`,
 								])
 								.send({
-									boardTitle: '',
-									boardContent: 'testPostContent',
+									title: '',
+									content: 'testPostContent',
 								});
+
+			console.log('res', res.body);
 								
 			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
 			expect(res.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
 		});
 
 		it('제목이 너무 긴 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[0].userId);
 			const res = await request(app)
-								.post('/board')
+								.post('/api/board')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
 									`Authorization_ino=${ino}`,
 								])
 								.send({
-									boardTitle: 'testPostTitle'.repeat(100),
-									boardContent: 'testPostContent',
+									title: 'testPostTitle'.repeat(100),
+									content: 'testPostContent',
 								});
 
 			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
@@ -319,17 +286,17 @@ describe('boardRoutes integration test', () => {
 		});
 
 		it('내용이 비어있는 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[0].userId);
 			const res = await request(app)
-								.post('/board')
+								.post('/api/board')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
 									`Authorization_ino=${ino}`,
 								])
 								.send({
-									boardTitle: 'testPostTitle',
-									boardContent: '',
+									title: 'testPostTitle',
+									content: '',
 								});
 
 			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
@@ -337,9 +304,9 @@ describe('boardRoutes integration test', () => {
 		});
 
 		it('내용이 너무 긴 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[0].userId);
 			const res = await request(app)
-								.post('/board')
+								.post('/api/board')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
@@ -355,11 +322,11 @@ describe('boardRoutes integration test', () => {
 		});
 	});
 
-	describe('GET /patch-detail/:boardNo', () => {
+	describe('GET /patch/:id', () => {
 		it('정상 조회', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[0].userId);
 			const res = await request(app)
-								.get('/board/patch-detail/1')
+								.get('/api/board/patch/1')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
@@ -367,44 +334,44 @@ describe('boardRoutes integration test', () => {
 								]);
 
 			expect(res.status).toBe(ResponseStatusCode.OK);
-			expect(res.body.content.boardNo).toBe(1);
-			expect(res.body.content.boardTitle).toBe('testTitle1');
-			expect(res.body.content.boardContent).toBe('testContent1');
+			expect(res.body.code).toBe(ResponseStatus.OK.CODE);
+			expect(res.body.message).toBe(ResponseStatus.OK.MESSAGE);
+			expect(res.body.content.id).toBeUndefined();
+			expect(res.body.content.title).toBe('testTitle1');
+			expect(res.body.content.content).toBe('testContent1');
 			expect(res.body.content.userId).toBeUndefined();
-			expect(res.body.content.boardDate).toBeUndefined();
-			expect(res.body.content.boardIndent).toBeUndefined();
-			expect(res.body.content.boardGroupNo).toBeUndefined();
-			expect(res.body.content.boardUpperNo).toBeUndefined();
-			expect(res.body.userStatus.loggedIn).toBe(true);
-			expect(res.body.userStatus.uid).toBe(DEFAULT_USER_ID);
+			expect(res.body.content.createdAt).toBeUndefined();
+			expect(res.body.content.indent).toBeUndefined();
+			expect(res.body.content.groupNo).toBeUndefined();
+			expect(res.body.content.upperNo).toBeUndefined();
 		});
 
 		it('비회원 접근', async () => {
 			const res = await request(app)
-								.get('/board/patch-detail/1');
+								.get('/api/board/patch/1');
 								
 			expect(res.status).toBe(ResponseStatusCode.FORBIDDEN);
 			expect(res.body.message).toBe(ResponseStatus.FORBIDDEN.MESSAGE);
 		});
 
 		it('데이터가 없는 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[0].userId);
 			const res = await request(app)
-								.get('/board/patch-detail/0')
+								.get('/api/board/patch/0')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
 									`Authorization_ino=${ino}`,
 								]);
 								
-			expect(res.status).toBe(ResponseStatusCode.NOT_FOUND);
-			expect(res.body.message).toBe(ResponseStatus.NOT_FOUND.MESSAGE);
+			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
+			expect(res.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
 		});
 
 		it('작성자가 아닌 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(WRONG_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[1].userId);
 			const res = await request(app)
-								.get('/board/patch-detail/1')
+								.get('/api/board/patch/1')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
@@ -418,38 +385,44 @@ describe('boardRoutes integration test', () => {
 
 	describe('PATCH /:boardNo', () => {
 		it('정상 수정', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[0].userId);
 			const res = await request(app)
-								.patch('/board/1')
+								.patch('/api/board/1')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
 									`Authorization_ino=${ino}`,
 								])
 								.send({
-									boardTitle: 'testUpdateTitle',
-									boardContent: 'testUpdateContent',
+									title: 'testUpdateTitle',
+									content: 'testUpdateContent',
 								});
 
-			expect(res.status).toBe(ResponseStatusCode.OK);
-			expect(res.body.boardNo).toBe(1);
+			const patchId = 1;
 
-			const updateBoard = await Board.findOne({ where: { boardNo: 1 } });
-			expect(updateBoard.boardTitle).toBe('testUpdateTitle');
-			expect(updateBoard.boardContent).toBe('testUpdateContent');
-			expect(updateBoard.userId).toBe(DEFAULT_USER_ID);
-			expect(updateBoard.boardDate).toBeDefined();
-			expect(updateBoard.boardIndent).toBe(1);
-			expect(updateBoard.boardGroupNo).toBe(1);
-			expect(updateBoard.boardUpperNo).toBe('1');
+			expect(res.status).toBe(ResponseStatusCode.OK);
+			expect(res.body.code).toBe(ResponseStatus.OK.CODE);
+			expect(res.body.message).toBe(ResponseStatus.OK.MESSAGE);
+			expect(res.body.content).toBe(patchId);
+
+
+
+			const updateBoard = await Board.findOne({ where: { id: patchId } });
+			expect(updateBoard.title).toBe('testUpdateTitle');
+			expect(updateBoard.content).toBe('testUpdateContent');
+			expect(updateBoard.userId).toBe(SAVE_MEMBER[0].id);
+			expect(updateBoard.createdAt).toBeDefined();
+			expect(updateBoard.indent).toBe(0);
+			expect(updateBoard.groupNo).toBe(1);
+			expect(updateBoard.upperNo).toBe('1');
 		});
 
 		it('비회원 접근', async () => {
 			const res = await request(app)
-								.patch('/board/1')
+								.patch('/api/board/1')
 								.send({
-									boardTitle: 'testUpdateTitle',
-									boardContent: 'testUpdateContent',
+									title: 'testUpdateTitle',
+									content: 'testUpdateContent',
 								});
 
 			expect(res.status).toBe(ResponseStatusCode.FORBIDDEN);
@@ -457,17 +430,17 @@ describe('boardRoutes integration test', () => {
 		});
 
 		it('제목이 비어있는 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[0].userId);
 			const res = await request(app)
-								.patch('/board/1')
+								.patch('/api/board/1')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
 									`Authorization_ino=${ino}`,
 								])
 								.send({
-									boardTitle: '',
-									boardContent: 'testUpdateContent',
+									title: '',
+									content: 'testUpdateContent',
 								});
 
 			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
@@ -475,17 +448,17 @@ describe('boardRoutes integration test', () => {
 		});
 
 		it('제목이 너무 긴 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[0].userId);
 			const res = await request(app)
-								.patch('/board/1')
+								.patch('/api/board/1')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
 									`Authorization_ino=${ino}`,
 								])
 								.send({
-									boardTitle: 'testUpdateTitle'.repeat(100),
-									boardContent: 'testUpdateContent',
+									title: 'testUpdateTitle'.repeat(100),
+									content: 'testUpdateContent',
 								});
 
 			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
@@ -493,17 +466,17 @@ describe('boardRoutes integration test', () => {
 		});
 
 		it('내용이 비어있는 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[0].userId);
 			const res = await request(app)
-								.patch('/board/1')
+								.patch('/api/board/1')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
 									`Authorization_ino=${ino}`,
 								])
 								.send({
-									boardTitle: 'testUpdateTitle',
-									boardContent: '',
+									title: 'testUpdateTitle',
+									content: '',
 								});
 
 			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
@@ -511,17 +484,17 @@ describe('boardRoutes integration test', () => {
 		});
 
 		it('내용이 너무 긴 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[0].userId);
 			const res = await request(app)
-								.patch('/board/1')
+								.patch('/api/board/1')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
 									`Authorization_ino=${ino}`,
 								])
 								.send({
-									boardTitle: 'testUpdateTitle',
-									boardContent: 'testUpdateContent'.repeat(1000),
+									title: 'testUpdateTitle',
+									content: 'testUpdateContent'.repeat(1000),
 								});
 
 			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
@@ -529,17 +502,17 @@ describe('boardRoutes integration test', () => {
 		});
 
 		it('작성자가 아닌 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(WRONG_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[1].userId);
 			const res = await request(app)
-								.patch('/board/1')
+								.patch('/api/board/1')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
 									`Authorization_ino=${ino}`,
 								])
 								.send({
-									boardTitle: 'testUpdateTitle',
-									boardContent: 'testUpdateContent',
+									title: 'testUpdateTitle',
+									content: 'testUpdateContent',
 								});
 
 			expect(res.status).toBe(ResponseStatusCode.FORBIDDEN);
@@ -547,29 +520,29 @@ describe('boardRoutes integration test', () => {
 		});
 
 		it('데이터가 없는 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[0].userId);
 			const res = await request(app)
-								.patch('/board/0')
+								.patch('/api/board/0')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
 									`Authorization_ino=${ino}`,
 								])
 								.send({
-									boardTitle: 'testUpdateTitle',
-									boardContent: 'testUpdateContent',
+									title: 'testUpdateTitle',
+									content: 'testUpdateContent',
 								});
 
-			expect(res.status).toBe(ResponseStatusCode.NOT_FOUND);
-			expect(res.body.message).toBe(ResponseStatus.NOT_FOUND.MESSAGE);
+			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
+			expect(res.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
 		});
 	});
 
 	describe('DELETE /:boardNo', () => {
 		it('정상 삭제', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[0].userId);
 			const res = await request(app)
-								.delete('/board/1')
+								.delete('/api/board/1')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
@@ -578,22 +551,22 @@ describe('boardRoutes integration test', () => {
 
 			expect(res.status).toBe(ResponseStatusCode.NO_CONTENT);
 
-			const deleteBoard = await Board.findOne({ where: { boardNo: 1 } });
+			const deleteBoard = await Board.findOne({ where: { id: 1 } });
 			expect(deleteBoard).toBeNull();
 		});
 
 		it('비회원 접근', async () => {
 			const res = await request(app)
-								.delete('/board/1');
+								.delete('/api/board/1');
 								
 			expect(res.status).toBe(ResponseStatusCode.FORBIDDEN);
 			expect(res.body.message).toBe(ResponseStatus.FORBIDDEN.MESSAGE);
 		});
 
 		it('작성자가 아닌 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(WRONG_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[1].userId);
 			const res = await request(app)
-								.delete('/board/1')
+								.delete('/api/board/1')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
@@ -605,25 +578,25 @@ describe('boardRoutes integration test', () => {
 		});
 
 		it('데이터가 없는 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[0].userId);
 			const res = await request(app)
-								.delete('/board/0')
+								.delete('/api/board/0')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
 									`Authorization_ino=${ino}`,
 								]);
 
-			expect(res.status).toBe(ResponseStatusCode.NOT_FOUND);
-			expect(res.body.message).toBe(ResponseStatus.NOT_FOUND.MESSAGE);
+			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
+			expect(res.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
 		});
 	});
 
-	describe('GET /reply/:boardNo', () => {
+	describe('GET /reply/:id', () => {
 		it('정상 조회', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[0].userId);
 			const res = await request(app)
-								.get('/board/reply/1')
+								.get('/api/board/reply/1')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
@@ -631,73 +604,71 @@ describe('boardRoutes integration test', () => {
 								]);
 
 			expect(res.status).toBe(ResponseStatusCode.OK);
-			expect(res.body.content.boardGroupNo).toBe(1);
-			expect(res.body.content.boardUpperNo).toBe('1');
-			expect(res.body.content.boardIndent).toBe(1);
-			expect(res.body.userStatus.loggedIn).toBe(true);
-			expect(res.body.userStatus.uid).toBe(DEFAULT_USER_ID);
+			expect(res.body.code).toBe(ResponseStatus.OK.CODE);
+			expect(res.body.message).toBe(ResponseStatus.OK.MESSAGE);
 		});
 
 		it('비회원 접근', async () => {
 			const res = await request(app)
-								.get('/board/reply/1');
+								.get('/api/board/reply/1');
 								
 			expect(res.status).toBe(ResponseStatusCode.FORBIDDEN);
 			expect(res.body.message).toBe(ResponseStatus.FORBIDDEN.MESSAGE);
 		});
 
 		it('데이터가 없는 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[0].userId);
 			const res = await request(app)
-								.get('/board/reply/0')
+								.get('/api/board/reply/0')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
 									`Authorization_ino=${ino}`,
 								]);
 
-			expect(res.status).toBe(ResponseStatusCode.NOT_FOUND);
-			expect(res.body.message).toBe(ResponseStatus.NOT_FOUND.MESSAGE);
+			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
+			expect(res.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
 		});
 	});
 
-	describe('POST /reply', () => {
+	describe('POST /reply/:id', () => {
 		it('정상 저장', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[0].userId);
 			const res = await request(app)
-								.post('/board/reply')
+								.post('/api/board/reply/1')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
 									`Authorization_ino=${ino}`,
 								])
 								.send({
-									boardTitle: 'testReplyTitle',
-									boardContent: 'testReplyContent',
-									boardGroupNo: 1,
-									boardIndent: 1,
-									boardUpperNo: '1',
+									title: 'testReplyTitle',
+									content: 'testReplyContent',
 								});
 
 			expect(res.status).toBe(ResponseStatusCode.CREATED);
-			expect(res.body.boardNo).toBeDefined();
+			expect(res.body.code).toBe(ResponseStatus.CREATED.CODE);
+			expect(res.body.message).toBe(ResponseStatus.CREATED.MESSAGE);
+			expect(res.body.content).toBeDefined();
 
-			const saveReply = await Board.findOne({ where: { boardNo: res.body.boardNo } });
-			expect(saveReply.boardTitle).toBe('testReplyTitle');
-			expect(saveReply.boardContent).toBe('testReplyContent');
-			expect(saveReply.userId).toBe(DEFAULT_USER_ID);
-			expect(saveReply.boardDate).toBeDefined();
-			expect(saveReply.boardIndent).toBe(2);
-			expect(saveReply.boardGroupNo).toBe(1);
-			expect(saveReply.boardUpperNo).toBe(`1,${res.body.boardNo}`);
+			const saveId = res.body.content;
+
+			const saveReply = await Board.findOne({ where: { id: saveId } });
+			expect(saveReply.title).toBe('testReplyTitle');
+			expect(saveReply.content).toBe('testReplyContent');
+			expect(saveReply.userId).toBe(SAVE_MEMBER[0].id);
+			expect(saveReply.createdAt).toBeDefined();
+			expect(saveReply.indent).toBe(1);
+			expect(saveReply.groupNo).toBe(1);
+			expect(saveReply.upperNo).toBe(`1,${saveId}`);
 		});
 
 		it('비회원 접근', async () => {
 			const res = await request(app)
-								.post('/board/reply')
+								.post('/api/board/reply/1')
 								.send({
-									boardTitle: 'testReplyTitle',
-									boardContent: 'testReplyContent',
+									title: 'testReplyTitle',
+									content: 'testReplyContent',
 								});
 
 			expect(res.status).toBe(ResponseStatusCode.FORBIDDEN);
@@ -705,20 +676,17 @@ describe('boardRoutes integration test', () => {
 		});
 
 		it('제목이 비어있는 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[0].userId);
 			const res = await request(app)
-								.post('/board/reply')
+								.post('/api/board/reply/1')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
 									`Authorization_ino=${ino}`,
 								])
 								.send({
-									boardTitle: '',
-									boardContent: 'testReplyContent',
-									boardGroupNo: 1,
-									boardIndent: 1,
-									boardUpperNo: '1',
+									title: '',
+									content: 'testReplyContent',
 								});
 
 			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
@@ -726,20 +694,17 @@ describe('boardRoutes integration test', () => {
 		});
 
 		it('제목이 너무 긴 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[0].userId);
 			const res = await request(app)
-								.post('/board/reply')
+								.post('/api/board/reply/1')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
 									`Authorization_ino=${ino}`,
 								])
 								.send({
-									boardTitle: 'testReplyTitle'.repeat(100),
-									boardContent: 'testReplyContent',
-									boardGroupNo: 1,
-									boardIndent: 1,
-									boardUpperNo: '1',
+									title: 'testReplyTitle'.repeat(100),
+									content: 'testReplyContent',
 								});
 
 			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
@@ -747,20 +712,17 @@ describe('boardRoutes integration test', () => {
 		});
 
 		it('내용이 비어있는 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[0].userId);
 			const res = await request(app)
-								.post('/board/reply')
+								.post('/api/board/reply/1')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
 									`Authorization_ino=${ino}`,
 								])
 								.send({
-									boardTitle: 'testReplyTitle',
-									boardContent: '',
-									boardGroupNo: 1,
-									boardIndent: 1,
-									boardUpperNo: '1',
+									title: 'testReplyTitle',
+									content: '',
 								});
 
 			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
@@ -768,83 +730,17 @@ describe('boardRoutes integration test', () => {
 		});
 
 		it('내용이 너무 긴 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
+			const { accessToken, refreshToken, ino } = await createTestToken(SAVE_MEMBER[0].userId);
 			const res = await request(app)
-								.post('/board/reply')
+								.post('/api/board/reply/1')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
 									`Authorization_ino=${ino}`,
 								])
 								.send({
-									boardTitle: 'testReplyTitle',
-									boardContent: 'testReplyContent'.repeat(1000),
-									boardGroupNo: 1,
-									boardIndent: 1,
-									boardUpperNo: '1',
-								});
-
-			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
-			expect(res.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-
-		it('boardGroupNo가 문자열인 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const res = await request(app)
-								.post('/board/reply')
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								])
-								.send({
-									boardTitle: 'testReplyTitle',
-									boardContent: 'testReplyContent',
-									boardGroupNo: '0',
-									boardIndent: 1,
-									boardUpperNo: '1',
-								});
-
-			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
-			expect(res.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-
-		it('boardIndent가 문자열인 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const res = await request(app)
-								.post('/board/reply')
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								])
-								.send({
-									boardTitle: 'testReplyTitle',
-									boardContent: 'testReplyContent',
-									boardGroupNo: 1,
-									boardIndent: '0',
-									boardUpperNo: '1',
-								});
-
-			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);
-			expect(res.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-
-		it('boardUpperNo가 문자열이 아닌 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const res = await request(app)
-								.post('/board/reply')
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								])
-								.send({
-									boardTitle: 'testReplyTitle',
-									boardContent: 'testReplyContent',
-									boardGroupNo: 1,
-									boardIndent: 1,
-									boardUpperNo: 1,
+									title: 'testReplyTitle',
+									content: 'testReplyContent'.repeat(1000),
 								});
 
 			expect(res.status).toBe(ResponseStatusCode.BAD_REQUEST);

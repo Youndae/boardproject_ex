@@ -11,6 +11,7 @@ export const profileResize = async (filename) => {
 }
 
 export const boardResize = async (filename) => {
+	console.log('boardResize filename', filename);
 	await resizeImage(filename, [300, 600], boardPath, { deleteOriginal: false });
 }
 
@@ -29,18 +30,22 @@ const resizeImage = async(filename, sizes, uploadPath, options = {}) => {
 				const outputPath = path.join(uploadPath, `${baseName}_${size}${ext}`);
 				return sharp(inputPath) // 파일을 읽어서 이미지 데이터(buffer)를 메모리에 올려둠
 					.resize(size, size, { fit: 'inside' }) // 가로 세로 옵션.
+					.toFormat('jpeg')
 					.toFile(outputPath); // 리사이징 된 데이터를 디스크에 저장.
 			})
 		);
 
 		if(options.deleteOriginal){
-			console.error('deleteOriginal : ', inputPath);
 			fs.unlinkSync(inputPath);
+		} else {
+			const tempPath = path.join(uploadPath, `temp_${filename}`);
+			await sharp(inputPath)
+				.toFormat('jpeg')
+				.toFile(tempPath);
+			fs.renameSync(tempPath, inputPath);
 		}
 	} catch (error) {
 		console.error(error);
 		throw error;
 	}
-
-	
 }

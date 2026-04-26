@@ -8,21 +8,46 @@ import { sequelize } from "#models/index.js"
 import { deleteImageFile } from "#utils/fileUtils.js";
 import { getResizeProfileName } from "#utils/fileNameUtils.js";
 import { ImageConstants } from "#constants/imageConstants.js";
+import {getMaxRole} from "#utils/authUtils.js";
+import {memberCheckConstants} from "#constants/memberCheckConstants.js";
+import {findSuffixType, MailConstants} from "#constants/mailConstants.js";
 
-export async function registerService ( userId, userPw, userName, nickName = null, email, profileThumbnail = null ) {
+export async function getMemberStatus(userId) {
+	try {
+		const member = await MemberRepository.findUserIdAndRoleById(userId);
+
+		if(!member) {
+			logger.warn('getMemberStatus Member not found.', { userId });
+			throw new CustomError(ResponseStatus.FORBIDDEN);
+		}
+
+		const maxRole = getMaxRole(member.roles);
+
+		return {
+			userId: member.userId,
+			role: maxRole,
+		}
+	}catch(error) {
+		logger.warn('memberService.getMemberStatus error', error);
+
+		if(error instanceof CustomError)
+			throw error;
+
+		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
+	}
+}
+
+export async function registerService ( {userId, password, username, nickname, email}, profileThumbnail = null ) {
 	const transaction = await sequelize.transaction();
+	let profile = profileThumbnail ? getResizeProfileName(profileThumbnail) : null;
 	try {
 		const member = await MemberRepository.findMemberByUserId(userId);
 		if(member)
 			throw new CustomError(ResponseStatus.BAD_REQUEST);
-		const hashedPw = await bcrypt.hash(userPw, 10);
+		const hashedPw = await bcrypt.hash(password, 10);
 
-		let dbProfileThumbnail = null;
-		if(profileThumbnail)
-			dbProfileThumbnail = `${ImageConstants.PROFILE_PREFIX}${getResizeProfileName(profileThumbnail)}`;
-
-		await MemberRepository.createMember(userId, hashedPw, userName, nickName, email, dbProfileThumbnail, { transaction });
-		await AuthRepository.createMemberAuth(userId, 'ROLE_MEMBER', { transaction });
+		const saveMember = await MemberRepository.createMember(userId, hashedPw, username, nickname, email, profile, { transaction });
+		await AuthRepository.createMemberAuth(saveMember.id, 'ROLE_MEMBER', { transaction });
 
 		await transaction.commit();
 	}catch(error) {
@@ -30,14 +55,14 @@ export async function registerService ( userId, userPw, userName, nickName = nul
 
 		console.error('registerService error : ', error);
 
+		if(profile)
+			await deleteImageFile(profile, ImageConstants.PROFILE_TYPE);
+
 		if(error instanceof CustomError && error.status === ResponseStatus.BAD_REQUEST.CODE){
 			logger.error('Member already exists.');
 			throw error;
 		}
 
-		if(profileThumbnail)
-			deleteImageFile(profileThumbnail, ImageConstants.PROFILE_TYPE);
-			
 		logger.error('Failed to register service.');
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
 	}
@@ -45,47 +70,61 @@ export async function registerService ( userId, userPw, userName, nickName = nul
 
 export async function checkIdService (userId) {
 	try {
-		return Boolean(await MemberRepository.findMemberByUserId(userId));
+		const member = await MemberRepository.findMemberByUserId(userId);
+
+		if(member)
+			throw new CustomError(ResponseStatus.CONFLICT);
+
+		return memberCheckConstants.VALID;
 	}catch(error) {
+		if(error instanceof CustomError)
+			throw error;
+
 		logger.error('Failed to check id service.')
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
 	}
 }
 
-export async function checkNicknameService (userId = null, nickName) {
+export async function checkNicknameService (userId, nickName) {
 	try {
 		const member = await MemberRepository.findMemberByNickname(nickName);
-		
+
 		if(member) {
-			if(userId) { // 동일한 nickName이 존재하지만 사용자의 닉네임일 때는 false를 반환해 Not Exist인 것처럼 처리
-				return member.userId !== userId;
-			}
-	
-			return true;
+			if(userId === member.userId)  // 동일한 nickName이 존재하지만 사용자의 닉네임인 경우
+				return memberCheckConstants.VALID;
+
+			throw new CustomError(ResponseStatus.CONFLICT);
 		}
 
-		return false;
+		return memberCheckConstants.VALID;
 	}catch(error) {
+		console.log('error is ', error);
+		if(error instanceof CustomError)
+			throw error;
+
 		logger.error('Failed to check nickname service.')
+
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
 	}
 }
 
-export async function patchProfileService (userId, nickName, profileThumbnail = null, deleteProfile = null) {
+export async function patchProfileService (userId, nickName, email, profileThumbnail = null, deleteProfile = null) {
 	const transaction = await sequelize.transaction();
 	try {
 		let dbProfileThumbnail = null;
 		if(profileThumbnail)
-			dbProfileThumbnail = `${ImageConstants.PROFILE_PREFIX}${getResizeProfileName(profileThumbnail)}`;
+			dbProfileThumbnail = `${getResizeProfileName(profileThumbnail)}`;
 
 		if(!profileThumbnail && !deleteProfile)
 			dbProfileThumbnail = undefined;
 
-		await MemberRepository.patchMemberProfile(userId, nickName, dbProfileThumbnail, { transaction });
+		if(!profileThumbnail && deleteProfile)
+			dbProfileThumbnail = null;
+
+		await MemberRepository.patchMemberProfile(userId, nickName, email, dbProfileThumbnail, { transaction });
 
 		if(deleteProfile){
-			const deleteFilename = deleteProfile.replace(ImageConstants.PROFILE_PREFIX, '');
-			deleteImageFile(deleteFilename, ImageConstants.PROFILE_TYPE);
+			await deleteImageFile(deleteProfile, ImageConstants.PROFILE_TYPE);
 		}
 			
 		await transaction.commit();
@@ -93,22 +132,59 @@ export async function patchProfileService (userId, nickName, profileThumbnail = 
 		await transaction.rollback();
 
 		if(profileThumbnail)
-			deleteImageFile(profileThumbnail, ImageConstants.PROFILE_TYPE);
+			await deleteImageFile(profileThumbnail, ImageConstants.PROFILE_TYPE);
 
-		logger.error('Failed to patch profile service.')
+		logger.error('Failed to patch profile service.', error);
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
 	}
 }
 
-export async function getProfileService (userId) {
+export async function getProfileService (id) {
 	try {
-		const member = await MemberRepository.getMemberProfile(userId);
+		const member = await MemberRepository.getMemberProfile(id);
+
 		if(!member)
 			throw new CustomError(ResponseStatus.BAD_REQUEST);
-		
-		return member;
+
+		const splitMail = member.email.split('@');
+		const suffix = splitMail[1].substring(0, splitMail[1].indexOf('.'));
+		const type = findSuffixType(suffix);
+
+		return {
+			nickname: member.nickname,
+			mailPrefix: splitMail[0],
+			mailSuffix: splitMail[1],
+			mailType: type,
+			profile: member.profile
+		}
 	}catch (error) {
 		logger.error('Failed to get profile service.')
+
+		if(error instanceof CustomError)
+			throw error;
+
+		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
+	}
+}
+
+export async function patchOAuthProfileService(userId, { nickname }, profile) {
+	const transaction = await sequelize.transaction();
+	let newProfile = profile ? getResizeProfileName(profile) : null;
+	try {
+		const member = await MemberRepository.findMemberById(userId);
+		if(!member)
+			throw new CustomError(ResponseStatus.BAD_REQUEST);
+
+		await MemberRepository.patchOAuthJoinProfile(userId, nickname, newProfile, { transaction });
+
+		await transaction.commit();
+	}catch(error) {
+		await transaction.rollback();
+
+		console.error('OAuth register profile patch error', error);
+
+		if(newProfile)
+			await deleteImageFile(newProfile, ImageConstants.PROFILE_TYPE);
 
 		if(error instanceof CustomError)
 			throw error;

@@ -37,7 +37,7 @@ export default class Comment extends Sequelize.Model {
                 indent: {
                     type: Sequelize.INTEGER,
                     allowNull: false,
-                    defaultValue: 1,
+                    defaultValue: 0,
                 },
                 upperNo: {
                     type: Sequelize.STRING(255),
@@ -57,11 +57,13 @@ export default class Comment extends Sequelize.Model {
                 }
             }, {
                 sequelize,
-                timestamps: false,
+                timestamps: true,
                 underscored: false,
                 modelName: 'Comment',
                 tableName: 'comment',
                 paranoid: true,
+                createdAt: 'created_at',
+                updatedAt: false,
                 deletedAt: 'deletedAt',
                 charset: 'utf8mb4',
                 collate: 'utf8mb4_0900_ai_ci',

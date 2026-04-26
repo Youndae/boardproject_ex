@@ -42,7 +42,7 @@ export default class Board extends Sequelize.Model {
 				indent: {
 					type: Sequelize.INTEGER,
 					allowNull: false,
-					defaultValue: 1,
+					defaultValue: 0,
 				},
             }, {
                 sequelize,

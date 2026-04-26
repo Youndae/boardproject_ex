@@ -81,8 +81,6 @@ export async function getBoardDetail(req, res, next) {
 	try {
 		const { id } = req.params;
 
-		console.log('getBoardDetail controller id : ', id);
-
 		const board = await getBoardDetailService(id);
 
 		res.success(board);
@@ -113,7 +111,7 @@ export async function getBoardDetail(req, res, next) {
  */
 export async function postBoard(req, res, next) {
 	try {
-		const userId = req.userId;
+		const userId = req.user.id;
 
 		if(userId === undefined)
 			throw new CustomError(ResponseStatus.FORBIDDEN);
@@ -156,7 +154,7 @@ export async function postBoard(req, res, next) {
 export async function patchBoardDetailData(req, res, next) {
 	try {
 		const { id } = req.params;
-		const userId = req.userId;
+		const userId = req.user.id;
 
 		if(userId === undefined)
 			throw new CustomError(ResponseStatus.FORBIDDEN);
@@ -195,7 +193,7 @@ export async function patchBoardDetailData(req, res, next) {
 export async function patchBoard(req, res, next) {
 	try {
 		const { id } = req.params;
-		const userId = req.userId;
+		const userId = req.user.id;
 
 		if(userId === undefined)
 			throw new CustomError(ResponseStatus.FORBIDDEN);
@@ -227,12 +225,13 @@ export async function patchBoard(req, res, next) {
 export async function deleteBoard(req, res, next) {
 	try {
 		const { id } = req.params;
-		const userId = req.userId;
+		const userId = req.user.id;
 
 		if(userId === undefined)
 			throw new CustomError(ResponseStatus.FORBIDDEN);
 
 		await deleteBoardService(userId, id);
+
 		res.status(ResponseStatusCode.NO_CONTENT).json({});
 	} catch (error) {
 		logger.error('deleteBoard error: ', error);
@@ -301,12 +300,13 @@ export async function getReplyDetail(req, res, next) {
  */
 export async function postBoardReply(req, res, next) {
 	try {
-		const userId = req.userId;
+		const userId = req.user.id;
+		const targetBoardId = req.params.id;
 
 		if(userId === undefined)
 			throw new CustomError(ResponseStatus.FORBIDDEN);
 
-		const postBoardReplyNo = await postBoardReplyService(userId, req.body);
+		const postBoardReplyNo = await postBoardReplyService(userId, targetBoardId, req.body);
 
 		res.created(postBoardReplyNo);
 	} catch (error) {

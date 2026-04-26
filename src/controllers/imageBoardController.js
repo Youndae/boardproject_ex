@@ -11,7 +11,8 @@ import logger from "#config/loggerConfig.js";
 import CustomError from "#errors/customError.js";
 import { ResponseStatus, ResponseStatusCode } from "#constants/responseStatus.js";
 import { ImageConstants } from "#constants/imageConstants.js";
-import { deleteImageFile } from "#utils/fileUtils.js";
+import {deleteBoardImageFromFiles, deleteImageFile} from "#utils/fileUtils.js";
+import {getImageBoardDisplayService} from "#services/file/imageFileService.js";
 
 /**
  * 
@@ -48,18 +49,9 @@ import { deleteImageFile } from "#utils/fileUtils.js";
  */
 export async function getImageBoardList(req, res, next){
 	try {
-		const imageBoardList = await getImageBoardListService(req.query);
+		const result = await getImageBoardListService(req.query);
 
-		res.status(ResponseStatusCode.OK)
-			.json({
-				content: imageBoardList.content,
-				empty: imageBoardList.empty,
-				totalElements: imageBoardList.totalElements,
-				userStatus: {
-					loggedIn: req.userId !== undefined,
-					uid: req.userId
-				}
-			})
+		res.success(result);
 	}catch(error) {
 		logger.error('getImageBoardList error: ', error);
 
@@ -103,16 +95,9 @@ export async function getImageBoardList(req, res, next){
  */
 export async function getImageBoardDetail(req, res, next) {
 	try {
-		const imageBoardDetail = await getImageBoardDetailService(req.params.imageNo);
+		const result = await getImageBoardDetailService(req.params.id);
 
-		res.status(ResponseStatusCode.OK)
-			.json({
-				content: imageBoardDetail,
-				userStatus: {
-					loggedIn: req.userId !== undefined,
-					uid: req.userId
-				}
-			});
+		res.success(result);
 	}catch(error) {
 		logger.error('getImageBoardDetail error: ', error);
 
@@ -150,25 +135,23 @@ export async function postImageBoard(req, res, next) {
 		}
 
 		try {
-			req.files.forEach(file => {
-				boardResize(file.filename);
-			})
+			await Promise.all(
+				req.files.map(file =>
+					boardResize(file.filename)
+				)
+			)
 		}catch(error) {
 			logger.error('postImageBoard error: resize error', error);
 
-			req.files.forEach(file => {
-				deleteImageFile(file.filename, ImageConstants.BOARD_TYPE);
-			});
+			if(req.files)
+				await deleteBoardImageFromFiles(req.files);
 
 			next(new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR));
 		}
 
-		const saveImageNo = await postImageBoardService(req.userId, req.body, req.files);
+		const result = await postImageBoardService(req.user.id, req.body, req.files);
 
-		res.status(ResponseStatusCode.CREATED)
-			.json({
-				imageNo: saveImageNo
-			});
+		res.created(result);
 	}catch(error) {
 		logger.error('postImageBoard error: ', error);
 
@@ -198,16 +181,9 @@ export async function postImageBoard(req, res, next) {
  */
 export async function getImageBoardPatchDetail(req, res, next) {
 	try {
-		const imageBoardPatchDetail = await getImageBoardPatchDetailService(req.params.imageNo, req.userId);
+		const result = await getImageBoardPatchDetailService(req.params.id, req.user.id);
 
-		res.status(ResponseStatusCode.OK)
-			.json({
-				content: imageBoardPatchDetail,
-				userStatus: {
-					loggedIn: req.userId !== undefined,
-					uid: req.userId
-				}
-			});
+		res.success(result);
 	}catch(error) {
 		logger.error('getImageBoardPatchDetail error: ', error);
 
@@ -242,27 +218,29 @@ export async function patchImageBoard(req, res, next) {
 	try {
 		if(req.files) {
 			try {
-				req.files.forEach(file => {
-					boardResize(file.filename);
-				})
+				await Promise.all(
+					req.files.map(file =>
+						boardResize(file.filename)
+					)
+				)
 			}catch(error) {
 				logger.error('patchImageBoard error: resize error', error);
+
+				await deleteBoardImageFromFiles(req.files);
+
 				next(new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR));
 			}
 		}
 
-		const patchImageNo = await patchImageBoardService(
-			req.userId, 
-			req.params.imageNo, 
+		const result = await patchImageBoardService(
+			req.user.id,
+			req.params.id,
 			req.body, 
 			req.files, 
 			req.body.deleteFiles
 		);
 
-		res.status(ResponseStatusCode.OK)
-			.json({
-				imageNo: parseInt(patchImageNo)
-			});
+		res.success(result);
 	}catch(error) {
 		logger.error('patchImageBoard error: ', error);
 
@@ -286,7 +264,7 @@ export async function patchImageBoard(req, res, next) {
  */
 export async function deleteImageBoard(req, res, next) {
 	try {
-		await deleteImageBoardService(req.params.imageNo, req.userId);
+		await deleteImageBoardService(req.params.id, req.user.id);
 
 		res.status(ResponseStatusCode.NO_CONTENT).json({});
 	}catch(error) {
@@ -313,4 +291,20 @@ export async function deleteImageBoard(req, res, next) {
  * 	}
  * }
  */
-export async function getImageBoardDisplay(req, res, next) {}
+export async function getImageBoardDisplay(req, res, next) {
+	const imageName = req.params.imageName;
+
+	try {
+		const { path, contentType } = await getImageBoardDisplayService(imageName);
+
+		res.locals.imagePayload = {
+			filePath: path,
+			contentType,
+			errorContext: 'ImageBoard'
+		}
+
+		next();
+	}catch(error) {
+		next(error);
+	}
+}

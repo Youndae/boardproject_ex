@@ -16,46 +16,67 @@ import { sequelize } from '#models/index.js';
 
 const SAVE_BOARD_LIST = [];
 const BOARD_AMOUNT = 20;
-const DEFAULT_USER_ID = 'tester';
-const WRONG_USER_ID = 'tester2';
+const DEFAULT_MEMBER = {
+	id: 1,
+	userId: 'tester',
+	password: 'tester1234',
+	username: 'testerName',
+	nickname: 'testerNickName',
+	email: 'tester@tester.com',
+	profile: 'testerProfileThumbnail.jpg',
+	provider: 'local'
+}
+const WRONG_USER_ID = 2;
 
 describe('boardService unit test', () => {
 	beforeAll(async () => {
 		for(let i = 1; i <= 20; i++) {
 			SAVE_BOARD_LIST.push({
-				boardNo: i,
-				boardTitle: `testTitle${i}`,
-				boardContent: `testContent${i}`,
-				boardDate: new Date(),
-				boardGroupNo: i,
-				boardUpperNo: i.toString(),
-				boardIndent: 1,
-				userId: DEFAULT_USER_ID,
+				id: i,
+				title: `testTitle${i}`,
+				content: `testContent${i}`,
+				createdAt: new Date(),
+				groupNo: i,
+				upperNo: i.toString(),
+				indent: 0,
+				userId: DEFAULT_MEMBER.id,
 			});
 		}
 	});
 
 	describe('getBoardListService', () => {
+		const currentPage = 1;
 		it('정상 조회', async () => {
-			jest.spyOn(BoardRepository, 'getBoardListPageable').mockResolvedValue({ rows: SAVE_BOARD_LIST, count: 20 });
+			const mockItems = SAVE_BOARD_LIST.map(board => ({
+				id: board.id,
+				title: board.title,
+				writer: DEFAULT_MEMBER.nickname,
+				createdAt: board.createdAt,
+				indent: board.indent
+			}));
+			jest.spyOn(BoardRepository, 'getBoardListPageable').mockResolvedValue({ items: mockItems, totalPages: 1, isEmpty: false, currentPage });
 
-			const result = await getBoardListService({ keyword: '', searchType: '', pageNum: 1 });
+			const result = await getBoardListService({ keyword: '', searchType: '', page: currentPage });
 
-			expect(result.content.length).toBe(BOARD_AMOUNT);
-			expect(result.empty).toBe(false);
-			expect(result.totalElements).toBe(SAVE_BOARD_LIST.length);
+			expect(result.items.length).toBe(BOARD_AMOUNT);
+			expect(result.isEmpty).toBe(false);
+			expect(result.totalPages).toBe(1);
+			expect(result.currentPage).toBe(currentPage);
 		});
 
 		it('데이터가 없는 경우', async () => {
 			jest.spyOn(BoardRepository, 'getBoardListPageable').mockResolvedValue({
-				rows: [],
-				count: 0,
+				items: [],
+				totalPages: 0,
+				isEmpty: true,
+				currentPage
 			});
-			const result = await getBoardListService({ keyword: '', searchType: '', pageNum: 1 });
+			const result = await getBoardListService({ keyword: '', searchType: '', page: currentPage });
 
-			expect(result.content.length).toBe(0);
-			expect(result.empty).toBe(true);
-			expect(result.totalElements).toBe(0);
+			expect(result.items.length).toBe(0);
+			expect(result.isEmpty).toBe(true);
+			expect(result.totalPages).toBe(0);
+			expect(result.currentPage).toBe(currentPage);
 		});
 	});
 	
@@ -64,29 +85,30 @@ describe('boardService unit test', () => {
 			const saveBoard = SAVE_BOARD_LIST[0];
 			jest.spyOn(BoardRepository, 'getBoardDetail')
 				.mockResolvedValue({
-					boardNo: saveBoard.boardNo,
-					boardTitle: saveBoard.boardTitle,
-					boardContent: saveBoard.boardContent,
-					userId: saveBoard.userId,
-					boardDate: saveBoard.boardDate,
+					title: saveBoard.title,
+					writer: DEFAULT_MEMBER.nickname,
+					writerId: DEFAULT_MEMBER.userId,
+					content: saveBoard.content,
+					createdAt: saveBoard.createdAt,
 				});
-			const result = await getBoardDetailService(saveBoard.boardNo);
+			const result = await getBoardDetailService(saveBoard.id);
 
-			expect(result.boardNo).toBe(saveBoard.boardNo);
-			expect(result.boardTitle).toBe(saveBoard.boardTitle);
-			expect(result.boardContent).toBe(saveBoard.boardContent);
-			expect(result.userId).toBe(saveBoard.userId);
-			expect(result.boardDate).toBe(saveBoard.boardDate);
+			expect(result.id).toBeUndefined();
+			expect(result.title).toBe(saveBoard.title);
+			expect(result.writer).toBe(DEFAULT_MEMBER.nickname);
+			expect(result.writerId).toBe(DEFAULT_MEMBER.userId);
+			expect(result.content).toBe(saveBoard.content);
+			expect(result.createdAt).toBe(saveBoard.createdAt);
 		});
 
 		it('데이터가 없는 경우', async () => {
-			jest.spyOn(BoardRepository, 'getBoardDetail').mockRejectedValue(new CustomError(ResponseStatus.NOT_FOUND));
+			jest.spyOn(BoardRepository, 'getBoardDetail').mockResolvedValue(null);
 			try {
 				await getBoardDetailService(0);
 			}catch(error) {
 				expect(error).toBeInstanceOf(CustomError);
-				expect(error.status).toBe(ResponseStatus.NOT_FOUND.CODE);
-				expect(error.message).toBe(ResponseStatus.NOT_FOUND.MESSAGE);
+				expect(error.status).toBe(ResponseStatus.BAD_REQUEST.CODE);
+				expect(error.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
 			}
 		});
 
@@ -110,12 +132,12 @@ describe('boardService unit test', () => {
 			}
 			jest.spyOn(sequelize, 'transaction').mockResolvedValue(mockTransaction);
 			jest.spyOn(BoardRepository, 'postBoard').mockResolvedValue(1);
-			const result = await postBoardService('tester', { boardTitle: 'testTitle', boardContent: 'testContent' });
+			const result = await postBoardService(1, { title: 'testTitle', content: 'testContent' });
 			expect(BoardRepository.postBoard)
 				.toHaveBeenCalledWith(
 					'testTitle',
 					'testContent',
-					'tester', 
+					DEFAULT_MEMBER.id,
 					{ transaction: mockTransaction }
 				);
 			expect(result).toBe(1);
@@ -130,7 +152,7 @@ describe('boardService unit test', () => {
 			jest.spyOn(sequelize, 'transaction').mockResolvedValue(mockTransaction);
 			jest.spyOn(BoardRepository, 'postBoard').mockRejectedValue(new Error('오류 발생'));
 			try {
-				await postBoardService('tester', { boardTitle: 'testTitle', boardContent: 'testContent' });
+				await postBoardService(1, { title: 'testTitle', content: 'testContent' });
 			}catch(error) {
 				expect(error).toBeInstanceOf(CustomError);
 				expect(error.status).toBe(ResponseStatus.INTERNAL_SERVER_ERROR.CODE);
@@ -144,24 +166,28 @@ describe('boardService unit test', () => {
 	describe('patchBoardDetailDataService', () => {
 		it('정상 조회', async () => {
 			const resultData = {
-				boardNo: SAVE_BOARD_LIST[0].boardNo,
-				boardTitle: SAVE_BOARD_LIST[0].boardTitle,
-				boardContent: SAVE_BOARD_LIST[0].boardContent,
+				id: SAVE_BOARD_LIST[0].id,
+				title: SAVE_BOARD_LIST[0].title,
+				content: SAVE_BOARD_LIST[0].content,
 				userId: SAVE_BOARD_LIST[0].userId,
 			}
 			jest.spyOn(BoardRepository, 'getPatchDetailData').mockResolvedValue(resultData);
-			const result = await patchBoardDetailDataService(DEFAULT_USER_ID, 1);
-			expect(result).toEqual(resultData);
+			const result = await patchBoardDetailDataService(DEFAULT_MEMBER.id, 1);
+
+			expect(result).toEqual({
+				title: resultData.title,
+				content: resultData.content,
+			});
 		});
 
 		it('데이터가 없는 경우', async () => {
-			jest.spyOn(BoardRepository, 'getPatchDetailData').mockRejectedValue(new CustomError(ResponseStatus.NOT_FOUND));
+			jest.spyOn(BoardRepository, 'getPatchDetailData').mockResolvedValue(null);
 			try {
-				await patchBoardDetailDataService(DEFAULT_USER_ID, 0);
+				await patchBoardDetailDataService(DEFAULT_MEMBER.id, 0);
 			}catch(error) {
 				expect(error).toBeInstanceOf(CustomError);
-				expect(error.status).toBe(ResponseStatus.NOT_FOUND.CODE);
-				expect(error.message).toBe(ResponseStatus.NOT_FOUND.MESSAGE);
+				expect(error.status).toBe(ResponseStatus.BAD_REQUEST.CODE);
+				expect(error.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
 			}
 		});
 
@@ -179,28 +205,17 @@ describe('boardService unit test', () => {
 	
 	describe('patchBoardService', () => {
 		it('정상 수정', async () => {
-			jest.spyOn(BoardRepository, 'getBoardDetail').mockResolvedValue({
-				boardNo: SAVE_BOARD_LIST[0].boardNo,
-				boardTitle: SAVE_BOARD_LIST[0].boardTitle,
-				boardContent: SAVE_BOARD_LIST[0].boardContent,
-				userId: SAVE_BOARD_LIST[0].userId,
-				boardDate: SAVE_BOARD_LIST[0].boardDate,
-			});
-			jest.spyOn(BoardRepository, 'patchBoard').mockResolvedValue(1);
-			const result = await patchBoardService(DEFAULT_USER_ID, 1, { boardTitle: 'testTitle', boardContent: 'testContent' });
+			jest.spyOn(BoardRepository, 'getBoardWriter').mockResolvedValue({ userId: DEFAULT_MEMBER.id });
+			jest.spyOn(BoardRepository, 'patchBoard');
+			const result = await patchBoardService(DEFAULT_MEMBER.id, 1, { title: 'testTitle', content: 'testContent' });
+
 			expect(result).toBe(1);
 		});
 
 		it('작성자가 아닌 경우', async () => {
-			jest.spyOn(BoardRepository, 'getBoardDetail').mockResolvedValue({
-				boardNo: SAVE_BOARD_LIST[0].boardNo,
-				boardTitle: SAVE_BOARD_LIST[0].boardTitle,
-				boardContent: SAVE_BOARD_LIST[0].boardContent,
-				userId: WRONG_USER_ID,
-				boardDate: SAVE_BOARD_LIST[0].boardDate,
-			});
+			jest.spyOn(BoardRepository, 'getBoardWriter').mockResolvedValue({ userId: WRONG_USER_ID });
 			try {
-				await patchBoardService(DEFAULT_USER_ID, 1, { boardTitle: 'testTitle', boardContent: 'testContent' });
+				await patchBoardService(DEFAULT_MEMBER.id, 1, { title: 'testTitle', content: 'testContent' });
 			}catch(error) {
 				expect(error).toBeInstanceOf(CustomError);
 				expect(error.status).toBe(ResponseStatus.FORBIDDEN.CODE);
@@ -211,31 +226,54 @@ describe('boardService unit test', () => {
 
 	describe('deleteBoardService', () => {
 		it('정상 삭제', async () => {
-			jest.spyOn(BoardRepository, 'getBoardDetail').mockResolvedValue({
-				boardNo: SAVE_BOARD_LIST[0].boardNo,
-				boardTitle: SAVE_BOARD_LIST[0].boardTitle,
-				boardContent: SAVE_BOARD_LIST[0].boardContent,
-				userId: SAVE_BOARD_LIST[0].userId,
-				boardDate: SAVE_BOARD_LIST[0].boardDate,
+			jest.spyOn(BoardRepository, 'getBoardWriter').mockResolvedValue({ userId: DEFAULT_MEMBER.id });
+			jest.spyOn(BoardRepository, 'findById').mockResolvedValue(SAVE_BOARD_LIST[0]);
+			const deleteByGroupNoSpy = jest.spyOn(BoardRepository, 'deleteByGroupNo');
+			const deleteByPathSpy = jest.spyOn(BoardRepository, 'deleteByPath');
+
+			await deleteBoardService(DEFAULT_MEMBER.id, 1);
+
+			expect(deleteByGroupNoSpy).toHaveBeenCalledTimes(1);
+			expect(deleteByGroupNoSpy).toHaveBeenCalledWith(1);
+			expect(deleteByPathSpy).not.toHaveBeenCalled();
+		});
+
+		it('정상 삭제. 중간 계층 삭제인 경우', async () => {
+			jest.spyOn(BoardRepository, 'getBoardWriter').mockResolvedValue({ userId: DEFAULT_MEMBER.id });
+			jest.spyOn(BoardRepository, 'findById').mockResolvedValue({
+				id: 2,
+				title: `testTitle1`,
+				content: `testContent1`,
+				createdAt: new Date(),
+				groupNo: 1,
+				upperNo: '1,2',
+				indent: 1,
+				userId: DEFAULT_MEMBER.id,
 			});
-			jest.spyOn(BoardRepository, 'deleteBoard').mockResolvedValue(1);
-			await deleteBoardService(DEFAULT_USER_ID, 1);
+			const deleteByGroupNoSpy = jest.spyOn(BoardRepository, 'deleteByGroupNo');
+			const deleteByPathSpy = jest.spyOn(BoardRepository, 'deleteByPath');
+
+			await deleteBoardService(DEFAULT_MEMBER.id, 2);
+
+			expect(deleteByPathSpy).toHaveBeenCalledTimes(1);
+			expect(deleteByPathSpy).toHaveBeenCalledWith(1, '1,2', '1,2,%');
+			expect(deleteByGroupNoSpy).not.toHaveBeenCalled();
 		});
 
 		it('작성자가 아닌 경우', async () => {
-			jest.spyOn(BoardRepository, 'getBoardDetail').mockResolvedValue({
-				boardNo: SAVE_BOARD_LIST[0].boardNo,
-				boardTitle: SAVE_BOARD_LIST[0].boardTitle,
-				boardContent: SAVE_BOARD_LIST[0].boardContent,
-				userId: WRONG_USER_ID,
-				boardDate: SAVE_BOARD_LIST[0].boardDate,
-			});
+			jest.spyOn(BoardRepository, 'getBoardWriter').mockResolvedValue({ userId: DEFAULT_MEMBER.id });
+			jest.spyOn(BoardRepository, 'findById').mockResolvedValue(SAVE_BOARD_LIST[0]);
+			const deleteByGroupNoSpy = jest.spyOn(BoardRepository, 'deleteByGroupNo');
+			const deleteByPathSpy = jest.spyOn(BoardRepository, 'deleteByPath');
+
 			try {
-				await deleteBoardService(DEFAULT_USER_ID, 1);
+				await deleteBoardService(WRONG_USER_ID, 1);
 			}catch(error) {
 				expect(error).toBeInstanceOf(CustomError);
 				expect(error.status).toBe(ResponseStatus.FORBIDDEN.CODE);
 				expect(error.message).toBe(ResponseStatus.FORBIDDEN.MESSAGE);
+				expect(deleteByGroupNoSpy).not.toHaveBeenCalled();
+				expect(deleteByPathSpy).not.toHaveBeenCalled();
 			}
 		});
 	});
@@ -243,27 +281,66 @@ describe('boardService unit test', () => {
 	describe('getReplyDetailService', () => {
 		it('정상 조회', async () => {
 			jest.spyOn(BoardRepository, 'getReplyDetail').mockResolvedValue(SAVE_BOARD_LIST[0]);
-			const result = await getReplyDetailService(1);
-			expect(result).toEqual(SAVE_BOARD_LIST[0]);
+			await getReplyDetailService(1);
 		});
+
+		it('데이터가 없는 경우', async () => {
+			jest.spyOn(BoardRepository, 'getReplyDetail').mockResolvedValue(null);
+
+			try {
+				await getReplyDetailService(1);
+			}catch(error) {
+				expect(error).toBeInstanceOf(CustomError);
+				expect(error.status).toBe(ResponseStatus.BAD_REQUEST.CODE);
+				expect(error.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
+			}
+		});
+
+		it('조회 중 오류 발생', async () => {
+			jest.spyOn(BoardRepository, 'getReplyDetail').mockRejectedValue(new Error('오류 발생'));
+
+			try {
+				await getReplyDetailService(1);
+			}catch(error) {
+				expect(error).toBeInstanceOf(CustomError);
+				expect(error.status).toBe(ResponseStatus.INTERNAL_SERVER_ERROR.CODE);
+				expect(error.message).toBe(ResponseStatus.INTERNAL_SERVER_ERROR.MESSAGE);
+			}
+		})
 	});
 	
 	describe('postBoardReplyService', () => {
 		it('정상 저장', async () => {
+			const targetBoardId = 1;
+			const postBoardId = 2;
+			const postTitle = 'testTitle';
+			const postContent = 'testContent';
 			const mockTransaction = {
 				commit: jest.fn(),
 				rollback: jest.fn(),
 			}
+			jest.spyOn(BoardRepository, 'getReplyDetail').mockResolvedValue(SAVE_BOARD_LIST[0]);
 			jest.spyOn(sequelize, 'transaction').mockResolvedValue(mockTransaction);
-			jest.spyOn(BoardRepository, 'postBoardReply').mockResolvedValue(1);
-			const result = await postBoardReplyService(DEFAULT_USER_ID, { boardTitle: 'testTitle', boardContent: 'testContent', boardGroupNo: 1, boardIndent: 1, boardUpperNo: '1' });
-			expect(result).toBe(1);
+			jest.spyOn(BoardRepository, 'postBoardReply').mockResolvedValue(postBoardId);
+
+			const result = await postBoardReplyService(
+				DEFAULT_MEMBER.id,
+				targetBoardId,
+				{
+					title: postTitle,
+					content: postContent
+				});
+
+			expect(result).toBe(postBoardId);
 			expect(BoardRepository.postBoardReply)
 				.toHaveBeenCalledWith(
-					'testTitle', 
-					'testContent', 
-					1, 
-					2, '1', DEFAULT_USER_ID, { transaction: mockTransaction }
+					postTitle,
+					postContent,
+					SAVE_BOARD_LIST[0].groupNo,
+					SAVE_BOARD_LIST[0].indent + 1,
+					SAVE_BOARD_LIST[0].upperNo,
+					DEFAULT_MEMBER.id,
+					{ transaction: mockTransaction }
 				);
 			expect(mockTransaction.commit).toHaveBeenCalled();
 			expect(mockTransaction.rollback).not.toHaveBeenCalled();
@@ -274,10 +351,11 @@ describe('boardService unit test', () => {
 				commit: jest.fn(),
 				rollback: jest.fn(),
 			}
+			jest.spyOn(BoardRepository, 'getReplyDetail').mockResolvedValue(SAVE_BOARD_LIST[0]);
 			jest.spyOn(sequelize, 'transaction').mockResolvedValue(mockTransaction);
 			jest.spyOn(BoardRepository, 'postBoardReply').mockRejectedValue(new Error('오류 발생'));
 			try {
-				await postBoardReplyService(DEFAULT_USER_ID, { boardTitle: 'testTitle', boardContent: 'testContent', boardGroupNo: 1, boardIndent: 1, boardUpperNo: '1' });
+				await postBoardReplyService(DEFAULT_MEMBER.id, 1, { title: 'testTitle', content: 'testContent' });
 			}catch(error) {
 				expect(error).toBeInstanceOf(CustomError);
 				expect(error.status).toBe(ResponseStatus.INTERNAL_SERVER_ERROR.CODE);

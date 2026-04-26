@@ -19,11 +19,9 @@ const createFilename = (file) => {
 
 	const allowedExt = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
 	if(!allowedExt.includes(ext))
-		throw new CustomError(
-			ResponseStatusCode.BAD_REQUEST, '허용되지 않은 확장자 입니다.'
-		);
+		throw new CustomError(ResponseStatusCode.BAD_REQUEST);
 
-	return `${Date.now()}${uuidv4()}${ext}`;
+	return `${Date.now()}${uuidv4()}.jpg`;
 };
 
 const imageFileFilter = (req, file, cb) => {
@@ -68,7 +66,7 @@ export const profileUpload = multer({
 	fileFilter: imageFileFilter,
 	limits: { fileSize: 1024 * 1024 * 5 },
 })
-.single("profileThumbnail");
+.single("profile");
 
 export const boardUpload = multer({
 	storage: createStorage(boardPath),

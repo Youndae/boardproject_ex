@@ -9,6 +9,17 @@ import {
 import { ResponseStatus } from '#constants/responseStatus.js';
 import CustomError from '#errors/customError.js';
 
+const SAVE_MEMBER = {
+	id: 1,
+	userId: 'tester',
+	password: 'tester1234',
+	username: 'testerName',
+	nickname: 'testerNickName',
+	email: 'tester@tester.com',
+	profile: 'testerProfile.jpg',
+	provider: 'local',
+}
+
 const BOARD_FIXTURE_LENGTH = 20;
 const BOARD_AMOUNT = 15;
 const DEFAULT_USER_ID = 1;
@@ -19,14 +30,14 @@ describe('imageBoardRepository test', () => {
 		await sequelize.sync({ force: true });
 
 		await Member.create({
-			id: 1,
-			userId: 'tester',
-			password: 'tester1234',
-			username: 'testerName',
-			nickname: 'testerNickName',
-			email: 'tester@tester.com',
-			profile: 'testerProfile.jpg',
-			provider: 'local',
+			id: SAVE_MEMBER.id,
+			userId: SAVE_MEMBER.userId,
+			password: SAVE_MEMBER.password,
+			username: SAVE_MEMBER.username,
+			nickname: SAVE_MEMBER.nickname,
+			email: SAVE_MEMBER.email,
+			profile: SAVE_MEMBER.profile,
+			provider: SAVE_MEMBER.provider,
 		});
 
 		await Auth.create({
@@ -68,56 +79,68 @@ describe('imageBoardRepository test', () => {
 		it('정상 조회', async () => {
 			const result = await ImageBoardRepository.getImageBoardListPageable({page: 1});
 
-			expect(result.content.length).toBe(BOARD_AMOUNT);
-			expect(result.totalElements).toBe(BOARD_FIXTURE_LENGTH);
+			expect(result.items.length).toBe(BOARD_AMOUNT);
+			expect(result.totalPages).toBe(Math.ceil(BOARD_FIXTURE_LENGTH / BOARD_AMOUNT));
+			expect(result.isEmpty).toBeFalsy();
+			expect(result.currentPage).toBe(1);
 
-			expect(result.content[0].id).toBe(BOARD_FIXTURE_LENGTH);
-			expect(result.content[1].id).toBe(BOARD_FIXTURE_LENGTH - 1);
-			expect(result.content[2].id).toBe(BOARD_FIXTURE_LENGTH - 2);
-			expect(result.content[3].id).toBe(BOARD_FIXTURE_LENGTH - 3);
+			expect(result.items[0].id).toBe(BOARD_FIXTURE_LENGTH);
+			expect(result.items[1].id).toBe(BOARD_FIXTURE_LENGTH - 1);
+			expect(result.items[2].id).toBe(BOARD_FIXTURE_LENGTH - 2);
+			expect(result.items[3].id).toBe(BOARD_FIXTURE_LENGTH - 3);
 
-			result.content.forEach((item) => {
+			result.items.forEach((item) => {
 				expect(item.imageName).toBe(`testImage${item.id}_1.jpg`);
 			});
 		});
 
 		it('데이터가 없는 경우', async () => {
 			await ImageBoard.destroy({ where: {} });
-			const result = await ImageBoardRepository.getImageBoardListPageable({pageNum: 1});
+			const result = await ImageBoardRepository.getImageBoardListPageable({page: 1});
 
-			expect(result.content.length).toBe(0);
-			expect(result.totalElements).toBe(0);
+			expect(result.items.length).toBe(0);
+			expect(result.totalPages).toBe(0);
+			expect(result.isEmpty).toBeTruthy();
+			expect(result.currentPage).toBe(1);
 		});
 
 		it('제목 기준 검색 조회', async () => {
 			const result = await ImageBoardRepository.getImageBoardListPageable({keyword: 'testTitle11', searchType: 't', page: 1});
 
-			expect(result.content.length).toBe(1);
-			expect(result.totalElements).toBe(1);
+			expect(result.items.length).toBe(1);
+			expect(result.totalPages).toBe(1);
+			expect(result.isEmpty).toBeFalsy();
+			expect(result.currentPage).toBe(1);
 			
-			expect(result.content[0].id).toBe(11);
+			expect(result.items[0].id).toBe(11);
 		});
 
 		it('내용 기준 검색 조회', async () => {
 			const result = await ImageBoardRepository.getImageBoardListPageable({keyword: 'testContent11', searchType: 'c', page: 1});
 
-			expect(result.content.length).toBe(1);
-			expect(result.totalElements).toBe(1);
+			expect(result.items.length).toBe(1);
+			expect(result.totalPages).toBe(1);
+			expect(result.isEmpty).toBeFalsy();
+			expect(result.currentPage).toBe(1);
 			
 		});
 
 		it('제목 및 내용 기준 검색 조회', async () => {
 			const result = await ImageBoardRepository.getImageBoardListPageable({keyword: 'testTitle11', searchType: 'tc', page: 1});
 
-			expect(result.content.length).toBe(1);
-			expect(result.totalElements).toBe(1);
+			expect(result.items.length).toBe(1);
+			expect(result.totalPages).toBe(1);
+			expect(result.isEmpty).toBeFalsy();
+			expect(result.currentPage).toBe(1);
 		});
 
 		it('유저 기준 검색 조회', async () => {
 			const result = await ImageBoardRepository.getImageBoardListPageable({keyword: 'testerNickName', searchType: 'u', page: 1});
 
-			expect(result.content.length).toBe(BOARD_AMOUNT);
-			expect(result.totalElements).toBe(BOARD_FIXTURE_LENGTH);
+			expect(result.items.length).toBe(BOARD_AMOUNT);
+			expect(result.totalPages).toBe(Math.ceil(BOARD_FIXTURE_LENGTH / BOARD_AMOUNT));
+			expect(result.isEmpty).toBeFalsy();
+			expect(result.currentPage).toBe(1);
 		});
 	});
 
@@ -125,21 +148,15 @@ describe('imageBoardRepository test', () => {
 		it('정상 조회', async () => {
 			const result = await ImageBoardRepository.getImageBoardDetail(1);
 
-			expect(result.id).toBe(1);
 			expect(result.title).toBe('testTitle1');
 			expect(result.content).toBe('testContent1');
-			expect(result.userId).toBe(DEFAULT_USER_ID);
+			expect(result.writer).toBe(SAVE_MEMBER.nickname);
+			expect(result.writerId).toBe(SAVE_MEMBER.userId);
 			expect(result.createdAt).toBeDefined();
-			expect(result.imageDatas.length).toBe(3);
-			expect(result.imageDatas[0].imageName).toBe('testImage1_1.jpg');
-			expect(result.imageDatas[0].originName).toBe('testImage_old_1_1.jpg');
-			expect(result.imageDatas[0].imageStep).toBe(1);
-			expect(result.imageDatas[1].imageName).toBe('testImage1_2.jpg');
-			expect(result.imageDatas[1].originName).toBe('testImage_old_1_2.jpg');
-			expect(result.imageDatas[1].imageStep).toBe(2);
-			expect(result.imageDatas[2].imageName).toBe('testImage1_3.jpg');
-			expect(result.imageDatas[2].originName).toBe('testImage_old_1_3.jpg');
-			expect(result.imageDatas[2].imageStep).toBe(3);
+			expect(result.imageDataList.length).toBe(3);
+			expect(result.imageDataList[0]).toBe('testImage1_1.jpg');
+			expect(result.imageDataList[1]).toBe('testImage1_2.jpg');
+			expect(result.imageDataList[2]).toBe('testImage1_3.jpg');
 		});
 
 		it('데이터가 없는 경우', async () => {
@@ -185,13 +202,13 @@ describe('imageBoardRepository test', () => {
 
 			const saveImageData = await ImageData.findAll({ where: { imageId: result } });
 			expect(saveImageData.length).toBe(3);
-			expect(saveImageData[0].imageName).toBe('board_testPostImage1.jpg');
+			expect(saveImageData[0].imageName).toBe('testPostImage1.jpg');
 			expect(saveImageData[0].originName).toBe('testPostImage_old_1.jpg');
 			expect(saveImageData[0].imageStep).toBe(1);
-			expect(saveImageData[1].imageName).toBe('board_testPostImage2.jpg');
+			expect(saveImageData[1].imageName).toBe('testPostImage2.jpg');
 			expect(saveImageData[1].originName).toBe('testPostImage_old_2.jpg');
 			expect(saveImageData[1].imageStep).toBe(2);
-			expect(saveImageData[2].imageName).toBe('board_testPostImage3.jpg');
+			expect(saveImageData[2].imageName).toBe('testPostImage3.jpg');
 			expect(saveImageData[2].originName).toBe('testPostImage_old_3.jpg');
 			expect(saveImageData[2].imageStep).toBe(3);
 		});
@@ -201,15 +218,20 @@ describe('imageBoardRepository test', () => {
 		it('정상 조회', async () => {
 			const result = await ImageBoardRepository.getImageBoardPatchDetail(1);
 
-			expect(result.id).toBe(1);
 			expect(result.title).toBe('testTitle1');
 			expect(result.content).toBe('testContent1');
 			expect(result.createdAt).toBeUndefined();
 			expect(result.userId).toBeUndefined();
-			expect(result.imageDatas.length).toBe(3);
-			expect(result.imageDatas[0].imageName).toBe('testImage1_1.jpg');
-			expect(result.imageDatas[1].imageName).toBe('testImage1_2.jpg');
-			expect(result.imageDatas[2].imageName).toBe('testImage1_3.jpg');
+			expect(result.imageList.length).toBe(3);
+			expect(result.imageList[0].imageName).toBe('testImage1_1.jpg');
+			expect(result.imageList[0].originName).toBe('testImage_old_1_1.jpg');
+			expect(result.imageList[0].imageStep).toBe(1);
+			expect(result.imageList[1].imageName).toBe('testImage1_2.jpg');
+			expect(result.imageList[1].originName).toBe('testImage_old_1_2.jpg');
+			expect(result.imageList[1].imageStep).toBe(2);
+			expect(result.imageList[2].imageName).toBe('testImage1_3.jpg');
+			expect(result.imageList[2].originName).toBe('testImage_old_1_3.jpg');
+			expect(result.imageList[2].imageStep).toBe(3);
 		});
 
 		it('데이터가 없는 경우', async () => {
@@ -256,10 +278,10 @@ describe('imageBoardRepository test', () => {
 			expect(saveImageData[0].imageName).toBe('testImage1_3.jpg');
 			expect(saveImageData[0].originName).toBe('testImage_old_1_3.jpg');
 			expect(saveImageData[0].imageStep).toBe(3);
-			expect(saveImageData[1].imageName).toBe('board_testPatchImage1_10.jpg');
+			expect(saveImageData[1].imageName).toBe('testPatchImage1_10.jpg');
 			expect(saveImageData[1].originName).toBe('testPatchImage_old_1_10.jpg');
 			expect(saveImageData[1].imageStep).toBe(4);
-			expect(saveImageData[2].imageName).toBe('board_testPatchImage1_20.jpg');
+			expect(saveImageData[2].imageName).toBe('testPatchImage1_20.jpg');
 			expect(saveImageData[2].originName).toBe('testPatchImage_old_1_20.jpg');
 			expect(saveImageData[2].imageStep).toBe(5);
 		});
@@ -321,7 +343,7 @@ describe('imageBoardRepository test', () => {
 			expect(saveImageData[2].imageName).toBe('testImage1_3.jpg');
 			expect(saveImageData[2].originName).toBe('testImage_old_1_3.jpg');
 			expect(saveImageData[2].imageStep).toBe(3);
-			expect(saveImageData[3].imageName).toBe('board_testPatchImage1_10.jpg');
+			expect(saveImageData[3].imageName).toBe('testPatchImage1_10.jpg');
 			expect(saveImageData[3].originName).toBe('testPatchImage_old_1_10.jpg');
 			expect(saveImageData[3].imageStep).toBe(4);
 		});
@@ -375,13 +397,9 @@ describe('imageBoardRepository test', () => {
 		});
 
 		it('데이터가 없는 경우', async () => {
-			try {
-				await ImageBoardRepository.getImageBoardWriter(0);
-			}catch(error) {
-				expect(error).toBeInstanceOf(CustomError);
-				expect(error.status).toBe(ResponseStatus.NOT_FOUND.CODE);
-				expect(error.message).toBe(ResponseStatus.NOT_FOUND.MESSAGE);
-			}
+			const result = await ImageBoardRepository.getImageBoardWriter(0);
+
+			expect(result).toBeNull();
 		});
 	});
 	
@@ -390,9 +408,9 @@ describe('imageBoardRepository test', () => {
 			const result = await ImageBoardRepository.getImageBoardDeleteFiles(1);
 
 			expect(result.length).toBe(3);
-			expect(result[0].imageName).toBe('testImage1_1.jpg');
-			expect(result[1].imageName).toBe('testImage1_2.jpg');
-			expect(result[2].imageName).toBe('testImage1_3.jpg');
+			expect(result[0]).toBe('testImage1_1.jpg');
+			expect(result[1]).toBe('testImage1_2.jpg');
+			expect(result[2]).toBe('testImage1_3.jpg');
 		});
 	});
 })

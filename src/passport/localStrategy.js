@@ -4,16 +4,16 @@ import { MemberRepository } from '#repositories/memberRepository.js';
 
 const localStrategy = new LocalStrategy({
 		usernameField: 'userId',
-		passwordField: 'userPw',
+		passwordField: 'password',
 		session: false,
 	},
-	async (userId, userPw, done) => {
+	async (userId, password, done) => {
 		try {
 			const member = await MemberRepository.findMemberByUserIdFromLocal(userId);
 			if(!member) 
 				return done(null, false, { message: 'Authenticate Failed' });
 			
-			const isMatch = await bcrypt.compare(userPw, member.userPw);
+			const isMatch = await bcrypt.compare(password, member.password);
 			if(!isMatch)
 				return done(null, false, { message: 'Authenticate Failed' });
 

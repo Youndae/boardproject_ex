@@ -1,7 +1,4 @@
 import { Board, Member } from "#models/index.js"
-import logger from "#config/loggerConfig.js"
-import { ResponseStatus } from "#constants/responseStatus.js"
-import CustomError from "#errors/customError.js"
 import { getOffset, toPage } from "#utils/paginationUtils.js"
 import {Op, Sequelize} from "sequelize"
 
@@ -58,7 +55,6 @@ export class BoardRepository {
 	}
 
 	static async getBoardDetail(id) {
-		console.log('getBoardDetail id : ', id);
 		const board = await Board.findOne({
 			attributes: [
 				'title',
@@ -125,6 +121,30 @@ export class BoardRepository {
 			title: title,
 			content: content,
 		}, { where: { id } });
+	}
+
+	static async findById(id) {
+		return await Board.findOne({ where: { id } });
+	}
+
+	static async deleteByGroupNo(id) {
+		await Board.destroy({ where: { groupNo: id } })
+	}
+
+	static async deleteByPath(groupNo, selfUpper, childUpper) {
+		await Board.destroy({
+			where: {
+				groupNo,
+				[Op.or]: [
+					{ upperNo: selfUpper },
+					{
+						upperNo: {
+							[Op.like]: childUpper
+						}
+					}
+				]
+			}
+		})
 	}
 
 	static async deleteBoard(id) {

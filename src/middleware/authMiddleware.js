@@ -3,14 +3,17 @@ import CustomError from '#errors/customError.js';
 
 
 export const isLoggedIn = (req, res, next) => {
-	if(req.userId)
+	if(req.user)
 		return next();
 	else
 		return next(new CustomError(ResponseStatus.FORBIDDEN));
 };
 
 export const isNotLoggedIn = (req, res, next) => {
-	if(!req.userId)
+	const path = req.originalUrl;
+	console.log('isNotLoggedIn path', path);
+
+	if(!req.user)
 		return next();
 	else
 		return next(new CustomError(ResponseStatus.FORBIDDEN));

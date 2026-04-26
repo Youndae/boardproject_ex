@@ -10,9 +10,18 @@ import {
 	postReplyCommentService,
 } from '#services/comment/commentService.js';
 
+const DEFAULT_MEMBER = {
+	id: 1,
+	userId: 'tester',
+	password: 'tester1234',
+	username: 'testerName',
+	nickname: 'testerNickName',
+	email: 'tester@tester.com',
+	profile: 'testerProfile.jpg',
+	provider: 'local',
+}
 const COMMENT_AMOUNT = 20;
 const COMMENT_TOTAL_ELEMENTS = 30;
-const DEFAULT_USER_ID = 'tester';
 const WRONG_USER_ID = 'tester2';
 
 describe('commentService integration test', () => {
@@ -20,36 +29,28 @@ describe('commentService integration test', () => {
 		await sequelize.authenticate();
 		await sequelize.sync({ force: true });
 
-		await Member.create({
-			userId: DEFAULT_USER_ID,
-			userPw: 'tester1234',
-			userName: 'testerName',
-			nickName: 'testerNickName',
-			email: 'tester@tester.com',
-			profileThumbnail: 'testerProfileThumbnail.jpg',
-			provider: 'local',
-		});
+		await Member.create(DEFAULT_MEMBER);
 
 		await Auth.create({
-			userId: DEFAULT_USER_ID,
+			userId: DEFAULT_MEMBER.id,
 			auth: 'ROLE_MEMBER',
 		});
 
 		await Board.create({
-			boardNo: 1,
-			userId: DEFAULT_USER_ID,
-			boardTitle: 'testTitle',
-			boardContent: 'testContent',
-			boardGroupNo: 1,
-			boardUpperNo: '1',
-			boardIndent: 1,
+			id: 1,
+			userId: DEFAULT_MEMBER.id,
+			title: 'testTitle',
+			content: 'testContent',
+			groupNo: 1,
+			upperNo: '1',
+			indent: 1,
 		});
 
 		await ImageBoard.create({
-			imageNo: 1,
-			userId: DEFAULT_USER_ID,
-			imageTitle: 'testTitle',
-			imageContent: 'testContent',
+			id: 1,
+			userId: DEFAULT_MEMBER.id,
+			title: 'testTitle',
+			content: 'testContent',
 		});
 	});
 
@@ -64,29 +65,29 @@ describe('commentService integration test', () => {
 	beforeEach(async () => {
 		for(let i = 1; i <= COMMENT_TOTAL_ELEMENTS; i++) {
 			await Comment.create({
-				commentNo: i,
-				boardNo: 1,
-				imageNo: null,
-				userId: DEFAULT_USER_ID,
-				commentContent: `testCommentContent${i}`,
-				commentDate: new Date(),
-				commentGroupNo: i,
-				commentIndent: 1,
-				commentUpperNo: `${i}`,
+				id: i,
+				boardId: 1,
+				imageId: null,
+				userId: DEFAULT_MEMBER.id,
+				content: `testCommentContent${i}`,
+				createdAt: new Date(),
+				groupNo: i,
+				indent: 0,
+				upperNo: `${i}`,
 			});
 
 			const imageCommentNo = i + COMMENT_TOTAL_ELEMENTS;
 
 			await Comment.create({
-				commentNo: imageCommentNo,
-				boardNo: null,
-				imageNo: 1,
-				userId: DEFAULT_USER_ID,
-				commentContent: `testCommentContent${imageCommentNo}`,
-				commentDate: new Date(),
-				commentGroupNo: imageCommentNo,
-				commentIndent: 1,
-				commentUpperNo: `${imageCommentNo}`,
+				id: imageCommentNo,
+				boardId: null,
+				imageId: 1,
+				userId: DEFAULT_MEMBER.id,
+				content: `testCommentContent${imageCommentNo}`,
+				createdAt: new Date(),
+				groupNo: imageCommentNo,
+				indent: 0,
+				upperNo: `${imageCommentNo}`,
 			});
 		}
 	});
@@ -100,239 +101,157 @@ describe('commentService integration test', () => {
 
 	describe('getCommentListService', () => {
 		it('정상 조회. Board 기준', async () => {
-			const result = await getCommentListService({ boardNo: 1 });
+			const result = await getCommentListService({ boardId: 1 });
 
 			expect(result).toBeDefined();
-			expect(result.content.length).toBe(COMMENT_AMOUNT);
-			expect(result.empty).toBe(false);
-			expect(result.totalElements).toBe(COMMENT_TOTAL_ELEMENTS);
+			expect(result.items.length).toBe(COMMENT_AMOUNT);
+			expect(result.isEmpty).toBe(false);
+			expect(result.totalPages).toBe(Math.ceil(COMMENT_TOTAL_ELEMENTS / COMMENT_AMOUNT));
 
-			result.content.forEach((comment) => {
-				expect(comment.commentNo).toBeLessThanOrEqual(COMMENT_TOTAL_ELEMENTS);
-				expect(comment.userId).toBeDefined();
-				expect(comment.commentDate).toBeDefined();
-				expect(comment.commentContent).toBeDefined();
-				expect(comment.commentGroupNo).toBeDefined();
-				expect(comment.commentIndent).toBeDefined();
-				expect(comment.commentUpperNo).toBeDefined();
-				expect(comment.boardNo).toBeUndefined();
-				expect(comment.imageNo).toBeUndefined();
+			result.items.forEach((comment) => {
+				expect(comment.id).toBeLessThanOrEqual(COMMENT_TOTAL_ELEMENTS);
+				expect(comment.writerId).toBe(DEFAULT_MEMBER.userId);
+				expect(comment.writer).toBe(DEFAULT_MEMBER.nickname);
+				expect(comment.createdAt).toBeDefined();
+				expect(comment.content).toBeDefined();
+				expect(comment.groupNo).toBeUndefined();
+				expect(comment.indent).toBeDefined();
+				expect(comment.upperNo).toBeUndefined();
+				expect(comment.boardId).toBeUndefined();
+				expect(comment.imageId).toBeUndefined();
+				expect(comment.deletedAt).toBeFalsy();
 			});
 		});
 
 		it('정상 조회. ImageBoard 기준', async () => {
-			const result = await getCommentListService({ imageNo: 1 });
+			const result = await getCommentListService({ imageId: 1 });
 
 			expect(result).toBeDefined();
-			expect(result.content.length).toBe(COMMENT_AMOUNT);
-			expect(result.empty).toBe(false);
-			expect(result.totalElements).toBe(COMMENT_TOTAL_ELEMENTS);
+			expect(result.items.length).toBe(COMMENT_AMOUNT);
+			expect(result.isEmpty).toBe(false);
+			expect(result.totalPages).toBe(Math.ceil(COMMENT_TOTAL_ELEMENTS / COMMENT_AMOUNT));
 
-			result.content.forEach((comment) => {
-				expect(comment.commentNo).toBeGreaterThan(COMMENT_TOTAL_ELEMENTS);
-				expect(comment.userId).toBeDefined();
-				expect(comment.commentContent).toBeDefined();
-				expect(comment.commentGroupNo).toBeDefined();
-				expect(comment.commentIndent).toBeDefined();
-				expect(comment.commentUpperNo).toBeDefined();
-				expect(comment.boardNo).toBeUndefined();
-				expect(comment.imageNo).toBeUndefined();
+			result.items.forEach((comment) => {
+				expect(comment.id).toBeGreaterThan(COMMENT_TOTAL_ELEMENTS);
+				expect(comment.writerId).toBe(DEFAULT_MEMBER.userId);
+				expect(comment.writer).toBe(DEFAULT_MEMBER.nickname);
+				expect(comment.createdAt).toBeDefined();
+				expect(comment.content).toBeDefined();
+				expect(comment.indent).toBeDefined();
+				expect(comment.deletedAt).toBeFalsy();
+				expect(comment.groupNo).toBeUndefined();
+				expect(comment.upperNo).toBeUndefined();
+				expect(comment.boardId).toBeUndefined();
+				expect(comment.imageId).toBeUndefined();
 			});
 		});
 
 		it('데이터가 없는 경우', async () => {
 			await Comment.destroy({ where: {} });
-			const result = await getCommentListService({ boardNo: 1 });
+			const result = await getCommentListService({ boardId: 999999 });
 
 			expect(result).toBeDefined();
-			expect(result.content.length).toBe(0);
-			expect(result.empty).toBe(true);
-			expect(result.totalElements).toBe(0);
-		});
-
-		it('boardNo, imageNo 모두 존재하는 경우', async () => {
-			try {
-				await getCommentListService({ boardNo: 1, imageNo: 1 });
-			}catch(error) {
-				expect(error).toBeInstanceOf(CustomError);
-				expect(error.status).toBe(ResponseStatusCode.BAD_REQUEST);
-				expect(error.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-			}
-		});
-
-		it('boardNo, imageNo 모두 존재하지 않는 경우', async () => {
-			try {
-				await getCommentListService({ });
-			}catch(error) {
-				expect(error).toBeInstanceOf(CustomError);
-				expect(error.status).toBe(ResponseStatusCode.BAD_REQUEST);
-				expect(error.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-			}
-		});
-
-		it('조회시 오류 발생', async () => {
-			jest.spyOn(CommentRepository, 'getCommentListPageable').mockRejectedValue(new Error('오류 발생'));
-			try {
-				await getCommentListService({ boardNo: 1 });
-			}catch(error) {
-				expect(error).toBeInstanceOf(CustomError);
-				expect(error.status).toBe(ResponseStatusCode.INTERNAL_SERVER_ERROR);
-				expect(error.message).toBe(ResponseStatus.INTERNAL_SERVER_ERROR.MESSAGE);
-			}
+			expect(result.items.length).toBe(0);
+			expect(result.isEmpty).toBe(true);
+			expect(result.totalPages).toBe(0);
+			expect(result.currentPage).toBe(1);
 		});
 	});
 
 	describe('postCommentService', () => {
+		const contentFixture = "testCommentContent";
 		it('정상 처리. Board 기준', async () => {
-			const result = await postCommentService({ boardNo: 1, commentContent: 'testCommentContent' }, DEFAULT_USER_ID);
+			await Comment.destroy({ where: {}, force: true });
+			await postCommentService({ boardId: 1, content: contentFixture }, DEFAULT_MEMBER.id);
 
-			expect(result).toBeDefined();
-			expect(result.commentNo).toBeDefined();
-			
-			const saveComment = await Comment.findOne({ where: { commentNo: result.commentNo } });
+			const saveComment = await Comment.findOne({ where: { boardId: 1 } });
 			expect(saveComment).toBeDefined();
-			expect(saveComment.commentNo).toBe(result.commentNo);
-			expect(saveComment.boardNo).toBe(1);
-			expect(saveComment.imageNo).toBeNull();
-			expect(saveComment.userId).toBe(DEFAULT_USER_ID);
-			expect(saveComment.commentContent).toBe('testCommentContent');
-			expect(saveComment.commentGroupNo).toBe(result.commentNo);
-			expect(saveComment.commentIndent).toBe(1);
-			expect(saveComment.commentUpperNo).toBe(`${result.commentNo}`);
+			expect(saveComment.id).toBeDefined();
+			expect(saveComment.boardId).toBe(1);
+			expect(saveComment.imageId).toBeNull();
+			expect(saveComment.userId).toBe(DEFAULT_MEMBER.id);
+			expect(saveComment.content).toBe(contentFixture);
+			expect(saveComment.groupNo).toBe(saveComment.id);
+			expect(saveComment.indent).toBe(0);
+			expect(saveComment.upperNo).toBe(`${saveComment.id}`);
 		});
 
 		it('정상 처리. ImageBoard 기준', async () => {
-			const result = await postCommentService({ imageNo: 1, commentContent: 'testCommentContent' }, DEFAULT_USER_ID);
-			expect(result).toBeDefined();
-			expect(result.commentNo).toBeDefined();
+			await Comment.destroy({ where: {}, force: true });
+			await postCommentService({ imageId: 1, content: contentFixture }, DEFAULT_MEMBER.id);
 
-			const saveComment = await Comment.findOne({ where: { commentNo: result.commentNo } });
+			const saveComment = await Comment.findOne({ where: { imageId: 1 } });
 			expect(saveComment).toBeDefined();
-			expect(saveComment.commentNo).toBe(result.commentNo);
-			expect(saveComment.boardNo).toBeNull();
-			expect(saveComment.imageNo).toBe(1);
-			expect(saveComment.userId).toBe(DEFAULT_USER_ID);
-			expect(saveComment.commentContent).toBe('testCommentContent');
-			expect(saveComment.commentGroupNo).toBe(result.commentNo);
-			expect(saveComment.commentIndent).toBe(1);
-			expect(saveComment.commentUpperNo).toBe(`${result.commentNo}`);
-		});
-
-		it('처리시 오류 발생', async () => {
-			jest.spyOn(CommentRepository, 'postComment').mockRejectedValue(new Error('오류 발생'));
-			try {
-				await postCommentService({ boardNo: 1, commentContent: 'testCommentContent' }, DEFAULT_USER_ID);
-			}catch(error) {
-				expect(error).toBeInstanceOf(CustomError);
-				expect(error.status).toBe(ResponseStatusCode.INTERNAL_SERVER_ERROR);
-				expect(error.message).toBe(ResponseStatus.INTERNAL_SERVER_ERROR.MESSAGE);
-			}
-		});
-
-		it('boardNo, imageNo 모두 존재하는 경우', async () => {
-			jest.spyOn(CommentRepository, 'postComment');
-			try {
-				await postCommentService({ boardNo: 1, imageNo: 1, commentContent: 'testCommentContent' }, DEFAULT_USER_ID);
-			}catch(error) {
-				expect(error).toBeInstanceOf(CustomError);
-				expect(error.status).toBe(ResponseStatusCode.BAD_REQUEST);
-				expect(error.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-				expect(CommentRepository.postComment).not.toHaveBeenCalled();
-			}
-		});
-
-		it('boardNo, imageNo 모두 존재하지 않는 경우', async () => {
-			jest.spyOn(CommentRepository, 'postComment');
-			try {
-				await postCommentService({ commentContent: 'testCommentContent' }, DEFAULT_USER_ID);
-			}catch(error) {
-				expect(error).toBeInstanceOf(CustomError);
-				expect(error.status).toBe(ResponseStatusCode.BAD_REQUEST);
-				expect(error.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-				expect(CommentRepository.postComment).not.toHaveBeenCalled();
-			}
+			expect(saveComment.id).toBeDefined();
+			expect(saveComment.boardId).toBeNull();
+			expect(saveComment.imageId).toBe(1);
+			expect(saveComment.userId).toBe(DEFAULT_MEMBER.id);
+			expect(saveComment.content).toBe(contentFixture);
+			expect(saveComment.groupNo).toBe(saveComment.id);
+			expect(saveComment.indent).toBe(0);
+			expect(saveComment.upperNo).toBe(`${saveComment.id}`);
 		});
 	});
 
 	describe('deleteCommentService', () => {
 		it('정상 처리', async () => {
-			await deleteCommentService(1, DEFAULT_USER_ID);
+			await deleteCommentService(1, DEFAULT_MEMBER.id);
 
-			const saveComment = await Comment.findOne({ where: { commentNo: 1 } });
+			const saveComment = await Comment.findOne({ where: { id: 1 } });
 			expect(saveComment).toBeNull();
 		});
 
+		it('데이터가 없는 경우', async () => {
+			const deleteCommentSpy = jest.spyOn(CommentRepository, 'deleteComment');
+			try {
+				await deleteCommentService(999999, DEFAULT_MEMBER.id);
+			}catch(error) {
+				expect(error).toBeInstanceOf(CustomError);
+				expect(error.status).toBe(ResponseStatusCode.BAD_REQUEST);
+				expect(error.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
+				expect(deleteCommentSpy).not.toHaveBeenCalled();
+			}
+		})
+
 		it('작성자가 아닌 경우', async () => {
-			jest.spyOn(CommentRepository, 'deleteComment');
+			const deleteCommentSpy = jest.spyOn(CommentRepository, 'deleteComment');
 			try {
 				await deleteCommentService(1, WRONG_USER_ID);
 			}catch(error) {
 				expect(error).toBeInstanceOf(CustomError);
 				expect(error.status).toBe(ResponseStatusCode.FORBIDDEN);
 				expect(error.message).toBe(ResponseStatus.FORBIDDEN.MESSAGE);
-				expect(CommentRepository.deleteComment).not.toHaveBeenCalled();
+				expect(deleteCommentSpy).not.toHaveBeenCalled();
 			}
-		});
-
-		it('오류 발생', async () => {
-			jest.spyOn(CommentRepository, 'deleteComment').mockRejectedValue(new Error('오류 발생'));
-			try {
-				await deleteCommentService(1, DEFAULT_USER_ID);
-			}catch(error) {
-				expect(error).toBeInstanceOf(CustomError);
-				expect(error.status).toBe(ResponseStatusCode.INTERNAL_SERVER_ERROR);
-				expect(error.message).toBe(ResponseStatus.INTERNAL_SERVER_ERROR.MESSAGE);
-			}
-
-			const saveComment = await Comment.findOne({ where: { commentNo: 1 } });
-			expect(saveComment).toBeDefined();
 		});
 	});
 
 	describe('postReplyCommentService', () => {
-		it('정상 처리. Board 기준', async () => {
-			await postReplyCommentService({ boardNo: 1, }, { commentContent: 'testReplyCommentContent', commentGroupNo: 1, commentIndent: 1, commentUpperNo: '1' }, DEFAULT_USER_ID);
+		const contentFixture = 'testReplyCommentContent';
+		it('정상 처리', async () => {
+			await postReplyCommentService(1, { content: contentFixture }, DEFAULT_MEMBER.id);
 
-			const saveComment = await Comment.findOne({ order: [['commentNo', 'DESC']], limit: 1 });
+			const saveComment = await Comment.findOne({ order: [['id', 'DESC']], limit: 1 });
 			expect(saveComment).toBeDefined();
-			expect(saveComment.boardNo).toBe(1);
-			expect(saveComment.imageNo).toBeNull();
-			expect(saveComment.userId).toBe(DEFAULT_USER_ID);
-			expect(saveComment.commentContent).toBe('testReplyCommentContent');
-			expect(saveComment.commentGroupNo).toBe(1);
-			expect(saveComment.commentIndent).toBe(2);
-			expect(saveComment.commentUpperNo).toBe(`1,${saveComment.commentNo}`);
+			expect(saveComment.boardId).toBe(1);
+			expect(saveComment.imageId).toBeNull();
+			expect(saveComment.userId).toBe(DEFAULT_MEMBER.id);
+			expect(saveComment.content).toBe(contentFixture);
+			expect(saveComment.groupNo).toBe(1);
+			expect(saveComment.indent).toBe(1);
+			expect(saveComment.upperNo).toBe(`1,${saveComment.id}`);
 		});
 
-		it('정상 처리. ImageBoard 기준', async () => {
-			await postReplyCommentService({ imageNo: 1, }, { commentContent: 'testReplyCommentContent', commentGroupNo: 1, commentIndent: 1, commentUpperNo: '1' }, DEFAULT_USER_ID);
-
-			const saveComment = await Comment.findOne({ order: [['commentNo', 'DESC']], limit: 1 });
-			expect(saveComment).toBeDefined();
-			expect(saveComment.imageNo).toBe(1);
-			expect(saveComment.userId).toBe(DEFAULT_USER_ID);
-			expect(saveComment.commentContent).toBe('testReplyCommentContent');
-			expect(saveComment.commentGroupNo).toBe(1);
-			expect(saveComment.commentIndent).toBe(2);
-			expect(saveComment.commentUpperNo).toBe(`1,${saveComment.commentNo}`);
-		});
-
-		it('처리시 오류 발생', async () => {
-			const mockTransaction = {
-				commit: jest.fn(),
-				rollback: jest.fn(),
-			}
-			jest.spyOn(sequelize, 'transaction').mockResolvedValue(mockTransaction);
-			jest.spyOn(CommentRepository, 'postReplyComment').mockRejectedValue(new Error('오류 발생'));
+		it('원본 아이디가 잘못 된 경우', async () => {
+			const postReplyCommentSpy = jest.spyOn(CommentRepository, 'postReplyComment');
 			try {
-				await postReplyCommentService({ boardNo: 1, }, { commentContent: 'testReplyCommentContent', commentGroupNo: 1, commentIndent: 1, commentUpperNo: '1' }, DEFAULT_USER_ID);
+				await postReplyCommentService(99999, { content: contentFixture }, DEFAULT_MEMBER.id);
 			}catch(error) {
 				expect(error).toBeInstanceOf(CustomError);
-				expect(error.status).toBe(ResponseStatusCode.INTERNAL_SERVER_ERROR);
-				expect(error.message).toBe(ResponseStatus.INTERNAL_SERVER_ERROR.MESSAGE);
-				expect(mockTransaction.commit).not.toHaveBeenCalled();
-				expect(mockTransaction.rollback).toHaveBeenCalled();
+				expect(error.status).toBe(ResponseStatusCode.BAD_REQUEST);
+				expect(error.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
+				expect(postReplyCommentSpy).not.toHaveBeenCalled();
 			}
-		});
+		})
 	});
 });

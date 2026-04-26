@@ -21,8 +21,8 @@ const pwValidator = z.string()
 export const registerValidator = z.object({
 	userId: userIdValidator,
 	password: pwValidator,
-	userName: z.string().min(2, { message: '이름은 최소 2자 이상이어야 합니다.'}).max(50),
-	nickname: nicknameValidator.optional().nullable(),
+	username: z.string().min(2, { message: '이름은 최소 2자 이상이어야 합니다.'}).max(50),
+	nickname: nicknameValidator,
 	email: z.string().email({ message: '이메일 형식에 맞지 않습니다.'}),
 });
 
@@ -40,7 +40,11 @@ export const loginValidator = z.object({
 }).strict();
 
 export const patchProfileValidator = z.object({
-	nickname: nicknameValidator.optional().nullable(),
+	nickname: nicknameValidator,
 	email: z.string().email({ message: '이메일 형식에 맞지 않습니다.'}),
 	deleteProfile: z.string().optional().nullable(),
 }).strict();
+
+export const patchOAuthJoinProfileValidator = z.object({
+	nickname: nicknameValidator
+})

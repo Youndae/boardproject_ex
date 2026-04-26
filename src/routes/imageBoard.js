@@ -9,7 +9,8 @@ import {
 	deleteImageBoard,
 	getImageBoardDisplay,
 } from '#controllers/imageBoardController.js';
-import { validate } from '#middleware/validateMiddleware.js';
+import { validate, imageBoardValidate } from '#middleware/validateMiddleware.js';
+import { imageRenderMiddleware } from "#middleware/imageRenderMiddleware.js";
 import {
 	imageBoardListSearchValidator,
 	postImageBoardValidator,
@@ -20,10 +21,11 @@ import { boardUpload } from '#middleware/uploadMiddleware.js';
 const router = express.Router();
 
 router.get('/', validate(imageBoardListSearchValidator, 'query'), getImageBoardList);
-router.get('/:imageNo', getImageBoardDetail);
-router.post('/', isLoggedIn, boardUpload, validate(postImageBoardValidator), postImageBoard);
-router.get('/patch-detail/:imageNo', isLoggedIn, getImageBoardPatchDetail);
-router.patch('/:imageNo', isLoggedIn, boardUpload, validate(patchImageBoardValidator), patchImageBoard);
-router.delete('/:imageNo', isLoggedIn, deleteImageBoard);
+router.get('/:id', getImageBoardDetail);
+router.post('/', isLoggedIn, boardUpload, imageBoardValidate(postImageBoardValidator), postImageBoard);
+router.get('/patch/detail/:id', isLoggedIn, getImageBoardPatchDetail);
+router.patch('/:id', isLoggedIn, boardUpload, imageBoardValidate(patchImageBoardValidator), patchImageBoard);
+router.delete('/:id', isLoggedIn, deleteImageBoard);
+router.get('/display/:imageName', getImageBoardDisplay, imageRenderMiddleware);
 
 export default router;

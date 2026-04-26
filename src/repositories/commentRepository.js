@@ -33,6 +33,7 @@ export class CommentRepository {
 			limit: commentAmount,
 			offset: offset,
 			order: [ ['groupNo', 'DESC'], ['upperNo', 'ASC'] ],
+			paranoid: false,
 			raw: true
 		});
 
@@ -45,7 +46,6 @@ export class CommentRepository {
 			imageId: imageId,
 			userId: userId,
 			content: content,
-			indent: 1,
 		}, { transaction: options.transaction });
 
 		await Comment.update({
@@ -57,7 +57,7 @@ export class CommentRepository {
 	}
 
 	static async deleteComment(id) {
-		await Comment.destroy({ where: { id: id } });
+		await Comment.destroy({ where: { id } });
 	}
 
 	static async postReplyComment(
@@ -90,7 +90,7 @@ export class CommentRepository {
 
 	static async findById(id) {
 		return await Comment.findOne({
-			where: id,
+			where: { id },
 			raw: true
 		})
 	}

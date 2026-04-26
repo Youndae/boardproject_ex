@@ -7,6 +7,11 @@ export const responseHandler = (req, res, next) => {
         return res.status(response.code).json(response);
     };
 
+    res.successWithMsg = (message) => {
+        const response = ApiResponse.successWithMsg(message);
+        return res.status(response.code).json(response);
+    }
+
     res.created = (content, message) => {
         const response = ApiResponse.created(content, message);
         return res.status(response.code).json(response);

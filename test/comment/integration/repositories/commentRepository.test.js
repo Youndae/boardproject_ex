@@ -161,12 +161,14 @@ describe('commentRepository test', () => {
 		});
 
 		it('데이터가 없는 경우', async () => {
-			await Comment.destroy({ where: {} });
-			const commentList = await CommentRepository.getCommentListPageable({ boardId: SAVE_BOARD.id, page: 1 });
+			await Comment.destroy({ where: {}, force: true });
+			const commentList = await CommentRepository.getCommentListPageable({ boardId: 1, page: 1 });
 
 			expect(commentList).toBeDefined();
 			expect(commentList.items.length).toBe(0);
 			expect(commentList.totalPages).toBe(0);
+			expect(commentList.isEmpty).toBeTruthy();
+			expect(commentList.currentPage).toBe(1);
 		});
 
 		it('계층형 구조', async () => {
@@ -241,7 +243,7 @@ describe('commentRepository test', () => {
 			expect(saveComment.userId).toBe(DEFAULT_USER_ID);
 			expect(saveComment.content).toBe('testPostBoardComment');
 			expect(saveComment.groupNo).toBe(comment.id);
-			expect(saveComment.indent).toBe(1);
+			expect(saveComment.indent).toBe(0);
 			expect(saveComment.upperNo).toBe(`${comment.id}`);
 		});
 
@@ -263,7 +265,7 @@ describe('commentRepository test', () => {
 			expect(saveComment.userId).toBe(DEFAULT_USER_ID);
 			expect(saveComment.content).toBe('testPostImageBoardComment');
 			expect(saveComment.groupNo).toBe(comment.id);
-			expect(saveComment.indent).toBe(1);
+			expect(saveComment.indent).toBe(0);
 			expect(saveComment.upperNo).toBe(`${comment.id}`);
 		});
 	});

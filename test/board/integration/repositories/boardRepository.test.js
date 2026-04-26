@@ -244,7 +244,7 @@ describe('boardRepository test', () => {
 			expect(saveBoard.content).toBe('testContent');
 			expect(saveBoard.userId).toBe(DEFAULT_MEMBER.id);
 			expect(saveBoard.createdAt).toBeDefined();
-			expect(saveBoard.indent).toBe(1);
+			expect(saveBoard.indent).toBe(0);
 			expect(saveBoard.groupNo).toBe(id);
 			expect(saveBoard.upperNo).toBe(id.toString());
 		});
@@ -310,7 +310,7 @@ describe('boardRepository test', () => {
 
 			expect(reply.groupNo).toBe(1);
 			expect(reply.upperNo).toBe('1');
-			expect(reply.indent).toBe(1);
+			expect(reply.indent).toBe(0);
 		});
 
 		it('데이터가 없는 경우', async () => {

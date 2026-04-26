@@ -34,7 +34,7 @@ async function findOrCreateOAuthMember({
 				{ transaction }
 			)
 
-			await AuthRepository.createMemberAuth(userId, 'ROLE_MEMBER', { transaction });
+			await AuthRepository.createMemberAuth(member.id, 'ROLE_MEMBER', { transaction });
 		}
 
 		await transaction.commit();

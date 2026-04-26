@@ -43,19 +43,11 @@ import { ResponseStatus, ResponseStatusCode } from "#constants/responseStatus.js
  * }
  */
 export async function getBoardCommentList(req, res, next) {
+	const { id, page } = req.query;
 	try {
-		const commentList = await getCommentListService(req.query);
+		const result = await getCommentListService({boardId: id, page: page});
 
-		res.status(ResponseStatusCode.OK)
-			.json({
-				content: commentList.content,
-				empty: commentList.empty,
-				totalElements: commentList.totalElements,
-				userStatus: {
-					loggedIn: req.userId !== undefined,
-					uid: req.userId
-				}
-			})
+		res.success(result);
 	}catch(error) {
 		logger.error('getBoardCommentList error: ', error);
 
@@ -98,19 +90,11 @@ export async function getBoardCommentList(req, res, next) {
 * }
 */
 export async function getImageBoardCommentList(req, res, next) {
+	const { id, page } = req.query;
 	try {
-		const commentList = await getCommentListService(req.query);
+		const result = await getCommentListService({imageId: id, page: page});
 
-		res.status(ResponseStatusCode.OK)
-			.json({
-				content: commentList.content,
-				empty: commentList.empty,
-				totalElements: commentList.totalElements,
-				userStatus: {
-					loggedIn: req.userId !== undefined,
-					uid: req.userId
-				}
-			})
+		res.success(result);
 	}catch(error) {
 		logger.error('getImageBoardCommentList error: ', error);
 
@@ -137,13 +121,13 @@ export async function getImageBoardCommentList(req, res, next) {
  */
 export async function postBoardComment(req, res, next) {
 	try {
-		const boardNo = req.params.boardNo;
-		const commentContent = req.body.commentContent;
+		const boardId = req.params.targetBoardId;
+		const content = req.body.content;
 
-		const comment = await postCommentService({boardNo, commentContent}, req.userId);
 
-		res.status(ResponseStatusCode.CREATED)
-			.json(comment);
+		await postCommentService({boardId, content}, req.user.id);
+
+		res.created();
 	}catch(error) {
 		logger.error('postBoardComment error: ', error);
 
@@ -170,13 +154,12 @@ export async function postBoardComment(req, res, next) {
 */
 export async function postImageBoardComment(req, res, next) {
 	try {
-		const imageNo = req.params.imageNo;
-		const commentContent = req.body.commentContent;
+		const imageId = req.params.targetBoardId;
+		const content = req.body.content;
 
-		const comment = await postCommentService({imageNo, commentContent}, req.userId);
+		await postCommentService({imageId, content}, req.user.id);
 
-		res.status(ResponseStatusCode.CREATED)
-			.json(comment);
+		res.created();
 	}catch(error) {
 		logger.error('postImageBoardComment error: ', error);
 
@@ -188,7 +171,7 @@ export async function postImageBoardComment(req, res, next) {
  * 
  * @param {
  * 	params: {
- * 		commentNo: Integer,
+ * 		id: Integer,
  * }
  * } req 
  * @param {*} res 
@@ -200,8 +183,8 @@ export async function postImageBoardComment(req, res, next) {
  */
 export async function deleteComment(req, res, next) {
 	try {
-		const commentNo = req.params.commentNo;
-		await deleteCommentService(commentNo, req.userId);
+		const id = req.params.id;
+		await deleteCommentService(id, req.user.id);
 
 		res.status(ResponseStatusCode.NO_CONTENT)
 			.json({});
@@ -232,51 +215,15 @@ export async function deleteComment(req, res, next) {
  * 	status: 201,
  * }
 */
-export async function postBoardReplyComment(req, res, next) {
+export async function postCommentReply(req, res, next) {
 	try {
-		const boardNo = req.params.boardNo;
+		const id = req.params.id;
 
-		const comment = await postReplyCommentService({boardNo}, req.body, req.userId);
+		await postReplyCommentService(id, req.body, req.user.id);
 
-		res.status(ResponseStatusCode.CREATED)
-			.json(comment);
+		res.created();
 	}catch(error) {
 		logger.error('postBoardReplyComment error: ', error);
-
-		next(error);
-	}
-}
-
-/**
- * 
- * @param {
- * 	body: {
- * 		commentContent: String,
- * 		commentGroupNo: Integer,
- * 		commentIndent: Integer,
- * 		commentUpperNo: String,
- * },
- * params: {
- * 		imageNo: Integer,
- * }
- * } req 
- * @param {*} res 
- * @param {*} next 
- * 
- * @returns {
- * 	status: 201,
- * }
-*/
-export async function postImageBoardReplyComment(req, res, next) {
-	try {
-		const imageNo = req.params.imageNo;
-
-		const comment = await postReplyCommentService({imageNo}, req.body, req.userId);
-
-		res.status(ResponseStatusCode.CREATED)
-			.json(comment);
-	}catch(error) {
-		logger.error('postImageBoardReplyComment error: ', error);
 
 		next(error);
 	}

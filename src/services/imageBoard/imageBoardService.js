@@ -3,19 +3,14 @@ import logger from "#config/loggerConfig.js";
 import CustomError from "#errors/customError.js";
 import { ResponseStatus } from "#constants/responseStatus.js";
 import { sequelize } from "#models/index.js";
-import { deleteImageFile } from "#utils/fileUtils.js";
-import dayjs from "dayjs";
-import { ImageConstants } from "#constants/imageConstants.js";
+import {
+	deleteBoardImageFromFiles,
+	deleteBoardImageFromNames,
+} from "#utils/fileUtils.js";
 
-export async function getImageBoardListService({keyword, searchType, pageNum = 1}) {
+export async function getImageBoardListService({keyword, searchType, page = 1}) {
 	try {
-		const imageBoardList = await ImageBoardRepository.getImageBoardListPageable({keyword, searchType, pageNum});
-
-		return {
-			content: imageBoardList.content,
-			empty: imageBoardList.totalElements === 0,
-			totalElements: imageBoardList.totalElements,
-		};
+		return await ImageBoardRepository.getImageBoardListPageable({keyword, searchType, page});
 	}catch (error) {
 		logger.error('Failed to get image board list service.', error);
 
@@ -26,18 +21,16 @@ export async function getImageBoardListService({keyword, searchType, pageNum = 1
 	}
 }
 
-export async function getImageBoardDetailService(imageNo) {
+export async function getImageBoardDetailService(id) {
 	try {
-		const imageBoard = await ImageBoardRepository.getImageBoardDetail(imageNo);
+		const imageBoard = await ImageBoardRepository.getImageBoardDetail(id);
 
-		return {
-			imageNo: imageBoard.imageNo,
-			imageTitle: imageBoard.imageTitle,
-			imageContent: imageBoard.imageContent,
-			userId: imageBoard.userId,
-			imageDate: dayjs(imageBoard.imageDate).format('YYYY-MM-DD'),
-			imageData: imageBoard.imageDatas,
-		};
+		if(!imageBoard) {
+			logger.error('Image board detail data not found, imageNo: ', { id });
+			throw new CustomError(ResponseStatus.BAD_REQUEST);
+		}
+
+		return imageBoard;
 	}catch (error) {
 		logger.error('Failed to get image board detail service.', error);
 
@@ -48,22 +41,20 @@ export async function getImageBoardDetailService(imageNo) {
 	}
 }
 
-export async function postImageBoardService(userId, {imageTitle, imageContent}, files) {
+export async function postImageBoardService(userId, {title, content}, files) {
 	const transaction = await sequelize.transaction();
 	try {
-		const imageNo = await ImageBoardRepository.postImageBoard(userId, imageTitle, imageContent, files, {transaction});
+		const resultId = await ImageBoardRepository.postImageBoard(userId, title, content, files, {transaction});
 
 		await transaction.commit();
 
-		return imageNo;
+		return resultId;
 	}catch (error) {
 		logger.error('Failed to post image board service.', error);
 		await transaction.rollback();
 
 		if(files) {
-			files.forEach(file => {
-				deleteImageFile(file.filename, ImageConstants.BOARD_TYPE);
-			});
+			await deleteBoardImageFromFiles(files);
 		}
 
 		if(error instanceof CustomError)
@@ -73,13 +64,17 @@ export async function postImageBoardService(userId, {imageTitle, imageContent}, 
 	}
 }
 
-export async function getImageBoardPatchDetailService(imageNo, userId) {
+export async function getImageBoardPatchDetailService(id, userId) {
 	try {
-		if(await checkWriter(userId, imageNo)) {
-			const imageBoard = await ImageBoardRepository.getImageBoardPatchDetail(imageNo);
+		await checkWriter(userId, id)
+		const imageBoard = await ImageBoardRepository.getImageBoardPatchDetail(id);
 
-			return imageBoard;
+		if(!imageBoard) {
+			logger.error('Image board patch detail data not found, imageNo: ', { id });
+			throw new CustomError(ResponseStatus.NOT_FOUND);
 		}
+
+		return imageBoard;
 	}catch (error) {
 		logger.error('Failed to get image board patch detail service.', error);
 
@@ -90,31 +85,26 @@ export async function getImageBoardPatchDetailService(imageNo, userId) {
 	}
 }
 
-export async function patchImageBoardService(userId, imageNo, {imageTitle, imageContent}, files, deleteFiles) {
+export async function patchImageBoardService(userId, id, {title, content}, files, deleteFiles) {
 	const transaction = await sequelize.transaction();
 	try {
-		if(await checkWriter(userId, imageNo)) {
-			const patchImageNo = await ImageBoardRepository.patchImageBoard(imageNo, imageTitle, imageContent, files, deleteFiles, {transaction});
+		await checkWriter(userId, id)
+		await ImageBoardRepository.patchImageBoard(id, title, content, files, deleteFiles, {transaction});
 
-			await transaction.commit();
+		await transaction.commit();
 
-			if(deleteFiles) {
-				deleteFiles.forEach(file => {
-					deleteImageFile(file.replace(ImageConstants.BOARD_PREFIX, ''), ImageConstants.BOARD_TYPE);
-				});
-			}
-
-			return patchImageNo;
+		if(deleteFiles && deleteFiles.length > 0) {
+			await deleteBoardImageFromNames(deleteFiles);
 		}
+
+		return parseInt(id);
 	}catch (error) {
 		logger.error('Failed to patch image board service.', error);
 		
 		await transaction.rollback();
 
 		if(files) {
-			files.forEach(file => {
-				deleteImageFile(file.filename, ImageConstants.BOARD_TYPE);
-			});
+			await deleteBoardImageFromFiles(files);
 		}
 
 		if(error instanceof CustomError)
@@ -124,22 +114,22 @@ export async function patchImageBoardService(userId, imageNo, {imageTitle, image
 	}
 }
 
-export async function deleteImageBoardService(imageNo, userId) {
+export async function deleteImageBoardService(id, userId) {
+	const transaction = await sequelize.transaction();
 	try {
-		if(await checkWriter(userId, imageNo)) {
-			const deleteFiles = await ImageBoardRepository.getImageBoardDeleteFiles(imageNo);
-			await ImageBoardRepository.deleteImageBoard(imageNo);
+		await checkWriter(userId, id)
+		const deleteFiles = await ImageBoardRepository.getImageBoardDeleteFiles(id, {transaction});
+		await ImageBoardRepository.deleteImageBoard(id, {transaction});
 
-			if(deleteFiles) {
-				deleteFiles.forEach(file => {
-					deleteImageFile(file.imageName.replace(ImageConstants.BOARD_PREFIX, ''), ImageConstants.BOARD_TYPE);
-				});
-			}
-
-			return imageNo;
+		if(deleteFiles) {
+			console.log('deleteFiles', deleteFiles);
+			await deleteBoardImageFromNames(deleteFiles);
 		}
+
+		await transaction.commit();
 	}catch(error) {
 		logger.error('Failed to delete image board service.', error);
+		await transaction.rollback();
 
 		if(error instanceof CustomError)
 			throw error;
@@ -148,13 +138,16 @@ export async function deleteImageBoardService(imageNo, userId) {
 	}
 }
 
-async function checkWriter(userId, imageNo) {
-	const writer = await ImageBoardRepository.getImageBoardWriter(imageNo);
+async function checkWriter(userId, id) {
+	const writer = await ImageBoardRepository.getImageBoardWriter(id);
+
+	if(!writer) {
+		logger.error('Image board writer data not found', { id });
+		throw new CustomError(ResponseStatus.BAD_REQUEST);
+	}
 
 	if(writer !== userId) {
-		logger.error('User is not the author of the image board, imageNo: ', { imageNo });
+		logger.error('User is not the author of the image board', { id, userId });
 		throw new CustomError(ResponseStatus.FORBIDDEN);
 	}
-	
-	return true;
 }

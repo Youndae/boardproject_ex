@@ -7,6 +7,22 @@ export const getBaseNameAndExt = (filename) => {
 }
 
 export const getResizeProfileName = (filename) => {
+	return getResizeName(filename, 300);
+}
+
+export const getImageBoardFileNames = (fileNames) => {
+	const sizes = [300, 600];
+	const names = Array.isArray(fileNames) ? fileNames : [fileNames];
+
+	return names.flatMap(file => {
+		return [
+			file,
+			...sizes.map(size => getResizeName(file, size))
+		];
+	});
+}
+
+export const getResizeName = (filename, size) => {
 	const { baseName, ext } = getBaseNameAndExt(filename);
-	return `${baseName}_300${ext}`;
+	return `${baseName}_${size}${ext}`;
 }

@@ -1,9 +1,11 @@
 import {
+	getMemberStatus,
 	registerService,
 	checkIdService,
 	checkNicknameService,
 	patchProfileService,
-	getProfileService
+	getProfileService,
+	patchOAuthProfileService
 } from "#services/member/memberService.js"
 import { profileResize } from "#utils/resize.js"
 import logger from "#config/loggerConfig.js"
@@ -13,6 +15,22 @@ import { JWTTokenProvider } from "#services/jwt/jwtTokenProvider.js"
 import { getCookie } from "#utils/cookieUtils.js"
 import { jwtConfig } from "#config/jwtConfig.js"
 import passport from "passport"
+import {getProfileImageDisplayService} from "#services/file/imageFileService.js";
+
+
+export async function checkLogin(req, res, next) {
+	try {
+		const userId = req.user.id;
+
+		const result = await getMemberStatus(userId);
+
+		res.success(result);
+	}catch(error) {
+		logger.error('Failed to register member');
+		next(error);
+	}
+}
+
 
 /**
  * 
@@ -26,7 +44,6 @@ import passport from "passport"
  */
 export async function register(req, res, next) {
 	try {
-		const { userId, userPw, userName, nickName = null, email } = req.body;
 		const profileImage = req.file ? req.file.filename : null;
 
 		if(profileImage){
@@ -37,9 +54,9 @@ export async function register(req, res, next) {
 				next(new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR));
 			}
 		}
-		await registerService(userId, userPw, userName, nickName, email, profileImage);
+		await registerService(req.body, profileImage);
 
-		return res.status(ResponseStatusCode.CREATED).json({});
+		res.status(ResponseStatusCode.CREATED).json({});
 	}catch(error) {
 		logger.error('Failed to register member');
 		next(error);
@@ -61,15 +78,10 @@ export async function register(req, res, next) {
  */
 export async function checkId(req, res, next) {
 	try {
-		const result = await checkIdService(req.query.userId);
+		console.log('checkId: ', req.params.userId);
+		const result = await checkIdService(req.params.userId);
 
-		if(result)
-			throw new CustomError(ResponseStatus.CONFLICT);
-
-		return res.status(ResponseStatusCode.OK)
-			.json({
-				isExist: result
-			});
+		res.successWithMsg(result);
 	}catch(error) {
 		if(error instanceof CustomError && error.status === ResponseStatusCode.CONFLICT)
 			logger.info('checkId Already exists. ', error);
@@ -95,15 +107,10 @@ export async function checkId(req, res, next) {
 */
 export async function checkNickname(req, res, next) {
 	try {
-		const result = await checkNicknameService(req.userId, req.query.nickname);
+		const userId = req.user ? req.user.userId : null;
+		const result = await checkNicknameService(userId, req.params.nickname);
 
-		if(result)
-			throw new CustomError(ResponseStatus.CONFLICT);
-
-		return res.status(ResponseStatusCode.OK)
-			.json({
-				isExist: result
-			});
+		res.successWithMsg(result)
 	}catch(error) {
 		if(error instanceof CustomError && error.status === ResponseStatusCode.CONFLICT)
 			logger.info('checkNickname Already exists. ', error);
@@ -175,7 +182,8 @@ export async function login(req, res, next) {
 export async function logout(req, res, next) {
 	try {
 		const inoValue = getCookie(req, jwtConfig.inoHeader);
-		await JWTTokenProvider.deleteTokenDataAndCookie(req.userId, inoValue, res);
+
+		await JWTTokenProvider.deleteTokenDataAndCookie(req.user.userId, inoValue, res);
 
 		return res.status(ResponseStatusCode.OK).json({});
 	}catch (error) {
@@ -196,7 +204,7 @@ export async function logout(req, res, next) {
  */
 export async function patchProfile(req, res, next) {
 	try {
-		const { nickname = null, deleteProfile = null } = req.body;
+		const { nickname, email, deleteProfile = null } = req.body;
 		const profileImage = req.file ? req.file.filename : null;
 
 		if(profileImage){
@@ -207,9 +215,9 @@ export async function patchProfile(req, res, next) {
 			}
 		}
 		
-		await patchProfileService(req.userId, nickname, profileImage, deleteProfile);
+		await patchProfileService(req.user.id, nickname, email, profileImage, deleteProfile);
 		
-		return res.status(ResponseStatusCode.OK).json({});
+		res.success();
 	}catch (error) {
 		logger.error('Failed to patch profile');
 		next(error);
@@ -233,13 +241,9 @@ export async function patchProfile(req, res, next) {
  */
 export async function getProfile(req, res, next) {
 	try {
-		const member = await getProfileService(req.userId);
-		
-		return res.status(ResponseStatusCode.OK)
-			.json({
-				nickname: member.nickName,
-				profileImage: member.profileThumbnail,
-			});
+		const result = await getProfileService(req.user.id);
+
+		res.success(result);
 	}catch (error) {
 		logger.error('Failed to get profile');
 		next(error);
@@ -280,16 +284,69 @@ export async function callbackOAuth(req, res, next) {
 				logger.error('Failed to callback OAuth. Invalid provider');
 				return next(new CustomError(ResponseStatus.FORBIDDEN));
 			}
-	
-			await JWTTokenProvider.issuedAllToken(member.userId, res);
-	
-			// return res.status(ResponseStatusCode.OK).json({
-				// id: member.userId,
-			// });
-			return res.redirect('http://localhost:3000/');
+
+			const inoCookie = getCookie(req, jwtConfig.inoHeader);
+			const redirectUrl = getCookie(req, 'redirect_to') ?? '/';
+
+			if(redirectUrl !== '/')
+				res.clearCookie('redirect_to');
+
+			if(inoCookie)
+				await JWTTokenProvider.issuedToken(member.userId, inoCookie, res);
+			else
+				await JWTTokenProvider.issuedAllToken(member.userId, res);
+
+			const targetUrl = !member.nickname
+				? `/join/profile?redirect=${encodeURIComponent(redirectUrl)}`
+				: decodeURIComponent(redirectUrl);
+
+			return res.redirect(`http://localhost:3000${targetUrl}`)
+
 		}catch (error) {
 			logger.error('Failed to callback OAuth');
 			next(error);
 		}		
 	})(req, res, next);
+}
+
+export async function patchOAuthProfile(req, res, next) {
+	try {
+		const userId = req.user.id;
+
+		const profileImage = req.file ? req.file.filename : null;
+
+		if(profileImage){
+			try {
+				await profileResize(profileImage);
+			}catch(error) {
+				console.error('profileResize error : ', error);
+				next(new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR));
+			}
+		}
+
+		await patchOAuthProfileService(userId, req.body, profileImage);
+
+		res.success();
+	}catch(error) {
+		logger.error('Failed to patchOauthProfile');
+		next(error);
+	}
+}
+
+export async function getProfileDisplay(req, res, next) {
+	const imageName = req.params.imageName;
+
+	try {
+		const{ path, contentType } = await getProfileImageDisplayService(imageName);
+
+		res.locals.imagePayload = {
+			filePath: path,
+			contentType,
+			errorContext: 'Profile'
+		}
+
+		next();
+	}catch(error) {
+		next(error);
+	}
 }

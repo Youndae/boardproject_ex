@@ -4,17 +4,19 @@ import CustomError from "#errors/customError.js";
 import { ResponseStatus } from "#constants/responseStatus.js";
 import { sequelize } from "#models/index.js";
 
-export async function getCommentListService({boardId, imageId, pageNum = 1}) {
+export async function getCommentListService({boardId, imageId, page = 1}) {
 	checkCommentBoardStatus(boardId, imageId);
 
 	try {
-		const commentList = await CommentRepository.getCommentListPageable({ boardId, imageId, pageNum });
+		const commentList = await CommentRepository.getCommentListPageable({ boardId, imageId, page });
 
 		const items = commentList.items.map(toCommentResponse);
 
 		return {
-			...commentList,
 			items,
+			isEmpty: commentList.isEmpty,
+			totalPages: commentList.totalPages,
+			currentPage: parseInt(commentList.currentPage)
 		};
 	}catch (error) {
 		logger.error('Failed to get comment list service.', error);
@@ -26,11 +28,12 @@ export async function getCommentListService({boardId, imageId, pageNum = 1}) {
 	}
 }
 
-export async function postCommentService(boardId = null, imageId = null, { content }, userId) {
+export async function postCommentService({boardId = null, imageId = null, content }, userId) {
 	checkCommentBoardStatus(boardId, imageId);
 
 	const transaction = await sequelize.transaction();
 	try {
+
 		await CommentRepository.postComment(boardId, imageId, userId, content, { transaction });
 
 		await transaction.commit();
@@ -59,24 +62,19 @@ export async function deleteCommentService(id, userId) {
 	}
 }
 
-export async function postReplyCommentService(
-	{ 
-		boardNo = null, 
-		imageNo = null, 
-	},
-	{ id },
-	{
-		content,
-	},
-	userId) {
+export async function postReplyCommentService(id, {content}, userId) {
 	const transaction = await sequelize.transaction();
 	try {
-
 		const targetComment = await CommentRepository.findById(id)
 
+		if(!targetComment) {
+			logger.warn('postReplyComment targetComment is not found.', { id });
+			throw new CustomError(ResponseStatus.BAD_REQUEST);
+		}
+
 		await CommentRepository.postReplyComment(
-			boardNo, 
-			imageNo, 
+			targetComment.boardId,
+			targetComment.imageId,
 			content,
 			targetComment.groupNo,
 			targetComment.indent + 1,
@@ -126,8 +124,8 @@ const toCommentResponse = (row) => {
 
 	return {
 		id: row.id,
-		writer: isDeleted ? "" : row.nickname,
-		writerId: isDeleted ? "" : row.userId,
+		writer: isDeleted ? "" : row.writer,
+		writerId: isDeleted ? "" : row.writerId,
 		createdAt: row.createdAt.toISOString().slice(0, 10),
 		content: isDeleted ? "삭제된 댓글입니다." : row.content,
 		indent: row.indent,

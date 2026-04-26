@@ -193,7 +193,8 @@ export class JWTTokenProvider {
 			case 'd':
 				return value * 24 * 60 * 60 * 1000;
 			default:
-				throw new CustomError('Invalid convertExpiresToMillisecond', ResponseStatusCode.BAD_REQUEST);
+				logger.error('Invalid convertExpiresToMillisecond');
+				throw new CustomError(ResponseStatusCode.BAD_REQUEST);
 		}
 	}
  }

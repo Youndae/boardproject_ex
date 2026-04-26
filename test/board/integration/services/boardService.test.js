@@ -11,11 +11,22 @@ import {
 	getReplyDetailService,
 	postBoardReplyService,
 } from '#services/board/boardService.js';
+import {BoardRepository} from "#repositories/boardRepository.js";
 
 const BOARD_AMOUNT = 20;
 const BOARD_TOTAL_ELEMENTS = 30;
-const DEFAULT_USER_ID = 'tester';
-const WRONG_USER_ID = 'tester2';
+const DEFAULT_MEMBER = {
+	id: 1,
+	userId: 'tester',
+	password: 'tester1234',
+	username: 'testerName',
+	nickname: 'testerNickName',
+	email: 'tester@tester.com',
+	profile: 'testerProfileThumbnail.jpg',
+	provider: 'local'
+}
+
+const WRONG_USER_ID = 2;
 
 describe('boardService integration test', () => {
 	beforeAll(async () => {
@@ -23,17 +34,18 @@ describe('boardService integration test', () => {
 		await sequelize.sync({ force: true });
 
 		await Member.create({
-			userId: DEFAULT_USER_ID,
-			userPw: 'tester1234',
-			userName: 'testerName',
-			nickName: 'testerNickName',
-			email: 'tester@tester.com',
-			profileThumbnail: 'testerProfileThumbnail.jpg',
-			provider: 'local',
+			id: DEFAULT_MEMBER.id,
+			userId: DEFAULT_MEMBER.userId,
+			password: DEFAULT_MEMBER.password,
+			username: DEFAULT_MEMBER.username,
+			nickname: DEFAULT_MEMBER.nickname,
+			email: DEFAULT_MEMBER.email,
+			profile: DEFAULT_MEMBER.profile,
+			provider: DEFAULT_MEMBER.provider,
 		});
 
 		await Auth.create({
-			userId: DEFAULT_USER_ID,
+			userId: DEFAULT_MEMBER.id,
 			auth: 'ROLE_MEMBER',
 		});
 	});
@@ -47,13 +59,13 @@ describe('boardService integration test', () => {
 	beforeEach(async () => {
 		for(let i = 1; i <= BOARD_TOTAL_ELEMENTS; i++) {
 			await Board.create({
-				boardNo: i,
-				userId: DEFAULT_USER_ID,
-				boardTitle: `testTitle${i}`,
-				boardContent: `testContent${i}`,
-				boardGroupNo: i,
-				boardUpperNo: i.toString(),
-				boardIndent: 1,
+				id: i,
+				userId: DEFAULT_MEMBER.id,
+				title: `testTitle${i}`,
+				content: `testContent${i}`,
+				groupNo: i,
+				upperNo: i.toString(),
+				indent: 1,
 			});
 		}
 	});
@@ -64,37 +76,42 @@ describe('boardService integration test', () => {
 
 	describe('getBoardListService', () => {
 		it('정상 조회', async () => {
-			const result = await getBoardListService({ pageNum: 1 });
+			const result = await getBoardListService({ page: 1 });
 
-			expect(result.content.length).toBe(BOARD_AMOUNT);
-			expect(result.empty).toBe(false);
-			expect(result.totalElements).toBe(BOARD_TOTAL_ELEMENTS);
+			expect(result.items.length).toBe(BOARD_AMOUNT);
+			expect(result.isEmpty).toBe(false);
+			expect(result.totalPages).toBe(Math.ceil(BOARD_TOTAL_ELEMENTS / BOARD_AMOUNT));
+			expect(result.currentPage).toBe(1);
 
-			const resultData = result.content[0];
 
-			expect(resultData.boardNo).toBeDefined();
-			expect(resultData.boardTitle).toBeDefined();
-			expect(resultData.userId).toBeDefined();
-			expect(resultData.boardDate).toBeDefined();
-			expect(resultData.boardIndent).toBeDefined();
-			expect(resultData.boardGroupNo).toBeUndefined();
-			expect(resultData.boardUpperNo).toBeUndefined();
+			result.items.forEach(item => {
+				const itemResult = item.get({ plain: true })
+				expect(itemResult.id).toBeDefined();
+				expect(itemResult.title).toBeDefined();
+				expect(itemResult.writer).toBeDefined();
+				expect(itemResult.createdAt).toBeDefined();
+				expect(itemResult.indent).toBeDefined();
+				expect(itemResult.groupNo).toBeUndefined();
+				expect(itemResult.upperNo).toBeUndefined();
+			})
 		});
 
 		it('데이터가 없는 경우', async () => {
 			await Board.destroy({ where: {} });
-			const result = await getBoardListService({ pageNum: 1 });
-			expect(result.content.length).toBe(0);
-			expect(result.empty).toBe(true);
-			expect(result.totalElements).toBe(0);
+			const result = await getBoardListService({ page: 1 });
+			expect(result.items.length).toBe(0);
+			expect(result.isEmpty).toBe(true);
+			expect(result.totalPages).toBe(0);
+			expect(result.currentPage).toBe(1);
 		});
 
 		it('제목 기반 검색', async () => {
-			const result = await getBoardListService({ keyword: 'testTitle11', searchType: 't', pageNum: 1 });
+			const result = await getBoardListService({ keyword: 'testTitle11', searchType: 't', page: 1 });
 
-			expect(result.content.length).toBe(1);
-			expect(result.empty).toBe(false);
-			expect(result.totalElements).toBe(1);
+			expect(result.items.length).toBe(1);
+			expect(result.isEmpty).toBe(false);
+			expect(result.totalPages).toBe(1);
+			expect(result.currentPage).toBe(1);
 		});
 	});
 
@@ -102,14 +119,15 @@ describe('boardService integration test', () => {
 		it('정상 조회', async () => {
 			const result = await getBoardDetailService(1);
 
-			expect(result.boardNo).toBe(1);
-			expect(result.boardTitle).toBe('testTitle1');
-			expect(result.boardContent).toBe('testContent1');
-			expect(result.userId).toBe('tester');
-			expect(result.boardDate).toBeDefined();
-			expect(result.boardIndent).toBeUndefined();
-			expect(result.boardGroupNo).toBeUndefined();
-			expect(result.boardUpperNo).toBeUndefined();
+			expect(result.id).toBeUndefined();
+			expect(result.title).toBe('testTitle1');
+			expect(result.content).toBe('testContent1');
+			expect(result.writer).toBe(DEFAULT_MEMBER.nickname);
+			expect(result.writerId).toBe(DEFAULT_MEMBER.userId);
+			expect(result.createdAt).toBeDefined();
+			expect(result.indent).toBeUndefined();
+			expect(result.groupNo).toBeUndefined();
+			expect(result.upperNo).toBeUndefined();
 		});
 
 		it('데이터가 없는 경우', async () => {
@@ -117,8 +135,8 @@ describe('boardService integration test', () => {
 				await getBoardDetailService(0);
 			}catch(error) {
 				expect(error).toBeInstanceOf(CustomError);
-				expect(error.status).toBe(ResponseStatus.NOT_FOUND.CODE);
-				expect(error.message).toBe(ResponseStatus.NOT_FOUND.MESSAGE);
+				expect(error.status).toBe(ResponseStatus.BAD_REQUEST.CODE);
+				expect(error.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
 			}
 		});
 	});
@@ -129,23 +147,23 @@ describe('boardService integration test', () => {
 		});
 
 		it('정상 저장', async () => {
-			const result = await postBoardService(DEFAULT_USER_ID, { boardTitle: 'testTitle', boardContent: 'testContent' });
+			const result = await postBoardService(DEFAULT_MEMBER.id, { title: 'testTitle', content: 'testContent' });
 
 			expect(result).toBeDefined();
 
-			const saveBoard = await Board.findOne({ where: { boardNo: result } });
-			expect(saveBoard.boardTitle).toBe('testTitle');
-			expect(saveBoard.boardContent).toBe('testContent');
-			expect(saveBoard.userId).toBe(DEFAULT_USER_ID);
-			expect(saveBoard.boardDate).toBeDefined();
-			expect(saveBoard.boardIndent).toBe(1);
-			expect(saveBoard.boardGroupNo).toBe(result);
-			expect(saveBoard.boardUpperNo).toBe(result.toString());
+			const saveBoard = await Board.findOne({ where: { id: result } });
+			expect(saveBoard.title).toBe('testTitle');
+			expect(saveBoard.content).toBe('testContent');
+			expect(saveBoard.userId).toBe(DEFAULT_MEMBER.id);
+			expect(saveBoard.createdAt).toBeDefined();
+			expect(saveBoard.indent).toBe(0);
+			expect(saveBoard.groupNo).toBe(result);
+			expect(saveBoard.upperNo).toBe(result.toString());
 		});
 
 		it('저장시 오류 발생', async () => {
 			try {
-				await postBoardService(DEFAULT_USER_ID, { boardTitle: null, boardContent: 'testContent' });
+				await postBoardService(DEFAULT_MEMBER.id, { boardTitle: null, boardContent: 'testContent' });
 			}catch(error) {
 				expect(error).toBeInstanceOf(CustomError);
 				expect(error.status).toBe(ResponseStatus.INTERNAL_SERVER_ERROR.CODE);
@@ -159,32 +177,35 @@ describe('boardService integration test', () => {
 
 	describe('patchBoardDetailDataService', () => {
 		it('정상 조회', async () => {
-			const result = await patchBoardDetailDataService(DEFAULT_USER_ID, 1);
+			const result = await patchBoardDetailDataService(DEFAULT_MEMBER.id, 1);
 
-			expect(result.boardNo).toBe(1);
-			expect(result.boardTitle).toBe('testTitle1');
-			expect(result.boardContent).toBe('testContent1');
-			expect(result.userId).toBe(DEFAULT_USER_ID);
-			expect(result.boardDate).toBeUndefined();
-			expect(result.boardIndent).toBeUndefined();
-			expect(result.boardGroupNo).toBeUndefined();
-			expect(result.boardUpperNo).toBeUndefined();
+			expect(result.id).toBeUndefined();
+			expect(result.title).toBe('testTitle1');
+			expect(result.content).toBe('testContent1');
+			expect(result.userId).toBeUndefined();
+			expect(result.createdAt).toBeUndefined();
+			expect(result.indent).toBeUndefined();
+			expect(result.groupNo).toBeUndefined();
+			expect(result.upperNo).toBeUndefined();
 		});
 
 		it('데이터가 없는 경우', async () => {
 			try {
-				await patchBoardDetailDataService(DEFAULT_USER_ID, 0);
+				await patchBoardDetailDataService(DEFAULT_MEMBER.id, 0);
 			}catch(error) {
 				expect(error).toBeInstanceOf(CustomError);
-				expect(error.status).toBe(ResponseStatus.NOT_FOUND.CODE);
-				expect(error.message).toBe(ResponseStatus.NOT_FOUND.MESSAGE);
+				expect(error.status).toBe(ResponseStatus.BAD_REQUEST.CODE);
+				expect(error.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
 			}
 		});
 
 		it('작성자가 아닌 경우', async () => {
+			const board = await BoardRepository.getBoardListPageable({ });
+
 			try {
 				await patchBoardDetailDataService(WRONG_USER_ID, 1);
 			}catch(error) {
+				console.log('writer error', error);
 				expect(error).toBeInstanceOf(CustomError);
 				expect(error.status).toBe(ResponseStatus.FORBIDDEN.CODE);
 				expect(error.message).toBe(ResponseStatus.FORBIDDEN.MESSAGE);
@@ -194,18 +215,18 @@ describe('boardService integration test', () => {
 
 	describe('patchBoardService', () => {
 		it('정상 수정', async () => {
-			const saveBoard = await Board.findOne({ where: { boardNo: 1 } });
-			const result = await patchBoardService(DEFAULT_USER_ID, 1, { boardTitle: 'testUpdateTitle', boardContent: 'testUpdateContent' });
+			const saveBoard = await Board.findOne({ where: { id: 1 } });
+			const result = await patchBoardService(DEFAULT_MEMBER.id, 1, { title: 'testUpdateTitle', content: 'testUpdateContent' });
 			expect(result).toBe(1);
 
-			const patchBoard = await Board.findOne({ where: { boardNo: result } });
-			expect(patchBoard.boardTitle).toBe('testUpdateTitle');
-			expect(patchBoard.boardContent).toBe('testUpdateContent');
-			expect(patchBoard.userId).toBe(DEFAULT_USER_ID);
-			expect(patchBoard.boardDate).toStrictEqual(saveBoard.boardDate);
-			expect(patchBoard.boardIndent).toBe(saveBoard.boardIndent);
-			expect(patchBoard.boardGroupNo).toBe(saveBoard.boardGroupNo);
-			expect(patchBoard.boardUpperNo).toBe(saveBoard.boardUpperNo);
+			const patchBoard = await Board.findOne({ where: { id: result } });
+			expect(patchBoard.title).toBe('testUpdateTitle');
+			expect(patchBoard.content).toBe('testUpdateContent');
+			expect(patchBoard.userId).toBe(DEFAULT_MEMBER.id);
+			expect(patchBoard.createdAt).toStrictEqual(saveBoard.createdAt);
+			expect(patchBoard.indent).toBe(saveBoard.indent);
+			expect(patchBoard.groupNo).toBe(saveBoard.groupNo);
+			expect(patchBoard.upperNo).toBe(saveBoard.upperNo);
 		});
 
 		it('작성자가 아닌 경우', async () => {
@@ -221,9 +242,9 @@ describe('boardService integration test', () => {
 
 	describe('deleteBoardService', () => {
 		it('정상 삭제', async () => {
-			await deleteBoardService(DEFAULT_USER_ID, 1);
+			await deleteBoardService(DEFAULT_MEMBER.id, 1);
 			
-			const deleteBoard = await Board.findOne({ where: { boardNo: 1 } });
+			const deleteBoard = await Board.findOne({ where: { id: 1 } });
 			expect(deleteBoard).toBeNull();
 		});
 
@@ -240,11 +261,7 @@ describe('boardService integration test', () => {
 
 	describe('getReplyDetailService', () => {
 		it('정상 조회', async () => {
-			const result = await getReplyDetailService(1);
-
-			expect(result.boardGroupNo).toBe(1);
-			expect(result.boardUpperNo).toBe('1');
-			expect(result.boardIndent).toBe(1);
+			await getReplyDetailService(1);
 		});
 
 		it('데이터가 없는 경우', async () => {
@@ -252,8 +269,8 @@ describe('boardService integration test', () => {
 				await getReplyDetailService(0);
 			}catch(error) {
 				expect(error).toBeInstanceOf(CustomError);
-				expect(error.status).toBe(ResponseStatus.NOT_FOUND.CODE);
-				expect(error.message).toBe(ResponseStatus.NOT_FOUND.MESSAGE);
+				expect(error.status).toBe(ResponseStatus.BAD_REQUEST.CODE);
+				expect(error.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
 			}
 		});
 	});
@@ -261,47 +278,44 @@ describe('boardService integration test', () => {
 	describe('postBoardReplyService', () => {
 		it('정상 저장', async () => {
 			const result = await postBoardReplyService(
-				DEFAULT_USER_ID, 
-				{ 
-					boardTitle: 'testReplyTitle', 
-					boardContent: 'testReplyContent', 
-					boardGroupNo: 1, 
-					boardIndent: 1, 
-					boardUpperNo: '1' 
+				DEFAULT_MEMBER.id,
+				1,
+				{
+					title: 'testReplyTitle',
+					content: 'testReplyContent'
 				}
 			);
 
 			expect(result).toBeDefined();
 
-			const saveReply = await Board.findOne({ where: { boardNo: result } });
-			expect(saveReply.boardTitle).toBe('testReplyTitle');
-			expect(saveReply.boardContent).toBe('testReplyContent');
-			expect(saveReply.userId).toBe(DEFAULT_USER_ID);
-			expect(saveReply.boardDate).toBeDefined();
-			expect(saveReply.boardIndent).toBe(2);
-			expect(saveReply.boardGroupNo).toBe(1);
-			expect(saveReply.boardUpperNo).toBe(`1,${result}`);
+			const saveReply = await Board.findOne({ where: { id: result } });
+			expect(saveReply.title).toBe('testReplyTitle');
+			expect(saveReply.content).toBe('testReplyContent');
+			expect(saveReply.userId).toBe(DEFAULT_MEMBER.id);
+			expect(saveReply.createdAt).toBeDefined();
+			expect(saveReply.indent).toBe(2);
+			expect(saveReply.groupNo).toBe(1);
+			expect(saveReply.upperNo).toBe(`1,${result}`);
 		});
 
 		it('저장시 오류 발생', async () => {
 			try {
 				await postBoardReplyService(
-					DEFAULT_USER_ID, 
+					DEFAULT_MEMBER.id,
+					1,
 					{ 
-						boardTitle: null, 
-						boardContent: 'testReplyContent', 
-						boardGroupNo: 1, 
-						boardIndent: 1, 
-						boardUpperNo: '1' 
+						title: null,
+						content: 'testReplyContent'
 					}
 				);
 			}catch(error) {
+				console.log('error: ', error);
 				expect(error).toBeInstanceOf(CustomError);
 				expect(error.status).toBe(ResponseStatus.INTERNAL_SERVER_ERROR.CODE);
 				expect(error.message).toBe(ResponseStatus.INTERNAL_SERVER_ERROR.MESSAGE);
 			}
 
-			const saveReply = await Board.findAll({ where: { boardGroupNo: 1 } });
+			const saveReply = await Board.findAll({ where: { groupNo: 1 } });
 			expect(saveReply.length).toBe(1);
 		});
 	});

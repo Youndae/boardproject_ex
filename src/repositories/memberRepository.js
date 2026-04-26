@@ -9,15 +9,44 @@ export class MemberRepository {
 		return await Member.findOne({ where: { userId: userId } });
 	}
 
+	static async findMemberById(id) {
+		return await Member.findOne({ where: { id } });
+	}
+
 	static async findMemberByUserIdFromLocal(userId) {
 		return await Member.findOne({ where: { userId: userId, provider: 'local' } });
+	}
+
+	static async findUserIdAndRoleById(id) {
+		const member = await Member.findOne({
+			attributes: [
+				'userId'
+			],
+			where: { id },
+			include: [
+				{
+					model: Auth,
+					as: 'auths',
+					attributes: ['auth']
+				}
+			],
+		});
+
+		if(!member) return null;
+
+		const rawData = member.get({ plain: true });
+
+		return {
+			userId: rawData.userId,
+			roles: rawData.auths.map(auth => auth.auth),
+		}
 	}
 
 	static async findUserIdWithRoles(userId) {
 		try {
 			const member = await Member.findOne({
-				where: { userId },
 				attributes: ['id'],
+				where: { userId },
 				include: [
 					{
 						model: Auth,
@@ -41,7 +70,7 @@ export class MemberRepository {
 			}
 
 			return {
-				userId: member.userId,
+				id: member.id,
 				roles: member.auths.map(auth => auth.auth),
 			};
 		}catch(error) {
@@ -68,13 +97,13 @@ export class MemberRepository {
 		}, { transaction: options.transaction });
 	}
 
-	static async createMember(userId, hashedPw, userName, nickName, email, profileThumbnail, options = {}) {
+	static async createMember(userId, hashedPw, userName, nickname, email, profileThumbnail, options = {}) {
 		return await Member.create({
 			userId: userId,
 			password: hashedPw,
 			email: email,
 			username: userName,
-			nickname: nickName,
+			nickname: nickname,
 			profile: profileThumbnail,
 		}, { transaction: options.transaction });
 	}
@@ -86,19 +115,32 @@ export class MemberRepository {
 		});
 	}
 
-	static async patchMemberProfile(userId, nickname, profileImage, options = {}) {
-		const updateData = { nickname: nickname };
+	static async patchMemberProfile(id, nickname, email, profileImage, options = {}) {
+		const updateData = { nickname: nickname, email: email };
 
 		if(profileImage !== undefined)
 			updateData.profile = profileImage;
 
-		return await Member.update(updateData, { where: { userId }, transaction: options.transaction });
+		return await Member.update(updateData, { where: { id }, transaction: options.transaction });
 	}
 
-	static async getMemberProfile(userId) {
+	static async getMemberProfile(id) {
 		return await Member.findOne({
-			where: { userId },
-			attributes: ['nickname', 'profile'],
+			where: { id },
+			attributes: ['nickname', 'profile', 'email'],
 		});
+	}
+
+	static async patchOAuthJoinProfile(id, nickname, profile, options = {}) {
+		await Member.update(
+			{
+				nickname: nickname,
+				profile: profile,
+			},
+			{
+				where: { id },
+				transaction: options.transaction
+			}
+		)
 	}
 }

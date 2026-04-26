@@ -23,11 +23,11 @@ const router = express.Router();
 router.get('/', validate(boardListSearchValidator, 'query'), getBoardList);
 router.get('/:id', getBoardDetail);
 router.post('/', isLoggedIn, validate(postBoardValidator), postBoard);
-router.get('/patch-detail/:id', isLoggedIn, patchBoardDetailData);
+router.get('/patch/:id', isLoggedIn, patchBoardDetailData);
 router.patch('/:id', isLoggedIn, validate(patchBoardValidator), patchBoard);
 router.delete('/:id', isLoggedIn, deleteBoard);
 router.get('/reply/:id', isLoggedIn, getReplyDetail);
-router.post('/reply', isLoggedIn, validate(postBoardReplyValidator), postBoardReply);
+router.post('/reply/:id', isLoggedIn, validate(postBoardReplyValidator), postBoardReply);
 
 
 export default router;

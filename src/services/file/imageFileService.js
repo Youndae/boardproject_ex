@@ -1,50 +1,32 @@
 import path from 'path';
 import fs from 'fs';
-import { ImageConstants } from '#constants/imageConstants.js';
-import { getBaseNameAndExt } from '#utils/fileNameUtils.js';
 import CustomError from '#errors/customError.js';
 import { ResponseStatus } from '#constants/responseStatus.js';
 
 const profilePath = process.env.PROFILE_FILE_PATH;
 const boardPath = process.env.BOARD_FILE_PATH;
 
-export const getImageDisplayService = async (imageName) => {
-	let imagePrefix = '';
-	let imagePath = '';
+export const getImageBoardDisplayService = async (imageName) => {
+	return getDisplayPathAndContentType(imageName, boardPath);
+}
 
-	if(imageName.startsWith(ImageConstants.PROFILE_PREFIX)){
-		imagePrefix = ImageConstants.PROFILE_PREFIX;
-		imagePath = profilePath;
-	}else if(imageName.startsWith(ImageConstants.BOARD_PREFIX)){
-		imagePrefix = ImageConstants.BOARD_PREFIX;
-		imagePath = boardPath;
-	}else
-		throw new CustomError(ResponseStatus.BAD_REQUEST);
+export const getProfileImageDisplayService = async (imageName) => {
+	return getDisplayPathAndContentType(imageName, profilePath);
+}
 
-	const imageFilename = imageName.replace(imagePrefix, '');
-	const filePath = path.join(imagePath, imageFilename);
+const getDisplayPathAndContentType = async (imageName, imagePath) => {
+	const filePath = path.join(imagePath, imageName);
 
 	await fs.promises.access(filePath, fs.constants.F_OK)
 		.catch(() => {
-			throw new CustomError(ResponseStatus.NOT_FOUND);
+			throw new CustomError(ResponseStatus.NOT_FOUND)
 		});
 
-	const { ext } = getBaseNameAndExt(imageFilename);
-	let contentType = 'application/octet-stream';
-	
-	if(ext === '.png')
-		contentType = 'image/png';
-	else if(ext === '.jpg' || ext === '.jpeg')
-		contentType = 'image/jpeg';
-	else if(ext === '.gif')
-		contentType = 'image/gif';
-	else if(ext === '.bmp')
-		contentType = 'image/bmp';
-	else if(ext === '.webp')
-		contentType = 'image/webp';
+	// 현재는 어떤 이미지 파일이건 jpg로 저장되기 때문에 image/jpeg로 고정.
+	const contentType = 'image/jpeg';
 
 	return {
 		path: filePath,
-		contentType: contentType,
+		contentType: contentType
 	}
 }

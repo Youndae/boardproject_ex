@@ -8,21 +8,23 @@ import app from '#src/app.js';
 
 const SAVE_MEMBER = [
 	{
+		id: 1,
 		userId: 'tester',
-		userPw: 'tester1234',
-		userName: 'testerName',
-		nickName: 'testerNickName',
+		password: 'tester1234',
+		username: 'testerName',
+		nickname: 'testerNickName',
 		email: 'tester@tester.com',
-		profileThumbnail: 'testerProfileThumbnail.jpg',
+		profile: 'testerProfile.jpg',
 		provider: 'local',
 	},
 	{
+		id: 2,
 		userId: 'tester2',
-		userPw: 'tester1234',
-		userName: 'testerName2',
-		nickName: 'testerNickName2',
+		password: 'tester1234',
+		username: 'testerName2',
+		nickname: 'testerNickName2',
 		email: 'tester2@tester.com',
-		profileThumbnail: 'testerProfileThumbnail2.jpg',
+		profile: 'testerProfile2.jpg',
 		provider: 'local',
 	}
 ]
@@ -39,36 +41,30 @@ describe('commentRoutes integration test', () => {
 		await sequelize.sync({ force: true });
 
 		for(const member of SAVE_MEMBER) {
-			await Member.create({
-				userId: member.userId,
-				userPw: member.userPw,
-				userName: member.userName,
-				nickName: member.nickName,
-				email: member.email,
-			});
+			await Member.create(member);
 
 			await Auth.create({
-				userId: member.userId,
+				userId: member.id,
 				auth: 'ROLE_MEMBER',
 			});
 		}
 
 		await Board.create({
-			boardNo: 1,
-			userId: DEFAULT_USER_ID,
-			boardTitle: `testTitle1`,
-			boardContent: `testContent1`,
-			boardGroupNo: 1,
-			boardUpperNo: `1`,
-			boardIndent: 1,
+			id: 1,
+			userId: SAVE_MEMBER[0].id,
+			title: `testTitle1`,
+			content: `testContent1`,
+			groupNo: 1,
+			upperNo: `1`,
+			indent: 1,
 		});
 
 		await ImageBoard.create({
-			imageNo: 1,
-			userId: DEFAULT_USER_ID,
-			imageTitle: `testTitle1`,
-			imageContent: `testContent1`,
-			imageDate: new Date(),
+			id: 1,
+			userId: SAVE_MEMBER[0].id,
+			title: `testTitle1`,
+			content: `testContent1`,
+			createdAt: new Date(),
 		});
 	});
 
@@ -84,29 +80,29 @@ describe('commentRoutes integration test', () => {
 	beforeEach(async () => {
 		for(let i = 1; i <= COMMENT_TYPE_TOTAL_ELEMENTS; i++) {
 			await Comment.create({
-				commentNo: i,
-				boardNo: 1,
-				imageNo: null,
-				userId: DEFAULT_USER_ID,
-				commentContent: `testCommentContent${i}`,
-				commentDate: new Date(),
-				commentGroupNo: i,
-				commentIndent: 1,
-				commentUpperNo: `${i}`,
+				id: i,
+				boardId: 1,
+				imageId: null,
+				userId: SAVE_MEMBER[0].id,
+				content: `testCommentContent${i}`,
+				createdAt: new Date(),
+				groupNo: i,
+				indent: 0,
+				upperNo: `${i}`,
 			});
 
 			const imageCommentNo = i + COMMENT_TYPE_TOTAL_ELEMENTS;
 
 			await Comment.create({
-				commentNo: imageCommentNo,
-				boardNo: null,
-				imageNo: 1,
-				userId: DEFAULT_USER_ID,
-				commentContent: `testCommentContent${imageCommentNo}`,
-				commentDate: new Date(),
-				commentGroupNo: imageCommentNo,
-				commentIndent: 1,
-				commentUpperNo: `${imageCommentNo}`,
+				id: imageCommentNo,
+				boardId: null,
+				imageId: 1,
+				userId: SAVE_MEMBER[0].id,
+				content: `testCommentContent${imageCommentNo}`,
+				createdAt: new Date(),
+				groupNo: imageCommentNo,
+				indent: 0,
+				upperNo: `${imageCommentNo}`,
 			});
 		}
 	});
@@ -121,37 +117,39 @@ describe('commentRoutes integration test', () => {
 	describe('GET /board', () => {
 		it('정상 처리.', async () => {
 			const response = await request(app)
-								.get('/comment/board')
+								.get('/api/comment/board')
 								.query({
-									boardNo: 1,
+									id: 1,
+									page: 1,
 								});
 
 			expect(response.status).toBe(ResponseStatusCode.OK);
-			expect(response.body.content.length).toBe(COMMENT_AMOUNT);
-			expect(response.body.empty).toBe(false);
-			expect(response.body.totalElements).toBe(COMMENT_TYPE_TOTAL_ELEMENTS);
-			expect(response.body.userStatus.loggedIn).toBe(false);
-			expect(response.body.userStatus.uid).toBeUndefined();
+			expect(response.body.content.items.length).toBe(COMMENT_AMOUNT);
+			expect(response.body.content.isEmpty).toBe(false);
+			expect(response.body.content.totalPages).toBe(Math.ceil(COMMENT_TYPE_TOTAL_ELEMENTS / COMMENT_AMOUNT));
+			expect(response.body.content.currentPage).toBe(1);
 
-			response.body.content.forEach((item) => {
-				expect(item.commentNo).toBeLessThanOrEqual(COMMENT_TYPE_TOTAL_ELEMENTS);
-				expect(item.userId).toBe(DEFAULT_USER_ID);
-				expect(item.commentDate).toBeDefined();
-				expect(item.commentContent).toBeDefined();
-				expect(item.commentGroupNo).toBeDefined();
-				expect(item.commentIndent).toBeDefined();
-				expect(item.commentUpperNo).toBeDefined();
-				expect(item.boardNo).toBeUndefined();
-				expect(item.imageNo).toBeUndefined();
+			response.body.content.items.forEach((item) => {
+				expect(item.id).toBeLessThanOrEqual(COMMENT_TYPE_TOTAL_ELEMENTS);
+				expect(item.writer).toBe(SAVE_MEMBER[0].nickname);
+				expect(item.writerId).toBe(SAVE_MEMBER[0].userId);
+				expect(item.createdAt).toBeDefined();
+				expect(item.content).toBeDefined();
+				expect(item.groupNo).toBeUndefined();
+				expect(item.indent).toBeDefined();
+				expect(item.upperNo).toBeUndefined();
+				expect(item.boardId).toBeUndefined();
+				expect(item.imageId).toBeUndefined();
 			});
 		});
 
 		it('정상 처리. 로그인한 경우', async () => {
 			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
 			const response = await request(app)
-								.get('/comment/board')
+								.get('/api/comment/board')
 								.query({
-									boardNo: 1,
+									id: 1,
+									page: 1,
 								})
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
@@ -160,61 +158,94 @@ describe('commentRoutes integration test', () => {
 								]);
 
 			expect(response.status).toBe(ResponseStatusCode.OK);
-			expect(response.body.content.length).toBe(COMMENT_AMOUNT);
-			expect(response.body.empty).toBe(false);
-			expect(response.body.totalElements).toBe(COMMENT_TYPE_TOTAL_ELEMENTS);
-			expect(response.body.userStatus.loggedIn).toBe(true);
-			expect(response.body.userStatus.uid).toBe(DEFAULT_USER_ID);
+			expect(response.body.content.items.length).toBe(COMMENT_AMOUNT);
+			expect(response.body.content.isEmpty).toBe(false);
+			expect(response.body.content.totalPages).toBe(Math.ceil(COMMENT_TYPE_TOTAL_ELEMENTS / COMMENT_AMOUNT));
+			expect(response.body.content.currentPage).toBe(1);
+
+			response.body.content.items.forEach((item) => {
+				expect(item.id).toBeLessThanOrEqual(COMMENT_TYPE_TOTAL_ELEMENTS);
+				expect(item.writer).toBe(SAVE_MEMBER[0].nickname);
+				expect(item.writerId).toBe(SAVE_MEMBER[0].userId);
+				expect(item.createdAt).toBeDefined();
+				expect(item.content).toBeDefined();
+				expect(item.groupNo).toBeUndefined();
+				expect(item.indent).toBeDefined();
+				expect(item.upperNo).toBeUndefined();
+				expect(item.boardId).toBeUndefined();
+				expect(item.imageId).toBeUndefined();
+			});
 		});
 
 		it('정상 처리. 데이터가 없는 경우.', async () => {
 			const response = await request(app)
-								.get('/comment/board')
+								.get('/api/comment/board')
 								.query({
-									boardNo: 0,
+									id: 999999,
+									page: 1,
 								});
 
 			expect(response.status).toBe(ResponseStatusCode.OK);
-			expect(response.body.content.length).toBe(0);
-			expect(response.body.empty).toBe(true);
-			expect(response.body.totalElements).toBe(0);
-			expect(response.body.userStatus.loggedIn).toBe(false);
-			expect(response.body.userStatus.uid).toBeUndefined();
+			expect(response.body.content.items.length).toBe(0);
+			expect(response.body.content.isEmpty).toBe(true);
+			expect(response.body.content.totalPages).toBe(0);
+			expect(response.body.content.currentPage).toBe(1);
 		});
 	});
 
 	describe('GET /image', () => {
 		it('정상 처리.', async () => {
 			const response = await request(app)
-								.get('/comment/image')
+								.get('/api/comment/image-board')
 								.query({
-									imageNo: 1,
+									id: 1,
+									page: 1,
 								});
 
 			expect(response.status).toBe(ResponseStatusCode.OK);
-			expect(response.body.content.length).toBe(COMMENT_AMOUNT);
-			expect(response.body.empty).toBe(false);
-			expect(response.body.totalElements).toBe(COMMENT_TYPE_TOTAL_ELEMENTS);
-			expect(response.body.userStatus.loggedIn).toBe(false);
-			expect(response.body.userStatus.uid).toBeUndefined();
+			expect(response.body.content.items.length).toBe(COMMENT_AMOUNT);
+			expect(response.body.content.isEmpty).toBe(false);
+			expect(response.body.content.totalPages).toBe(Math.ceil(COMMENT_TYPE_TOTAL_ELEMENTS / COMMENT_AMOUNT));
+			expect(response.body.content.currentPage).toBe(1);
 
-			response.body.content.forEach((item) => {
-				expect(item.commentNo).toBeGreaterThan(COMMENT_TYPE_TOTAL_ELEMENTS);
-				expect(item.userId).toBe(DEFAULT_USER_ID);
-				expect(item.commentDate).toBeDefined();
-				expect(item.commentContent).toBeDefined();
+			response.body.content.items.forEach((item) => {
+				expect(item.id).toBeGreaterThanOrEqual(COMMENT_TYPE_TOTAL_ELEMENTS);
+				expect(item.writer).toBe(SAVE_MEMBER[0].nickname);
+				expect(item.writerId).toBe(SAVE_MEMBER[0].userId);
+				expect(item.createdAt).toBeDefined();
+				expect(item.content).toBeDefined();
+				expect(item.groupNo).toBeUndefined();
+				expect(item.indent).toBeDefined();
+				expect(item.upperNo).toBeUndefined();
+				expect(item.boardId).toBeUndefined();
+				expect(item.imageId).toBeUndefined();
 			});
+		});
+
+		it('정상 처리. 데이터가 없는 경우.', async () => {
+			const response = await request(app)
+				.get('/api/comment/image-board')
+				.query({
+					id: 999999,
+					page: 1,
+				});
+
+			expect(response.status).toBe(ResponseStatusCode.OK);
+			expect(response.body.content.items.length).toBe(0);
+			expect(response.body.content.isEmpty).toBe(true);
+			expect(response.body.content.totalPages).toBe(0);
+			expect(response.body.content.currentPage).toBe(1);
 		});
 	});
 
-	describe('POST /board/:boardNo', () => {
+	describe('POST /board/:targetBoardId', () => {
 		it('정상 처리.', async () => {
-			await Comment.destroy({ where: {} });
+			await Comment.destroy({ where: {}, force: true });
 			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
 			const response = await request(app)
-								.post('/comment/board/1')
+								.post('/api/comment/board/1')
 								.send({
-									commentContent: 'testCommentContent',
+									content: 'testCommentContent',
 								})
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
@@ -229,20 +260,20 @@ describe('commentRoutes integration test', () => {
 			expect(saveComment.length).toBe(1);
 			const saveCommentData = saveComment[0];
 
-			expect(saveCommentData.boardNo).toBe(1);
-			expect(saveCommentData.imageNo).toBeNull();
-			expect(saveCommentData.userId).toBe(DEFAULT_USER_ID);
-			expect(saveCommentData.commentContent).toBe('testCommentContent');
-			expect(saveCommentData.commentGroupNo).toBe(saveCommentData.commentNo);
-			expect(saveCommentData.commentIndent).toBe(1);
-			expect(saveCommentData.commentUpperNo).toBe(`${saveCommentData.commentNo}`);
+			expect(saveCommentData.boardId).toBe(1);
+			expect(saveCommentData.imageId).toBeNull();
+			expect(saveCommentData.userId).toBe(SAVE_MEMBER[0].id);
+			expect(saveCommentData.content).toBe('testCommentContent');
+			expect(saveCommentData.groupNo).toBe(saveCommentData.id);
+			expect(saveCommentData.indent).toBe(0);
+			expect(saveCommentData.upperNo).toBe(`${saveCommentData.id}`);
 		});
 
 		it('비회원 접근', async () => {
 			const response = await request(app)
-								.post('/comment/board/1')
+								.post('/api/comment/board/1')
 								.send({
-									commentContent: 'testCommentContent',
+									content: 'testCommentContent',
 								});
 
 			expect(response.status).toBe(ResponseStatusCode.FORBIDDEN);
@@ -252,9 +283,9 @@ describe('commentRoutes integration test', () => {
 		it('댓글 내용이 없는 경우', async () => {
 			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
 			const response = await request(app)
-								.post('/comment/board/1')
+								.post('/api/comment/board/1')
 								.send({
-									commentContent: '',
+									content: '',
 								})
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
@@ -269,9 +300,9 @@ describe('commentRoutes integration test', () => {
 		it('댓글 내용이 너무 긴 경우', async () => {
 			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
 			const response = await request(app)
-								.post('/comment/board/1')
+								.post('/api/comment/board/1')
 								.send({
-									commentContent: 'testCommentContent'.repeat(1000),
+									content: 'testCommentContent'.repeat(1000),
 								})
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
@@ -284,14 +315,14 @@ describe('commentRoutes integration test', () => {
 		});
 	});
 
-	describe('POST /image/:imageNo', () => {
+	describe('POST /image-board/:targetBoardId', () => {
 		it('정상 처리.', async () => {
-			await Comment.destroy({ where: {} });
+			await Comment.destroy({ where: {}, force: true });
 			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
 			const response = await request(app)
-								.post('/comment/image/1')
+								.post('/api/comment/image-board/1')
 								.send({
-									commentContent: 'testCommentContent',
+									content: 'testCommentContent',
 								})
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
@@ -306,20 +337,20 @@ describe('commentRoutes integration test', () => {
 			expect(saveComment.length).toBe(1);
 			const saveCommentData = saveComment[0];
 
-			expect(saveCommentData.boardNo).toBeNull();
-			expect(saveCommentData.imageNo).toBe(1);
-			expect(saveCommentData.userId).toBe(DEFAULT_USER_ID);
-			expect(saveCommentData.commentContent).toBe('testCommentContent');
-			expect(saveCommentData.commentGroupNo).toBe(saveCommentData.commentNo);
-			expect(saveCommentData.commentIndent).toBe(1);
-			expect(saveCommentData.commentUpperNo).toBe(`${saveCommentData.commentNo}`);
+			expect(saveCommentData.boardId).toBeNull();
+			expect(saveCommentData.imageId).toBe(1);
+			expect(saveCommentData.userId).toBe(SAVE_MEMBER[0].id);
+			expect(saveCommentData.content).toBe('testCommentContent');
+			expect(saveCommentData.groupNo).toBe(saveCommentData.id);
+			expect(saveCommentData.indent).toBe(0);
+			expect(saveCommentData.upperNo).toBe(`${saveCommentData.id}`);
 		});
 
 		it('비회원 접근', async () => {
 			const response = await request(app)
-								.post('/comment/image/1')
+								.post('/api/comment/image-board/1')
 								.send({
-									commentContent: 'testCommentContent',
+									content: 'testCommentContent',
 								});
 
 			expect(response.status).toBe(ResponseStatusCode.FORBIDDEN);
@@ -329,9 +360,9 @@ describe('commentRoutes integration test', () => {
 		it('댓글 내용이 없는 경우', async () => {
 			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
 			const response = await request(app)
-								.post('/comment/image/1')
+								.post('/api/comment/image-board/1')
 								.send({
-									commentContent: '',
+									content: '',
 								})
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
@@ -346,9 +377,9 @@ describe('commentRoutes integration test', () => {
 		it('댓글 내용이 너무 긴 경우', async () => {
 			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
 			const response = await request(app)
-								.post('/comment/image/1')
+								.post('/api/comment/image-board/1')
 								.send({
-									commentContent: 'testCommentContent'.repeat(1000),
+									content: 'testCommentContent'.repeat(1000),
 								})
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
@@ -361,11 +392,11 @@ describe('commentRoutes integration test', () => {
 		});
 	});
 
-	describe('DELETE /:commentNo', () => {
+	describe('DELETE /:id', () => {
 		it('정상 처리.', async () => {
 			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
 			const response = await request(app)
-								.delete('/comment/1')
+								.delete('/api/comment/1')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
@@ -375,13 +406,13 @@ describe('commentRoutes integration test', () => {
 			expect(response.status).toBe(ResponseStatusCode.NO_CONTENT);
 			expect(response.body).toEqual({});
 
-			const saveComment = await Comment.findOne({ where: { commentNo: 1 } });
+			const saveComment = await Comment.findOne({ where: { id: 1 } });
 			expect(saveComment).toBeNull();
 		});
 
 		it('비회원 접근', async () => {
 			const response = await request(app)
-								.delete('/comment/1');
+								.delete('/api/comment/1');
 
 			expect(response.status).toBe(ResponseStatusCode.FORBIDDEN);
 			expect(response.body.message).toBe(ResponseStatus.FORBIDDEN.MESSAGE);
@@ -390,7 +421,7 @@ describe('commentRoutes integration test', () => {
 		it('작성자가 아닌 경우', async () => {
 			const { accessToken, refreshToken, ino } = await createTestToken(WRONG_USER_ID);
 			const response = await request(app)
-								.delete('/comment/1')
+								.delete('/api/comment/1')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
@@ -400,35 +431,32 @@ describe('commentRoutes integration test', () => {
 			expect(response.status).toBe(ResponseStatusCode.FORBIDDEN);
 			expect(response.body.message).toBe(ResponseStatus.FORBIDDEN.MESSAGE);
 
-			const saveComment = await Comment.findOne({ where: { commentNo: 1 } });
+			const saveComment = await Comment.findOne({ where: { id: 1 } });
 			expect(saveComment).not.toBeNull();
 		});
 
 		it('데이터가 없는 경우', async () => {
 			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
 			const response = await request(app)
-								.delete('/comment/0')
+								.delete('/api/comment/99999')
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
 									`Authorization_Refresh=${refreshToken}`,
 									`Authorization_ino=${ino}`,
 								]);
 
-			expect(response.status).toBe(ResponseStatusCode.NOT_FOUND);
-			expect(response.body.message).toBe(ResponseStatus.NOT_FOUND.MESSAGE);
+			expect(response.status).toBe(ResponseStatusCode.BAD_REQUEST);
+			expect(response.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
 		});
 	});
 
-	describe('POST /board/:boardNo/reply', () => {
+	describe('POST /:id/reply', () => {
 		it('정상 처리.', async () => {
 			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
 			const response = await request(app)
-								.post('/comment/board/1/reply')
+								.post('/api/comment/1/reply')
 								.send({
-									commentContent: 'testCommentContent',
-									commentGroupNo: 1,
-									commentIndent: 1,
-									commentUpperNo: `1`,
+									content: 'testCommentContent',
 								})
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
@@ -438,28 +466,25 @@ describe('commentRoutes integration test', () => {
 
 			expect(response.status).toBe(ResponseStatusCode.CREATED);
 			
-			const saveComment = await Comment.findAll({ order: [['commentNo', 'DESC']], limit: 1 });
+			const saveComment = await Comment.findAll({ order: [['id', 'DESC']], limit: 1 });
 
 			expect(saveComment.length).toBe(1);
 			const saveCommentData = saveComment[0];
 
-			expect(saveCommentData.boardNo).toBe(1);
-			expect(saveCommentData.imageNo).toBeNull();
-			expect(saveCommentData.userId).toBe(DEFAULT_USER_ID);
-			expect(saveCommentData.commentContent).toBe('testCommentContent');
-			expect(saveCommentData.commentGroupNo).toBe(1);
-			expect(saveCommentData.commentIndent).toBe(2);
-			expect(saveCommentData.commentUpperNo).toBe(`1,${saveCommentData.commentNo}`);
+			expect(saveCommentData.boardId).toBe(1);
+			expect(saveCommentData.imageId).toBeNull();
+			expect(saveCommentData.userId).toBe(SAVE_MEMBER[0].id);
+			expect(saveCommentData.content).toBe('testCommentContent');
+			expect(saveCommentData.groupNo).toBe(1);
+			expect(saveCommentData.indent).toBe(1);
+			expect(saveCommentData.upperNo).toBe(`1,${saveCommentData.id}`);
 		});
 
 		it('비회원 접근', async () => {
 			const response = await request(app)
-								.post('/comment/board/1/reply')
+								.post('/api/comment/1/reply')
 								.send({
-									commentContent: 'testCommentContent',
-									commentGroupNo: 1,
-									commentIndent: 1,
-									commentUpperNo: `1`,
+									content: 'testCommentContent',
 								});
 
 			expect(response.status).toBe(ResponseStatusCode.FORBIDDEN);
@@ -469,12 +494,9 @@ describe('commentRoutes integration test', () => {
 		it('댓글 내용이 없는 경우', async () => {
 			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
 			const response = await request(app)
-								.post('/comment/board/1/reply')
+								.post('/api/comment/1/reply')
 								.send({
-									commentContent: '',
-									commentGroupNo: 1,
-									commentIndent: 1,
-									commentUpperNo: `1`,
+									content: '',
 								})
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
@@ -489,12 +511,9 @@ describe('commentRoutes integration test', () => {
 		it('댓글 내용이 너무 긴 경우', async () => {
 			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
 			const response = await request(app)
-								.post('/comment/board/1/reply')
+								.post('/api/comment/1/reply')
 								.send({
-									commentContent: 'testCommentContent'.repeat(1000),
-									commentGroupNo: 1,
-									commentIndent: 1,
-									commentUpperNo: `1`,
+									content: 'testCommentContent'.repeat(1000),
 								})
 								.set('Cookie', [
 									`Authorization=${accessToken}`,
@@ -504,480 +523,6 @@ describe('commentRoutes integration test', () => {
 
 			expect(response.status).toBe(ResponseStatusCode.BAD_REQUEST);
 			expect(response.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-
-		it('댓글 그룹 번호가 없는 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const response = await request(app)
-								.post('/comment/board/1/reply')
-								.send({
-									commentContent: 'testCommentContent',
-									commentIndent: 1,
-									commentUpperNo: `1`,
-								})
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-
-			expect(response.status).toBe(ResponseStatusCode.BAD_REQUEST);
-			expect(response.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-
-		it('댓글 그룹 번호가 문자열인 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const response = await request(app)
-								.post('/comment/board/1/reply')
-								.send({
-									commentContent: 'testCommentContent',
-									commentGroupNo: '1',
-									commentIndent: 1,
-									commentUpperNo: `1`,
-								})
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-
-			expect(response.status).toBe(ResponseStatusCode.BAD_REQUEST);
-			expect(response.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-
-		it('댓글 그룹 번호가 음수인 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const response = await request(app)
-								.post('/comment/board/1/reply')
-								.send({
-									commentContent: 'testCommentContent',
-									commentGroupNo: -1,
-									commentIndent: 1,
-									commentUpperNo: `1`,
-								})
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-
-			expect(response.status).toBe(ResponseStatusCode.BAD_REQUEST);
-			expect(response.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-
-		it('댓글 그룹 번호가 0인 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const response = await request(app)
-								.post('/comment/board/1/reply')
-								.send({
-									commentContent: 'testCommentContent',
-									commentGroupNo: 0,
-									commentIndent: 1,
-									commentUpperNo: `1`,
-								})
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-
-			expect(response.status).toBe(ResponseStatusCode.BAD_REQUEST);
-			expect(response.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-
-		it('댓글 indent가 문자열인 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const response = await request(app)
-								.post('/comment/board/1/reply')
-								.send({
-									commentContent: 'testCommentContent',
-									commentGroupNo: 1,
-									commentIndent: '1',
-									commentUpperNo: `1`,
-								})
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-
-			expect(response.status).toBe(ResponseStatusCode.BAD_REQUEST);
-			expect(response.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-
-		it('댓글 indent가 음수인 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const response = await request(app)
-								.post('/comment/board/1/reply')
-								.send({
-									commentContent: 'testCommentContent',
-									commentGroupNo: 1,
-									commentIndent: -1,
-									commentUpperNo: `1`,
-								})
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-
-			expect(response.status).toBe(ResponseStatusCode.BAD_REQUEST);
-			expect(response.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-
-		it('댓글 indent가 0인 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const response = await request(app)
-								.post('/comment/board/1/reply')
-								.send({
-									commentContent: 'testCommentContent',
-									commentGroupNo: 1,
-									commentIndent: 0,
-									commentUpperNo: `1`,
-								})
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-
-			expect(response.status).toBe(ResponseStatusCode.BAD_REQUEST);
-			expect(response.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-
-		it('댓글 upperNo가 비어있는 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const response = await request(app)
-								.post('/comment/board/1/reply')
-								.send({
-									commentContent: 'testCommentContent',
-									commentGroupNo: 1,
-									commentIndent: 1,
-									commentUpperNo: '',
-								})
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-
-			expect(response.status).toBe(ResponseStatusCode.BAD_REQUEST);
-			expect(response.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-
-		it('댓글 upperNo가 문자열이 아닌 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const response = await request(app)
-								.post('/comment/board/1/reply')
-								.send({
-									commentContent: 'testCommentContent',
-									commentGroupNo: 1,
-									commentIndent: 1,
-									commentUpperNo: 1,
-								})
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-
-			expect(response.status).toBe(ResponseStatusCode.BAD_REQUEST);
-			expect(response.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-
-		it('댓글 upperNo가 없는 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const response = await request(app)
-								.post('/comment/board/1/reply')
-								.send({
-									commentContent: 'testCommentContent',
-									commentGroupNo: 1,
-									commentIndent: 1,
-								})
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-
-			expect(response.status).toBe(ResponseStatusCode.BAD_REQUEST);
-			expect(response.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-	});
-
-	describe('POST /image/:imageNo/reply', () => {
-		it('정상 처리.', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const response = await request(app)
-								.post('/comment/image/1/reply')
-								.send({
-									commentContent: 'testCommentContent',
-									commentGroupNo: 1,
-									commentIndent: 1,
-									commentUpperNo: `1`,
-								})
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-
-			expect(response.status).toBe(ResponseStatusCode.CREATED);
-
-			const saveComment = await Comment.findAll({ order: [['commentNo', 'DESC']], limit: 1 });
-
-			expect(saveComment.length).toBe(1);
-			const saveCommentData = saveComment[0];
-
-			expect(saveCommentData.boardNo).toBeNull();
-			expect(saveCommentData.imageNo).toBe(1);
-			expect(saveCommentData.userId).toBe(DEFAULT_USER_ID);
-			expect(saveCommentData.commentContent).toBe('testCommentContent');
-			expect(saveCommentData.commentGroupNo).toBe(1);
-			expect(saveCommentData.commentIndent).toBe(2);
-			expect(saveCommentData.commentUpperNo).toBe(`1,${saveCommentData.commentNo}`);
-		});
-
-		it('비회원 접근', async () => {
-			const response = await request(app)
-								.post('/comment/image/1/reply')
-								.send({
-									commentContent: 'testCommentContent',
-									commentGroupNo: 1,
-									commentIndent: 1,
-									commentUpperNo: `1`,
-								});
-
-			expect(response.status).toBe(ResponseStatusCode.FORBIDDEN);
-			expect(response.body.message).toBe(ResponseStatus.FORBIDDEN.MESSAGE);
-		});
-
-		it('댓글 내용이 없는 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const response = await request(app)
-								.post('/comment/image/1/reply')
-								.send({
-									commentContent: '',
-									commentGroupNo: 1,
-									commentIndent: 1,
-									commentUpperNo: `1`,
-								})
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-
-			expect(response.status).toBe(ResponseStatusCode.BAD_REQUEST);
-			expect(response.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-
-		it('댓글 내용이 너무 긴 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const response = await request(app)
-								.post('/comment/image/1/reply')
-								.send({
-									commentContent: 'testCommentContent'.repeat(1000),
-									commentGroupNo: 1,
-									commentIndent: 1,
-									commentUpperNo: `1`,
-								})
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-
-			expect(response.status).toBe(ResponseStatusCode.BAD_REQUEST);
-			expect(response.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-
-		it('댓글 그룹 번호가 없는 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const response = await request(app)
-								.post('/comment/image/1/reply')
-								.send({
-									commentContent: 'testCommentContent',
-									commentIndent: 1,
-									commentUpperNo: `1`,
-								})
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-
-			expect(response.status).toBe(ResponseStatusCode.BAD_REQUEST);
-			expect(response.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-
-		it('댓글 그룹 번호가 문자열인 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const response = await request(app)
-								.post('/comment/image/1/reply')
-								.send({
-									commentContent: 'testCommentContent',
-									commentGroupNo: '1',
-									commentIndent: 1,
-									commentUpperNo: `1`,
-								})
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-
-			expect(response.status).toBe(ResponseStatusCode.BAD_REQUEST);
-			expect(response.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-
-		it('댓글 그룹 번호가 음수인 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const response = await request(app)
-								.post('/comment/image/1/reply')
-								.send({
-									commentContent: 'testCommentContent',
-									commentGroupNo: -1,
-									commentIndent: 1,
-									commentUpperNo: `1`,
-								})
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-
-			expect(response.status).toBe(ResponseStatusCode.BAD_REQUEST);
-			expect(response.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-
-		it('댓글 그룹 번호가 0인 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const response = await request(app)
-								.post('/comment/image/1/reply')
-								.send({
-									commentContent: 'testCommentContent',
-									commentGroupNo: 0,
-									commentIndent: 1,
-									commentUpperNo: `1`,
-								})
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-
-			expect(response.status).toBe(ResponseStatusCode.BAD_REQUEST);
-			expect(response.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-
-		it('댓글 indent가 문자열인 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const response = await request(app)
-								.post('/comment/image/1/reply')
-								.send({
-									commentContent: 'testCommentContent',
-									commentGroupNo: 1,
-									commentIndent: '1',
-									commentUpperNo: `1`,
-								})
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-		});
-
-		it('댓글 indent가 음수인 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const response = await request(app)
-								.post('/comment/image/1/reply')
-								.send({
-									commentContent: 'testCommentContent',
-									commentGroupNo: 1,
-									commentIndent: -1,
-									commentUpperNo: `1`,
-								})
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-
-			expect(response.status).toBe(ResponseStatusCode.BAD_REQUEST);
-			expect(response.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-
-		it('댓글 indent가 0인 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const response = await request(app)
-								.post('/comment/image/1/reply')
-								.send({
-									commentContent: 'testCommentContent',
-									commentGroupNo: 1,
-									commentIndent: 0,
-									commentUpperNo: `1`,
-								})
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-
-			expect(response.status).toBe(ResponseStatusCode.BAD_REQUEST);
-			expect(response.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-
-		it('댓글 upperNo가 비어있는 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const response = await request(app)
-								.post('/comment/image/1/reply')
-								.send({
-									commentContent: 'testCommentContent',
-									commentGroupNo: 1,
-									commentIndent: 1,
-									commentUpperNo: '',
-								})
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-
-			expect(response.status).toBe(ResponseStatusCode.BAD_REQUEST);
-			expect(response.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-
-		it('댓글 upperNo가 문자열이 아닌 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const response = await request(app)
-								.post('/comment/image/1/reply')
-								.send({
-									commentContent: 'testCommentContent',
-									commentGroupNo: 1,
-									commentIndent: 1,
-									commentUpperNo: 1,
-								})
-								.set('Cookie', [
-									`Authorization=${accessToken}`,
-									`Authorization_Refresh=${refreshToken}`,
-									`Authorization_ino=${ino}`,
-								]);
-
-			expect(response.status).toBe(ResponseStatusCode.BAD_REQUEST);
-			expect(response.body.message).toBe(ResponseStatus.BAD_REQUEST.MESSAGE);
-		});
-
-		it('댓글 upperNo가 없는 경우', async () => {
-			const { accessToken, refreshToken, ino } = await createTestToken(DEFAULT_USER_ID);
-			const response = await request(app)
-								.post('/comment/image/1/reply')
-								.send({
-									commentContent: 'testCommentContent',
-									commentGroupNo: 1,
-									commentIndent: 1,
-									commentUpperNo: '',
-								})
 		});
 	});
 });

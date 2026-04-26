@@ -6,8 +6,7 @@ import {
 	postBoardComment,
 	postImageBoardComment,
 	deleteComment,
-	postBoardReplyComment,
-	postImageBoardReplyComment
+	postCommentReply,
 } from "#controllers/commentController.js";
 import { validate } from "#middleware/validateMiddleware.js";
 import { postCommentValidator, postReplyCommentValidator } from "#validators/commentValidator.js";
@@ -15,11 +14,10 @@ import { postCommentValidator, postReplyCommentValidator } from "#validators/com
 const router = express.Router();
 
 router.get('/board', getBoardCommentList);
-router.get('/image', getImageBoardCommentList);
-router.post('/board/:boardNo', isLoggedIn, validate(postCommentValidator), postBoardComment);
-router.post('/image/:imageNo', isLoggedIn, validate(postCommentValidator), postImageBoardComment);
-router.delete('/:commentNo', isLoggedIn, deleteComment);
-router.post('/board/:boardNo/reply', isLoggedIn, validate(postReplyCommentValidator), postBoardReplyComment);
-router.post('/image/:imageNo/reply', isLoggedIn, validate(postReplyCommentValidator), postImageBoardReplyComment);
+router.get('/image-board', getImageBoardCommentList);
+router.post('/board/:targetBoardId', isLoggedIn, validate(postCommentValidator), postBoardComment);
+router.post('/image-board/:targetBoardId', isLoggedIn, validate(postCommentValidator), postImageBoardComment);
+router.delete('/:id', isLoggedIn, deleteComment);
+router.post('/:id/reply', isLoggedIn, validate(postReplyCommentValidator), postCommentReply);
 
 export default router;

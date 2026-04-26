@@ -23,20 +23,19 @@ export async function getBoardDetailService(id) {
 	try {
 		const result = await BoardRepository.getBoardDetail(id);
 
-		console.log('boardDetailService  result : ', result);
-
-		if(!result) {
-			logger.warn('Board detail data not found.', {id});
+		if(!result)
 			throw new CustomError(ResponseStatus.BAD_REQUEST);
-		}
 
 		return result;
 	}catch (error) {
 		logger.error('Failed to get board detail service.')
 
-		if(error instanceof CustomError)
+		if(error instanceof CustomError){
+			logger.error('origin error');
 			throw error;
+		}
 
+		logger.error('internal error');
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
 	}
 }
@@ -71,7 +70,7 @@ export async function patchBoardDetailDataService(userId, id) {
 			throw new CustomError(ResponseStatus.BAD_REQUEST);
 		}
 
-		if(board.userId === userId) {
+		if(board.userId !== userId) {
 			logger.error('User is not the author of the board.', { id, userId });
 			throw new CustomError(ResponseStatus.FORBIDDEN);
 		}
@@ -82,6 +81,9 @@ export async function patchBoardDetailDataService(userId, id) {
 		};
 	}catch (error) {
 		logger.error('Failed to get patch detail data service.', error);
+
+		if(error instanceof CustomError)
+			throw error;
 
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
 	}
@@ -110,7 +112,17 @@ export async function deleteBoardService(userId, id) {
 	try {
 		await checkWriter(userId, id);
 
-		await BoardRepository.deleteBoard(id);
+		const board = await BoardRepository.findById(id);
+
+		if(board.indent === 0) {
+			console.log('delete groupNo');
+			await BoardRepository.deleteByGroupNo(id);
+		}else {
+			const selfUpper = board.upperNo;
+			const childUpper = `${board.upperNo},%`;
+
+			await BoardRepository.deleteByPath(board.groupNo, selfUpper, childUpper);
+		}
 	}catch (error) {
 		logger.error('Failed to delete board service.', error);
 

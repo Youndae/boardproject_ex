@@ -77,16 +77,62 @@ describe('memberRepository test', () => {
 		})
 	});
 
+	describe('findUserIdAndRoleById', () => {
+		it('정상 조회', async () => {
+			const result = await MemberRepository.findUserIdAndRoleById(SAVE_MEMBER.id);
+
+			expect(result).toBeDefined();
+			expect(result.userId).toBe(SAVE_MEMBER.userId);
+			expect(result.roles[0]).toBe('ROLE_MEMBER');
+		})
+
+		it('데이터가 없는 경우', async () => {
+			const result = await MemberRepository.findUserIdAndRoleById(0);
+
+			expect(result).toBeNull();
+		})
+
+		it('권한이 여러개인 사용자인 경우', async () => {
+			await Member.create({
+				id: 100,
+				userId: 'admin',
+				password: await bcrypt.hash(SAVE_MEMBER.password, 10),
+				username: 'adminName',
+				nickname: 'adminNickname',
+				email: 'admin@admin.com',
+				profile: null,
+				provider: 'local',
+			});
+
+			await Auth.create({
+				userId: 100,
+				auth: 'ROLE_MEMBER',
+			});
+
+			await Auth.create({
+				userId: 100,
+				auth: 'ROLE_ADMIN',
+			});
+
+			const result = await MemberRepository.findUserIdAndRoleById(100);
+
+			expect(result).toBeDefined();
+			expect(result.userId).toBe('admin');
+			expect(result.roles.length).toBe(2);
+			expect(result.roles).toStrictEqual(['ROLE_MEMBER', 'ROLE_ADMIN']);
+		})
+	})
+
 	describe('findUserIdWithRoles', () => {
 		it('정상 조회', async () => {
 			const userWithRoles = await MemberRepository.findUserIdWithRoles(SAVE_MEMBER.userId);
 
 			expect(userWithRoles).toBeDefined();
-			expect(userWithRoles.userId).toBe(SAVE_MEMBER.userId);
+			expect(userWithRoles.id).toBe(SAVE_MEMBER.id);
 			expect(userWithRoles.roles).toStrictEqual(['ROLE_MEMBER']); // 배열, 객체 내용 비교는 toStrictEqual 사용.
 			expect(userWithRoles.roles.length).toBe(1);
-			// userId 외 데이터는 존재하지 않음.
-			expect(userWithRoles.id).toBeUndefined();
+			// id 외 데이터는 존재하지 않음.
+			expect(userWithRoles.userId).toBeUndefined();
 			expect(userWithRoles.password).toBeUndefined();
 			expect(userWithRoles.username).toBeUndefined();
 			expect(userWithRoles.nickname).toBeUndefined();
@@ -198,27 +244,38 @@ describe('memberRepository test', () => {
 
 	describe('patchMemberProfile', () => {
 		it('정상 수정', async () => {
-			await MemberRepository.patchMemberProfile(SAVE_MEMBER.userId, 'newNickName', 'newProfileThumbnail.jpg');
+			const patchBody = {
+				nickname: 'newNickname',
+				email: 'newMember@newMember.com',
+				profile: 'newProfileThumbnail.jpg'
+			}
+			await MemberRepository.patchMemberProfile(
+				SAVE_MEMBER.id,
+				patchBody.nickname,
+				patchBody.email,
+				patchBody.profile
+			);
 
 			const member = await MemberRepository.findMemberByUserId(SAVE_MEMBER.userId);
 
 			expect(member).toBeDefined();
-			expect(member.nickname).toBe('newNickName');
-			expect(member.profile).toBe('newProfileThumbnail.jpg');
+			expect(member.nickname).toBe(patchBody.nickname);
+			expect(member.email).toBe(patchBody.email);
+			expect(member.profile).toBe(patchBody.profile);
 		})
 	});
 
 	describe('getMemberProfile', () => {
 		it('정상 조회', async () => {
-			const member = await MemberRepository.getMemberProfile(SAVE_MEMBER.userId);
+			const member = await MemberRepository.getMemberProfile(SAVE_MEMBER.id);
 
 			expect(member).toBeDefined();
 			expect(member.nickname).toBe(SAVE_MEMBER.nickname);
 			expect(member.profile).toBe(SAVE_MEMBER.profile);
+			expect(member.email).toBe(SAVE_MEMBER.email);
 			expect(member.userId).toBeUndefined();
 			expect(member.password).toBeUndefined();
 			expect(member.username).toBeUndefined();
-			expect(member.email).toBeUndefined();
 			expect(member.provider).toBeUndefined();
 		});
 
