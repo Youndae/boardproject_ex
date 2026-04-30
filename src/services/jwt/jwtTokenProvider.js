@@ -8,7 +8,7 @@ import { ResponseStatusCode, ResponseStatus } from '#constants/responseStatus.js
 
 export class JWTTokenProvider {
 
-	// decodeToken. token is string
+	// decodeToken. token typeof string
 	static decodeToken(token) {
 		const replacedToken = this.#replaceTokenValue(token);
 
@@ -37,14 +37,14 @@ export class JWTTokenProvider {
 		if(redisValue === replacedToken)
 			return verifyValue;
 		else if(redisValue === null) {
-			logger.error('Redis Token Value is Null. ', { redisValue, replacedToken });
+			logger.error('Redis Token Value is Null.', { redisValue, replacedToken });
 			throw new CustomError(ResponseStatus.TOKEN_STEALING);
 		} else {
-			logger.error('Access Token Stealing. ', { redisValue, replacedToken });
+			logger.error('Access Token Stealing.', { redisValue, replacedToken });
 			this.deleteAllTokenCookie(res);
 			const refreshKey = this.#getRedisKey(jwtConfig.refreshKeyPrefix, verifyValue, inoValue);
-			RedisService.deleteTokenValue(redisKey);
-			RedisService.deleteTokenValue(refreshKey);
+			await RedisService.deleteTokenValue(redisKey);
+			await RedisService.deleteTokenValue(refreshKey);
 			throw new CustomError(ResponseStatus.TOKEN_STEALING);
 		}
 	}
@@ -59,14 +59,14 @@ export class JWTTokenProvider {
 		if(redisValue === replacedToken)
 			return verifyValue;
 		else if(redisValue === null) {
-			logger.error('Redis Token Value is Null. ', { redisValue, replacedToken });
+			logger.error('Redis Token Value is Null.', { redisValue, replacedToken });
 			throw new CustomError(ResponseStatus.TOKEN_STEALING);
 		} else {
-			logger.error('Refresh Token Stealing. ', { redisValue, replacedToken });
+			logger.error('Refresh Token Stealing.', { redisValue, replacedToken });
 			this.deleteAllTokenCookie(res);
 			const refreshKey = this.#getRedisKey(jwtConfig.refreshKeyPrefix, verifyValue, inoValue);
-			RedisService.deleteTokenValue(redisKey);
-			RedisService.deleteTokenValue(refreshKey);
+			await RedisService.deleteTokenValue(redisKey);
+			await RedisService.deleteTokenValue(refreshKey);
 			throw new CustomError(ResponseStatus.TOKEN_STEALING);
 		}
 	}
@@ -74,9 +74,7 @@ export class JWTTokenProvider {
 	// verify Token
 	static #verifyToken(tokenValue, secret) {
 		try {
-			const verifyValue = jwt.verify(tokenValue, secret);
-
-			return verifyValue;
+			return jwt.verify(tokenValue, secret);
 		}catch (error) {
 			if(error instanceof jwt.TokenExpiredError) {
 				logger.info('Token Expired', error.expiredAt);

@@ -6,8 +6,6 @@ const commentAmount = 20;
 
 export class CommentRepository {
 
-
-	// CASE WHEN 추가 필요.
 	static async getCommentListPageable({ boardId, imageId, page = 1 }) {
 		const offset = getOffset(page, commentAmount);
 		const where = boardId ? { boardId: boardId } : { imageId: imageId };

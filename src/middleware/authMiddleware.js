@@ -10,9 +10,6 @@ export const isLoggedIn = (req, res, next) => {
 };
 
 export const isNotLoggedIn = (req, res, next) => {
-	const path = req.originalUrl;
-	console.log('isNotLoggedIn path', path);
-
 	if(!req.user)
 		return next();
 	else

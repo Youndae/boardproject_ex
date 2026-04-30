@@ -31,11 +31,9 @@ export async function getBoardDetailService(id) {
 		logger.error('Failed to get board detail service.')
 
 		if(error instanceof CustomError){
-			logger.error('origin error');
 			throw error;
 		}
 
-		logger.error('internal error');
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
 	}
 }
@@ -50,7 +48,7 @@ export async function postBoardService(userId, {title, content}) {
 
 		return boardNo;
 	}catch (error) {
-		logger.error('Failed to post board service.', error);
+		logger.error('Failed to post board service.', {error});
 		await transaction.rollback();
 
 		if(error instanceof CustomError)
@@ -80,7 +78,7 @@ export async function patchBoardDetailDataService(userId, id) {
 			content: board.content,
 		};
 	}catch (error) {
-		logger.error('Failed to get patch detail data service.', error);
+		logger.error('Failed to get patch detail data service.', {error});
 
 		if(error instanceof CustomError)
 			throw error;
@@ -98,7 +96,7 @@ export async function patchBoardService(userId, id, {title, content}) {
 
 		return parseInt(id);
 	}catch (error) {
-		logger.error('Failed to patch board service.', error);
+		logger.error('Failed to patch board service.', {error});
 
 		if(error instanceof CustomError)
 			throw error;
@@ -115,7 +113,6 @@ export async function deleteBoardService(userId, id) {
 		const board = await BoardRepository.findById(id);
 
 		if(board.indent === 0) {
-			console.log('delete groupNo');
 			await BoardRepository.deleteByGroupNo(id);
 		}else {
 			const selfUpper = board.upperNo;
@@ -124,7 +121,7 @@ export async function deleteBoardService(userId, id) {
 			await BoardRepository.deleteByPath(board.groupNo, selfUpper, childUpper);
 		}
 	}catch (error) {
-		logger.error('Failed to delete board service.', error);
+		logger.error('Failed to delete board service.', {error});
 
 		if(error instanceof CustomError)
 			throw error;
@@ -143,7 +140,7 @@ export async function getReplyDetailService(id) {
 			throw new CustomError(ResponseStatus.BAD_REQUEST);
 		}
 	}catch (error) {
-		logger.error('Failed to get reply detail service.', error);
+		logger.error('Failed to get reply detail service.', {error});
 
 		if(error instanceof CustomError)
 			throw error;
@@ -171,7 +168,7 @@ export async function postBoardReplyService(userId, id, {title, content}) {
 
 		return replyNo;
 	}catch (error) {
-		logger.error('Failed to post board reply service.', error);
+		logger.error('Failed to post board reply service.', {error});
 		await transaction.rollback();
 
 		if(error instanceof CustomError)

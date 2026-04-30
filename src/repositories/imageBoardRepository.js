@@ -7,7 +7,6 @@ const imageBoardAmount = 15;
 
 export class ImageBoardRepository {
 
-	// query check
 	static async getImageBoardListPageable({keyword, searchType, page = 1}) {
 		const offset = getOffset(page, imageBoardAmount);
 		const searchKeyword = keyword ? `%${keyword}%` : '';

@@ -28,7 +28,7 @@ export async function getMemberStatus(userId) {
 			role: maxRole,
 		}
 	}catch(error) {
-		logger.warn('memberService.getMemberStatus error', error);
+		logger.warn('memberService.getMemberStatus error', {error});
 
 		if(error instanceof CustomError)
 			throw error;
@@ -52,18 +52,16 @@ export async function registerService ( {userId, password, username, nickname, e
 		await transaction.commit();
 	}catch(error) {
 		await transaction.rollback();
-
-		console.error('registerService error : ', error);
+		logger.error('Failed to register service.');
 
 		if(profile)
 			await deleteImageFile(profile, ImageConstants.PROFILE_TYPE);
 
 		if(error instanceof CustomError && error.status === ResponseStatus.BAD_REQUEST.CODE){
-			logger.error('Member already exists.');
+			logger.error('Register service member already exists.');
 			throw error;
 		}
 
-		logger.error('Failed to register service.');
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
 	}
 }
@@ -98,11 +96,10 @@ export async function checkNicknameService (userId, nickName) {
 
 		return memberCheckConstants.VALID;
 	}catch(error) {
-		console.log('error is ', error);
+		logger.error('Failed to check nickname service.')
+
 		if(error instanceof CustomError)
 			throw error;
-
-		logger.error('Failed to check nickname service.')
 
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
 	}
@@ -131,10 +128,11 @@ export async function patchProfileService (userId, nickName, email, profileThumb
 	}catch(error) {
 		await transaction.rollback();
 
+		logger.error('Failed to patch profile service.', error);
+
 		if(profileThumbnail)
 			await deleteImageFile(profileThumbnail, ImageConstants.PROFILE_TYPE);
 
-		logger.error('Failed to patch profile service.', error);
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
 	}
 }
@@ -143,8 +141,11 @@ export async function getProfileService (id) {
 	try {
 		const member = await MemberRepository.getMemberProfile(id);
 
-		if(!member)
+		if(!member){
+			logger.error('getProfileService member is null', {id})
 			throw new CustomError(ResponseStatus.BAD_REQUEST);
+		}
+
 
 		const splitMail = member.email.split('@');
 		const suffix = splitMail[1].substring(0, splitMail[1].indexOf('.'));
@@ -172,8 +173,10 @@ export async function patchOAuthProfileService(userId, { nickname }, profile) {
 	let newProfile = profile ? getResizeProfileName(profile) : null;
 	try {
 		const member = await MemberRepository.findMemberById(userId);
-		if(!member)
+		if(!member){
+			logger.error('patchOAuthProfileService member is null', {id});
 			throw new CustomError(ResponseStatus.BAD_REQUEST);
+		}
 
 		await MemberRepository.patchOAuthJoinProfile(userId, nickname, newProfile, { transaction });
 
@@ -181,7 +184,7 @@ export async function patchOAuthProfileService(userId, { nickname }, profile) {
 	}catch(error) {
 		await transaction.rollback();
 
-		console.error('OAuth register profile patch error', error);
+		logger.error('Failed to patch OAuth profile service.', {error});
 
 		if(newProfile)
 			await deleteImageFile(newProfile, ImageConstants.PROFILE_TYPE);

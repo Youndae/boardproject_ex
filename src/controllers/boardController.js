@@ -12,71 +12,19 @@ import logger from '#config/loggerConfig.js';
 import CustomError from '#errors/customError.js';
 import { ResponseStatusCode, ResponseStatus } from '#constants/responseStatus.js';
 
-/**
- * 
- * @param {
- * 	query: {
- * 		keyword: String?,
- * 		searchType: String?,
- * 		pageNum: Integer? = 1
- * 	}
- * } req 
- * @param {*} res 
- * @param {*} next 
- * 
- * @returns {
- * 	status: 200,
- * 	data: {
- * 		content: [
- * 			{
- * 				boardNo: 1,
- * 				boardTitle: String,
- * 				userId: String,
- * 				boardDate: Date,
- * 				boardIndent: Integer,
- * 			}
- * 		],
- *		totalPages: Integer,
- * 		isEmpty: boolean,
- * 		currentPage: Integer,
- * 	}
- * }
- */
+
 export async function getBoardList(req, res, next) {
 	try {
 		const boardList = await getBoardListService(req.query);
 
 		res.success(boardList);
 	} catch (error) {
-		logger.error('getBoardList error: ', error);
+		logger.error('getBoardList error.', {error});
 
 		next(error);
 	}
 }
 
-/**
- * 
- * @param {
- * 	params: {
- * 		boardNo: Integer
- * 	}
- * } req 
- * @param {*} res 
- * @param {*} next 
- * 
- * @returns {
- *  status: 200,
- *  data: {
- * 		content: {
- * 			boardNo: Integer,
- * 			boardTitle: String,
- * 			boardContent: String,
- * 			userId: String
- * 			boardDate: Date,
- * 		}
- * 	}
- * }
- */
 export async function getBoardDetail(req, res, next) {
 	try {
 		const { id } = req.params;
@@ -85,30 +33,12 @@ export async function getBoardDetail(req, res, next) {
 
 		res.success(board);
 	} catch (error) {
-		logger.error('getBoardDetail error: ', error);
+		logger.error('getBoardDetail error.', {error});
 
 		next(error);
 	}
 }
 
-/**
- * 
- * @param {
- * 	body: {
- * 		boardTitle: String,
- * 		boardContent: String,
- * 	}
- * } req 
- * @param {*} res 
- * @param {*} next 
- * 
- * @returns {
- * 	status: 201,
- * 	data: {
- * 		content: Integer
- * 	}
- * }
- */
 export async function postBoard(req, res, next) {
 	try {
 		const userId = req.user.id;
@@ -120,37 +50,12 @@ export async function postBoard(req, res, next) {
 
 		res.created(saveBoardNo);
 	} catch (error) {
-		logger.error('postBoard error: ', error);
+		logger.error('postBoard error.', {error});
 
 		next(error);
 	}
 }
 
-/**
- * 
- * @param {
- * 	params: {
- * 		boardNo: Integer
- * 	}
- * } req 
- * @param {*} res 
- * @param {*} next 
- * 
- * @returns {
- * 	status: 200,
- * 	data: {
- * 		content: {
- * 			boardNo: Integer,
- * 			boardTitle: String,
- * 			boardContent: String,
- * 		},
- * 		userStatus: {
- * 			loggedIn: boolean,
- * 			uid: String
- * 		}
- * 	}
- * }
- */
 export async function patchBoardDetailData(req, res, next) {
 	try {
 		const { id } = req.params;
@@ -163,33 +68,12 @@ export async function patchBoardDetailData(req, res, next) {
 
 		res.success(board);
 	} catch (error) {
-		logger.error('patchBoardDetailData error: ', error);
+		logger.error('patchBoardDetailData error.', {error});
 
 		next(error);
 	}
 }
 
-/**
- * 
- * @param {
- * 	params: {
- * 		boardNo: Integer
- * 	}
- * 	body: {
- * 		boardTitle: String,
- * 		boardContent: String,
- * 	}
- * } req 
- * @param {*} res 
- * @param {*} next 
- * 
- * @returns {
- * 	status: 200,
- * 	data: {
- * 		boardNo: Integer
- * 	}
- * }
- */
 export async function patchBoard(req, res, next) {
 	try {
 		const { id } = req.params;
@@ -202,26 +86,12 @@ export async function patchBoard(req, res, next) {
 
 		res.success(patchBoardNo);
 	} catch (error) {
-		logger.error('patchBoard error: ', error);
+		logger.error('patchBoard error.', {error});
 
 		next(error);
 	}
 }
 
-/**
- * 
- * @param {
- * 	params: {
- * 		boardNo: Integer
- * 	}
- * } req 
- * @param {*} res 
- * @param {*} next 
- * 
- * @returns {
- * 	status: 204,
- * }
- */
 export async function deleteBoard(req, res, next) {
 	try {
 		const { id } = req.params;
@@ -234,70 +104,24 @@ export async function deleteBoard(req, res, next) {
 
 		res.status(ResponseStatusCode.NO_CONTENT).json({});
 	} catch (error) {
-		logger.error('deleteBoard error: ', error);
+		logger.error('deleteBoard error.', {error});
 
 		next(error);
 	}
 }
 
-/**
- * 
- * @param {
- * 	params: {
- * 		boardNo: Integer
- * 	}
- * } req 
- * @param {*} res 
- * @param {*} next 
- * 
- * @returns {
- * 	status: 200,
- * 	data: {
- * 		content: {
- * 			boardGroupNo: Integer,
- * 			boardUpperNo: String,
- * 			boardIndent: Integer,
- * 		},
- * 		userStatus: {
- * 			loggedIn: boolean,
- * 			uid: String
- * 		}
- * 	}
- * }
- */
 export async function getReplyDetail(req, res, next) {
 	try {
 		const { id } = req.params;
 		await getReplyDetailService(id);
 		res.success();
 	} catch (error) {
-		logger.error('getReplyDetail error: ', error);
+		logger.error('getReplyDetail error.', {error});
 
 		next(error);
 	}
 }
 
-/**
- * 
- * @param {
- * 	body: {
- * 		boardTitle: String,
- * 		boardContent: String,
- * 		boardGroupNo: Integer,
- * 		boardIndent: Integer,
- * 		boardUpperNo: String,
- * }
- * } req 
- * @param {*} res 
- * @param {*} next 
- * 
- * @returns {
- * 	status: 201,
- * 	data: {
- * 		boardNo: Integer
- * 	}
- * }
- */
 export async function postBoardReply(req, res, next) {
 	try {
 		const userId = req.user.id;
@@ -310,7 +134,7 @@ export async function postBoardReply(req, res, next) {
 
 		res.created(postBoardReplyNo);
 	} catch (error) {
-		logger.error('postBoardReply error: ', error);
+		logger.error('postBoardReply error.', {error});
 
 		next(error);
 	}

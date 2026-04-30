@@ -22,7 +22,6 @@ export const memberValidate = (schema, property = 'body') => async (req, res, ne
 			await deleteImageFile(req.file.filename, ImageConstants.PROFILE_TYPE);
 		}
 
-		console.log('member validate error!!!!!!!!!!!!!!!!!!');
 		next(new CustomError(ResponseStatus.BAD_REQUEST));
 	}
 }

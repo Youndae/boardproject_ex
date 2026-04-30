@@ -28,6 +28,7 @@ import {imageRenderMiddleware} from "#middleware/imageRenderMiddleware.js";
 
 const router = express.Router();
 
+// /api/member
 router.get('/status',isLoggedIn, checkLogin);
 router.post('/join', isNotLoggedIn, profileUpload, memberValidate(registerValidator), register);
 router.get('/check-id/:userId', isNotLoggedIn, validate(checkIdValidator, 'params'), checkId);
@@ -40,7 +41,7 @@ router.get('/oauth/:provider/callback', callbackOAuth);
 router.post('/oauth/join/profile', isLoggedIn, profileUpload, memberValidate(patchOAuthJoinProfileValidator), patchOAuthProfile);
 router.get('/display/:imageName', getProfileDisplay, imageRenderMiddleware);
 
-
+// /oauth2/authorization
 router.get('/:provider', isNotLoggedIn, oAuthLogin);
 
 export default router;

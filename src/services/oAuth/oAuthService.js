@@ -18,12 +18,6 @@ async function findOrCreateOAuthMember({
 	try {
 		let member = await MemberRepository.findOAuthMember(provider, userId);
 
-		console.error('oAuthService :: userId : ', userId);
-		console.error('oAuthService :: email : ', email);
-		console.error('oAuthService :: username : ', username);
-		console.error('oAuthService :: provider : ', provider);
-		console.error('oAuthService :: member : ', member);
-
 		if(!member) {
 			member = await MemberRepository.createOAuthMember(
 				userId,
@@ -39,9 +33,9 @@ async function findOrCreateOAuthMember({
 
 		await transaction.commit();
 		return member;
-	} catch(err) {
+	} catch(error) {
 		await transaction.rollback();
-		logger.error('Failed to find or create OAuth member: ', { err: err.message });
+		logger.error('Failed to find or create OAuth member.', { error: error.message });
 		throw new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR);
 	}
 }
@@ -67,7 +61,6 @@ export const parsers = {
 export const oAuthCallback = (provider, parseProfile) =>
 	async (accessToken, refreshToken, profile, done) => {
 		try {
-			console.error('oAuthCallback :: profile : ', profile);
 			const { userId, email, username } = parseProfile(profile);
 			const member = await findOrCreateOAuthMember({ provider, userId, email, username });
 

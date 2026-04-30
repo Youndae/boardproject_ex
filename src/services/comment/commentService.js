@@ -19,7 +19,7 @@ export async function getCommentListService({boardId, imageId, page = 1}) {
 			currentPage: parseInt(commentList.currentPage)
 		};
 	}catch (error) {
-		logger.error('Failed to get comment list service.', error);
+		logger.error('Failed to get comment list service.', {error});
 
 		if(error instanceof CustomError)
 			throw error;
@@ -38,7 +38,7 @@ export async function postCommentService({boardId = null, imageId = null, conten
 
 		await transaction.commit();
 	}catch (error) {
-		logger.error('Failed to post comment service.', error);
+		logger.error('Failed to post comment service.', {error});
 		await transaction.rollback();
 
 		if(error instanceof CustomError)
@@ -53,7 +53,7 @@ export async function deleteCommentService(id, userId) {
 	try {
 		await CommentRepository.deleteComment(id);
 	}catch (error) {
-		logger.error('Failed to delete comment service.', error);
+		logger.error('Failed to delete comment service.', {error});
 
 		if(error instanceof CustomError)
 			throw error;
@@ -85,7 +85,7 @@ export async function postReplyCommentService(id, {content}, userId) {
 
 		await transaction.commit();
 	}catch (error) {
-		logger.error('Failed to post reply comment service.', error);
+		logger.error('Failed to post reply comment service.', {error});
 
 		await transaction.rollback();
 
@@ -110,9 +110,9 @@ async function checkCommentWriter(id, userId) {
 	}
 }
 
-function checkCommentBoardStatus(boardNo, imageNo) {
-	if((!boardNo && !imageNo) || (boardNo && imageNo)) {
-		logger.error('boardNo and imageNo must be provided together');
+function checkCommentBoardStatus(boardId, imageId) {
+	if((!boardId && !imageId) || (boardId && imageId)) {
+		logger.error('boardId and imageId must be provided together');
 		throw new CustomError(ResponseStatus.BAD_REQUEST);
 	}
 

@@ -12,7 +12,7 @@ export async function getImageBoardListService({keyword, searchType, page = 1}) 
 	try {
 		return await ImageBoardRepository.getImageBoardListPageable({keyword, searchType, page});
 	}catch (error) {
-		logger.error('Failed to get image board list service.', error);
+		logger.error('Failed to get image board list service.', {error});
 
 		if(error instanceof CustomError)
 			throw error;
@@ -32,7 +32,7 @@ export async function getImageBoardDetailService(id) {
 
 		return imageBoard;
 	}catch (error) {
-		logger.error('Failed to get image board detail service.', error);
+		logger.error('Failed to get image board detail service.', {error});
 
 		if(error instanceof CustomError)
 			throw error;
@@ -50,7 +50,7 @@ export async function postImageBoardService(userId, {title, content}, files) {
 
 		return resultId;
 	}catch (error) {
-		logger.error('Failed to post image board service.', error);
+		logger.error('Failed to post image board service.', {error});
 		await transaction.rollback();
 
 		if(files) {
@@ -76,7 +76,7 @@ export async function getImageBoardPatchDetailService(id, userId) {
 
 		return imageBoard;
 	}catch (error) {
-		logger.error('Failed to get image board patch detail service.', error);
+		logger.error('Failed to get image board patch detail service.', {error});
 
 		if(error instanceof CustomError)
 			throw error;
@@ -99,7 +99,7 @@ export async function patchImageBoardService(userId, id, {title, content}, files
 
 		return parseInt(id);
 	}catch (error) {
-		logger.error('Failed to patch image board service.', error);
+		logger.error('Failed to patch image board service.', {error});
 		
 		await transaction.rollback();
 
@@ -128,7 +128,7 @@ export async function deleteImageBoardService(id, userId) {
 
 		await transaction.commit();
 	}catch(error) {
-		logger.error('Failed to delete image board service.', error);
+		logger.error('Failed to delete image board service.', {error});
 		await transaction.rollback();
 
 		if(error instanceof CustomError)

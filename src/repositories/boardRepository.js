@@ -168,14 +168,14 @@ export class BoardRepository {
 			userId: userId,
 		}, { transaction: options.transaction });
 
-		const replyNo = reply.id;
-		const updateUpperNo = `${upperNo},${replyNo}`;
+		const replyId = reply.id;
+		const updateUpperNo = `${upperNo},${replyId}`;
 
 		await Board.update({
 			upperNo: updateUpperNo,
-		}, { where: { id: replyNo }, transaction: options.transaction });
+		}, { where: { id: replyId }, transaction: options.transaction });
 
-		return replyNo;
+		return replyId;
 	}
 
 	static async getBoardWriter(id){

@@ -26,22 +26,11 @@ export async function checkLogin(req, res, next) {
 
 		res.success(result);
 	}catch(error) {
-		logger.error('Failed to register member');
+		logger.error('Failed to checkLogin');
 		next(error);
 	}
 }
 
-
-/**
- * 
- * @param {*} req 
- * @param {*} res 
- * @param {*} next 
- * 
- * @returns {
- * 	status: 201
- * }
- */
 export async function register(req, res, next) {
 	try {
 		const profileImage = req.file ? req.file.filename : null;
@@ -50,7 +39,7 @@ export async function register(req, res, next) {
 			try {
 				await profileResize(profileImage);
 			}catch(error) {
-				console.error('profileResize error : ', error);
+				logger.error('Failed to register profile resize', {error});
 				next(new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR));
 			}
 		}
@@ -63,19 +52,6 @@ export async function register(req, res, next) {
 	}
 }
 
-/**
- * 
- * @param {*} req 
- * @param {*} res 
- * @param {*} next 
- * 
- * @returns {
- * 	status: 200,
- * 	data: {
- * 		isExist: true/false
- * }
- * }
- */
 export async function checkId(req, res, next) {
 	try {
 		console.log('checkId: ', req.params.userId);
@@ -84,27 +60,14 @@ export async function checkId(req, res, next) {
 		res.successWithMsg(result);
 	}catch(error) {
 		if(error instanceof CustomError && error.status === ResponseStatusCode.CONFLICT)
-			logger.info('checkId Already exists. ', error);
+			logger.info('checkId Already exists.', {error});
 		else
-			logger.error('Failed to check id. ', error);
+			logger.error('Failed to check id. ', {error});
 
 		return next(error);
 	}
 }
 
-/**
- * 
- * @param {*} req 
- * @param {*} res 
- * @param {*} next 
- * 
- * @returns {
-* 	status: 200,
-* 	data: {
-* 		isExist: true/false
-* }
-* }
-*/
 export async function checkNickname(req, res, next) {
 	try {
 		const userId = req.user ? req.user.userId : null;
@@ -113,46 +76,23 @@ export async function checkNickname(req, res, next) {
 		res.successWithMsg(result)
 	}catch(error) {
 		if(error instanceof CustomError && error.status === ResponseStatusCode.CONFLICT)
-			logger.info('checkNickname Already exists. ', error);
+			logger.info('checkNickname Already exists.', {error});
 		else
-			logger.error('Failed to check nickname. ', error);
+			logger.error('Failed to check nickname.', {error});
 
 		return next(error);
 	}
 }
 
-/**
- * 
- * @param {*} req 
- * @param {*} res 
- * @param {*} next 
- * 
- * @returns {
- * 	status: 200,
- *  message: 'SUCCESS' || 'FORBIDDEN'
- * 	data: {
- * 		userId: string
- * 	}
- * 	cookies: {
- * 		accessToken: httyOnly, secure, sameSite: 'strict',
- * 		refreshToken: httyOnly, secure, sameSite: 'strict',
- * 		ino: httyOnly, secure, sameSite: 'strict',
- * 	}
- * }
- * }
- */
 export async function login(req, res, next) {
-	
-	//TODO: login validation
-	//TODO: passport local strategy
 	passport.authenticate('local', async (err, member, info) => {
 		try {
 			if(err){
-				logger.error('Failed to login');
+				logger.error('Failed to local login');
 				return next(err);
 			}
 			if(!member) {
-				logger.error('Failed to login. Invalid userId or userPw');
+				logger.error('Failed to login. Invalid userId or password');
 				return next(new CustomError(ResponseStatus.FORBIDDEN));
 			}
 
@@ -163,22 +103,12 @@ export async function login(req, res, next) {
 							id: member.userId,
 						});
 		}catch (error) {
-			logger.error('Failed to login');
+			logger.error('Failed to local login');
 			next(error);
 		}
 	})(req, res, next);
 }
 
-/**
- * 
- * @param {*} req 
- * @param {*} res 
- * @param {*} next 
- * 
- * @returns {
- * 	status: 200
- * }
- */
 export async function logout(req, res, next) {
 	try {
 		const inoValue = getCookie(req, jwtConfig.inoHeader);
@@ -192,16 +122,6 @@ export async function logout(req, res, next) {
 	}
 }
 
-/**
- * 
- * @param {*} req 
- * @param {*} res 
- * @param {*} next 
- * 
- * @returns {
- * 	status: 200,
- * }
- */
 export async function patchProfile(req, res, next) {
 	try {
 		const { nickname, email, deleteProfile = null } = req.body;
@@ -211,6 +131,7 @@ export async function patchProfile(req, res, next) {
 			try {
 				await profileResize(profileImage);
 			}catch(error) {
+				logger.error('Failed to patchProfile profile resize.', {error})
 				next(new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR));
 			}
 		}
@@ -224,21 +145,6 @@ export async function patchProfile(req, res, next) {
 	}
 }
 
-/**
- * 
- * @param {*} req 
- * @param {*} res 
- * @param {*} next 
- * 
- * @returns {
- * 	status: 200,
- *  message: 'SUCCESS',
- * 	data: {
- * 		nickname: string,
- * 		profileImage: string,
- * 	}
- * }
- */
 export async function getProfile(req, res, next) {
 	try {
 		const result = await getProfileService(req.user.id);
@@ -260,6 +166,7 @@ const providerOptions = {
 export async function oAuthLogin(req, res, next) {
 	const { provider } = req.params;
 	if(!allowedProviders.includes(provider)) {
+		logger.warn('OAuth login allowedProviders not includes.', {provider})
 		return next(new CustomError(ResponseStatus.BAD_REQUEST));
 	}
 
@@ -270,10 +177,10 @@ export async function callbackOAuth(req, res, next) {
 	const { provider } = req.params;
 
 	if(!allowedProviders.includes(provider)) {
+		logger.warn('OAuth login callback allowedProviders not includes.', {provider})
 		return next(new CustomError(ResponseStatus.BAD_REQUEST));
 	}
-	
-	
+
 	passport.authenticate(provider, { session: false }, async (err, member, info) => {
 		try {
 			if(err){
@@ -319,7 +226,7 @@ export async function patchOAuthProfile(req, res, next) {
 			try {
 				await profileResize(profileImage);
 			}catch(error) {
-				console.error('profileResize error : ', error);
+				logger.error('Failed to patchOAuthProfile profile resize.', {error});
 				next(new CustomError(ResponseStatus.INTERNAL_SERVER_ERROR));
 			}
 		}
@@ -347,6 +254,7 @@ export async function getProfileDisplay(req, res, next) {
 
 		next();
 	}catch(error) {
+		logger.error('Failed to get profile display.', {imageName, error})
 		next(error);
 	}
 }
